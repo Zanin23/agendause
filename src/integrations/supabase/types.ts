@@ -98,6 +98,8 @@ export type Database = {
       }
       trainings: {
         Row: {
+          cancellation_reason: string | null
+          cancelled_at: string | null
           client: string | null
           created_at: string
           created_by: string
@@ -111,6 +113,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
           client?: string | null
           created_at?: string
           created_by: string
@@ -124,6 +128,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
           client?: string | null
           created_at?: string
           created_by?: string
