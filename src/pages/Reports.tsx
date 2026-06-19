@@ -192,11 +192,290 @@ const Reports = () => {
   );
 };
 
-const StatBox = ({ label, value, tone }: { label: string; value: string | number; tone?: "destructive" }) => (
-  <div className={`rounded-md border p-3 ${tone === "destructive" ? "border-destructive/40 bg-destructive/5" : "bg-muted/30"}`}>
-    <div className="text-xs text-muted-foreground">{label}</div>
-    <div className={`text-2xl font-semibold mt-0.5 ${tone === "destructive" ? "text-destructive" : ""}`}>{value}</div>
-  </div>
-);
+type WeeklyStats = {
+  total_visits: number;
+  cancelled_count: number;
+  concluded_count: number;
+  scheduled_count: number;
+  confirmation_rate_pct: number;
+  confirmed_trainings: number;
+  total_acceptances: number;
+  top_clients: { name: string; count: number }[];
+  cancellations: { title: string; client: string | null; reason: string | null; date: string }[];
+};
+
+const WeeklyAIReport = ({
+  weekStart,
+  setWeekStart,
+  weekLabel,
+  generating,
+  report,
+  stats,
+  onGenerate,
+}: {
+  weekStart: Date;
+  setWeekStart: (fn: (d: Date) => Date) => void;
+  weekLabel: string;
+  generating: boolean;
+  report: string | null;
+  stats: WeeklyStats | null;
+  onGenerate: () => void;
+}) => {
+  const copyReport = async () => {
+    if (!report) return;
+    await navigator.clipboard.writeText(report);
+    toast({ title: "Relatório copiado" });
+  };
+
+  return (
+    <Card className="overflow-hidden border-primary/20">
+      {/* Hero */}
+      <div className="relative bg-gradient-to-br from-primary/10 via-primary/5 to-transparent px-6 py-5 border-b">
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div className="flex items-start gap-3">
+            <div className="h-10 w-10 rounded-lg bg-primary/15 text-primary flex items-center justify-center shrink-0">
+              <Sparkles className="h-5 w-5" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold tracking-tight">Relatório semanal com IA</h2>
+              <p className="text-xs text-muted-foreground mt-0.5 capitalize">
+                Semana de {weekLabel}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Button variant="outline" size="icon" onClick={() => setWeekStart((d) => addWeeks(d, -1))} disabled={generating} aria-label="Semana anterior">
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setWeekStart(() => addWeeks(startOfWeek(new Date(), { weekStartsOn: 1 }), -1))}
+              disabled={generating}
+            >
+              Semana passada
+            </Button>
+            <Button variant="outline" size="icon" onClick={() => setWeekStart((d) => addWeeks(d, 1))} disabled={generating} aria-label="Próxima semana">
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+            <Button onClick={onGenerate} disabled={generating} size="sm" className="ml-2">
+              {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+              {generating ? "Gerando..." : report ? "Atualizar" : "Gerar relatório"}
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      <CardContent className="p-6 space-y-6">
+        {/* Empty state */}
+        {!stats && !generating && (
+          <div className="text-center py-10 px-4">
+            <div className="mx-auto h-12 w-12 rounded-full bg-primary/10 text-primary flex items-center justify-center mb-3">
+              <Sparkles className="h-6 w-6" />
+            </div>
+            <h3 className="font-medium">Gere um resumo inteligente da semana</h3>
+            <p className="text-sm text-muted-foreground max-w-md mx-auto mt-1">
+              A IA analisa visitas, cancelamentos, taxa de confirmação dos clientes e gera recomendações para a próxima semana.
+            </p>
+          </div>
+        )}
+
+        {/* Loading skeleton */}
+        {generating && (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {[0, 1, 2, 3].map((i) => (
+                <div key={i} className="h-24 rounded-lg border bg-muted/30 animate-pulse" />
+              ))}
+            </div>
+            <div className="h-2 rounded bg-muted animate-pulse" />
+            <div className="space-y-2">
+              {[0, 1, 2, 3, 4].map((i) => (
+                <div key={i} className="h-4 rounded bg-muted/60 animate-pulse" style={{ width: `${90 - i * 10}%` }} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Stats grid */}
+        {stats && !generating && (
+          <>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <MetricCard
+                icon={CalendarClock}
+                label="Total de visitas"
+                value={stats.total_visits}
+                tint="primary"
+              />
+              <MetricCard
+                icon={CheckCircle2}
+                label="Concluídas"
+                value={stats.concluded_count}
+                tint="success"
+                hint={stats.total_visits > 0 ? `${Math.round((stats.concluded_count / stats.total_visits) * 100)}% do total` : undefined}
+              />
+              <MetricCard
+                icon={CalendarX2}
+                label="Canceladas"
+                value={stats.cancelled_count}
+                tint="destructive"
+                hint={stats.total_visits > 0 ? `${Math.round((stats.cancelled_count / stats.total_visits) * 100)}% do total` : undefined}
+              />
+              <MetricCard
+                icon={TrendingUp}
+                label="Confirmação cliente"
+                value={`${stats.confirmation_rate_pct}%`}
+                tint="primary"
+                hint={`${stats.confirmed_trainings} confirmadas`}
+              />
+            </div>
+
+            {/* Confirmation progress */}
+            <div className="rounded-lg border bg-muted/20 p-4">
+              <div className="flex items-center justify-between text-sm mb-2">
+                <span className="font-medium flex items-center gap-2">
+                  <Users className="h-4 w-4 text-primary" />
+                  Taxa de confirmação dos clientes
+                </span>
+                <span className="text-muted-foreground">
+                  {stats.total_acceptances} aceite{stats.total_acceptances === 1 ? "" : "s"} totais
+                </span>
+              </div>
+              <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-primary to-primary/70 transition-all"
+                  style={{ width: `${Math.min(stats.confirmation_rate_pct, 100)}%` }}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                {stats.confirmed_trainings} de {stats.total_visits - stats.cancelled_count} visitas não-canceladas tiveram pelo menos um aceite.
+              </p>
+            </div>
+
+            {/* Two-column: cancellations + top clients */}
+            <div className="grid md:grid-cols-2 gap-4">
+              {/* Cancellations */}
+              <div className="rounded-lg border">
+                <div className="px-4 py-3 border-b flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 text-destructive" />
+                  <h3 className="text-sm font-medium">Cancelamentos</h3>
+                  <Badge variant="destructive" className="ml-auto">{stats.cancelled_count}</Badge>
+                </div>
+                <div className="p-3 space-y-2 max-h-64 overflow-auto">
+                  {stats.cancellations.length === 0 ? (
+                    <p className="text-xs text-muted-foreground text-center py-6">
+                      Nenhuma visita cancelada nesta semana 🎉
+                    </p>
+                  ) : (
+                    stats.cancellations.map((c, i) => (
+                      <div key={i} className="rounded-md border border-destructive/30 bg-destructive/5 p-2.5 text-xs">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-medium truncate">{c.title}</span>
+                          <span className="text-muted-foreground shrink-0">
+                            {format(new Date(c.date), "d MMM", { locale: ptBR })}
+                          </span>
+                        </div>
+                        {c.client && <div className="text-muted-foreground mt-0.5">{c.client}</div>}
+                        {c.reason && <div className="text-destructive mt-1 italic">"{c.reason}"</div>}
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* Top clients */}
+              <div className="rounded-lg border">
+                <div className="px-4 py-3 border-b flex items-center gap-2">
+                  <Building2 className="h-4 w-4 text-primary" />
+                  <h3 className="text-sm font-medium">Clientes mais atendidos</h3>
+                </div>
+                <div className="p-3 space-y-2 max-h-64 overflow-auto">
+                  {stats.top_clients.length === 0 ? (
+                    <p className="text-xs text-muted-foreground text-center py-6">
+                      Nenhum cliente registrado.
+                    </p>
+                  ) : (
+                    stats.top_clients.map((c, i) => {
+                      const max = stats.top_clients[0].count || 1;
+                      const pct = (c.count / max) * 100;
+                      return (
+                        <div key={i} className="space-y-1">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="font-medium truncate">{c.name}</span>
+                            <span className="text-muted-foreground">{c.count} visita{c.count === 1 ? "" : "s"}</span>
+                          </div>
+                          <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                            <div className="h-full bg-primary/70" style={{ width: `${pct}%` }} />
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* AI narrative */}
+            {report && (
+              <div className="rounded-lg border bg-card">
+                <div className="px-4 py-3 border-b flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-primary" />
+                    <h3 className="text-sm font-medium">Resumo executivo</h3>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Button variant="ghost" size="sm" onClick={copyReport}>
+                      <Copy className="h-3.5 w-3.5" /> Copiar
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => window.print()}>
+                      <Printer className="h-3.5 w-3.5" /> Imprimir
+                    </Button>
+                  </div>
+                </div>
+                <div className="p-5">
+                  <div className="prose prose-sm dark:prose-invert max-w-none prose-headings:font-semibold prose-headings:tracking-tight prose-h1:text-lg prose-h2:text-base prose-h3:text-sm prose-p:leading-relaxed prose-li:my-0.5 prose-strong:text-foreground">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{report}</ReactMarkdown>
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
+const MetricCard = ({
+  icon: Icon,
+  label,
+  value,
+  hint,
+  tint,
+}: {
+  icon: any;
+  label: string;
+  value: string | number;
+  hint?: string;
+  tint: "primary" | "success" | "destructive";
+}) => {
+  const tintMap = {
+    primary: "bg-primary/10 text-primary border-primary/20",
+    success: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
+    destructive: "bg-destructive/10 text-destructive border-destructive/20",
+  } as const;
+  return (
+    <div className="rounded-lg border bg-card p-4 hover:border-primary/30 transition-colors">
+      <div className="flex items-start justify-between">
+        <div className={`h-8 w-8 rounded-md border flex items-center justify-center ${tintMap[tint]}`}>
+          <Icon className="h-4 w-4" />
+        </div>
+      </div>
+      <div className="text-2xl font-semibold mt-3 tracking-tight tabular-nums">{value}</div>
+      <div className="text-xs text-muted-foreground mt-0.5">{label}</div>
+      {hint && <div className="text-[11px] text-muted-foreground/80 mt-1">{hint}</div>}
+    </div>
+  );
+};
 
 export default Reports;
