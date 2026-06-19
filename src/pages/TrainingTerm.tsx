@@ -83,7 +83,7 @@ const TrainingTerm = () => {
 
       <main className="max-w-3xl mx-auto px-10 py-12">
         <header className="text-center mb-10 pb-6 border-b-2 border-black">
-          <p className="text-xs uppercase tracking-[0.3em] text-neutral-600">TreinaCheck</p>
+          <p className="text-xs uppercase tracking-[0.3em] text-neutral-600">Use Sistemas</p>
           <h1 className="text-3xl font-bold tracking-tight mt-2 uppercase">
             Termo de Recebimento de Treinamento
           </h1>
@@ -144,7 +144,7 @@ const TrainingTerm = () => {
         </section>
 
         <footer className="mt-16 pt-4 border-t border-neutral-300 text-xs text-neutral-500 flex justify-between">
-          <span>TreinaCheck — Termo de Recebimento</span>
+          <span>Use Sistemas — Termo de Recebimento</span>
           <span>Gerado em {format(new Date(), "d MMM yyyy 'às' HH:mm", { locale: ptBR })}</span>
         </footer>
       </main>
