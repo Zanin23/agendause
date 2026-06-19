@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   addDays,
   addWeeks,
@@ -12,6 +12,16 @@ import { ptBR } from "date-fns/locale";
 import { Printer, ArrowLeft, ChevronLeft, ChevronRight, X, Layers } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { toast } from "@/hooks/use-toast";
 
 type Training = {
   id: string;
@@ -31,10 +41,19 @@ const BLUE = "#6F7FB8";
 const RED = "#E22B2B";
 
 const PrintAgenda = () => {
+  const navigate = useNavigate();
   const [trainings, setTrainings] = useState<Training[]>([]);
   const [weekStart, setWeekStart] = useState<Date>(() =>
     startOfWeek(new Date(), { weekStartsOn: 1 })
   );
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [dropTarget, setDropTarget] = useState<number | null>(null);
+  const [rescheduleData, setRescheduleData] = useState<{
+    training: Training;
+    newDay: Date;
+  } | null>(null);
+  const [newTime, setNewTime] = useState<string>("09:00");
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -68,6 +87,43 @@ const PrintAgenda = () => {
     "d MMM yyyy",
     { locale: ptBR }
   )}`;
+
+  const handleDropOnDay = (day: Date) => {
+    if (!dragId) return;
+    const training = trainings.find((t) => t.id === dragId);
+    setDragId(null);
+    setDropTarget(null);
+    if (!training) return;
+    const original = new Date(training.scheduled_at);
+    setNewTime(format(original, "HH:mm"));
+    setRescheduleData({ training, newDay: day });
+  };
+
+  const confirmReschedule = async () => {
+    if (!rescheduleData) return;
+    setSaving(true);
+    const [h, m] = newTime.split(":").map(Number);
+    const newDate = new Date(rescheduleData.newDay);
+    newDate.setHours(h || 0, m || 0, 0, 0);
+    const { error } = await supabase
+      .from("trainings")
+      .update({ scheduled_at: newDate.toISOString() })
+      .eq("id", rescheduleData.training.id);
+    setSaving(false);
+    if (error) {
+      toast({ title: "Erro ao reagendar", description: error.message, variant: "destructive" });
+      return;
+    }
+    setTrainings((prev) =>
+      prev.map((t) =>
+        t.id === rescheduleData.training.id
+          ? { ...t, scheduled_at: newDate.toISOString() }
+          : t
+      )
+    );
+    toast({ title: "Visita reagendada", description: format(newDate, "d MMM 'às' HH:mm", { locale: ptBR }) });
+    setRescheduleData(null);
+  };
 
   return (
     <div className="min-h-screen bg-white text-black">
@@ -158,11 +214,29 @@ const PrintAgenda = () => {
           {weekDays.map((day, idx) => {
             const events = eventsByDay[idx];
             const isToday = isSameDay(day, new Date());
+            const isOver = dropTarget === idx;
             return (
               <div
                 key={idx}
-                className="border-[3px] rounded-md flex flex-col"
-                style={{ borderColor: ORANGE, minHeight: 520 }}
+                className="border-[3px] rounded-md flex flex-col transition-colors"
+                style={{
+                  borderColor: isOver ? BLUE : ORANGE,
+                  minHeight: 520,
+                  background: isOver ? "#EEF1FB" : "transparent",
+                }}
+                onDragOver={(e) => {
+                  if (!dragId) return;
+                  e.preventDefault();
+                  e.dataTransfer.dropEffect = "move";
+                  if (dropTarget !== idx) setDropTarget(idx);
+                }}
+                onDragLeave={() => {
+                  if (dropTarget === idx) setDropTarget(null);
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  handleDropOnDay(day);
+                }}
               >
                 <div
                   className="day-head text-[28px] px-3 pt-2 pb-2 border-b-[3px]"
@@ -174,19 +248,83 @@ const PrintAgenda = () => {
                   {events.length === 0 ? (
                     <div className="h-full" />
                   ) : (
-                    events.map((t) => <EventCard key={t.id} t={t} />)
+                    events.map((t) => (
+                      <EventCard
+                        key={t.id}
+                        t={t}
+                        onDragStart={() => setDragId(t.id)}
+                        onDragEnd={() => {
+                          setDragId(null);
+                          setDropTarget(null);
+                        }}
+                        onOpen={() => navigate(`/treinamento/${t.id}`)}
+                      />
+                    ))
                   )}
                 </div>
               </div>
             );
           })}
         </div>
+        <p className="no-print text-[11px] text-neutral-500 mt-3">
+          Dica: arraste uma visita para outro dia para reagendar.
+        </p>
       </main>
+
+      <Dialog open={!!rescheduleData} onOpenChange={(o) => !o && setRescheduleData(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reagendar visita</DialogTitle>
+          </DialogHeader>
+          {rescheduleData && (
+            <div className="space-y-4">
+              <div className="text-sm text-muted-foreground">
+                <div className="font-medium text-foreground">
+                  {rescheduleData.training.client?.trim() || rescheduleData.training.title}
+                </div>
+                <div>
+                  Novo dia:{" "}
+                  <span className="capitalize text-foreground">
+                    {format(rescheduleData.newDay, "EEEE, d 'de' MMMM", { locale: ptBR })}
+                  </span>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="newTime">Novo horário</Label>
+                <Input
+                  id="newTime"
+                  type="time"
+                  value={newTime}
+                  onChange={(e) => setNewTime(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRescheduleData(null)} disabled={saving}>
+              Cancelar
+            </Button>
+            <Button onClick={confirmReschedule} disabled={saving}>
+              {saving ? "Salvando..." : "Confirmar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
 
-const EventCard = ({ t }: { t: Training }) => {
+const EventCard = ({
+  t,
+  onDragStart,
+  onDragEnd,
+  onOpen,
+}: {
+  t: Training;
+  onDragStart: () => void;
+  onDragEnd: () => void;
+  onOpen: () => void;
+}) => {
   const hour = format(new Date(t.scheduled_at), "HH:mm");
   const label = t.client?.trim() ? t.client : t.title;
   const isDone = t.status === "realizado" || t.status === "concluido";
@@ -194,7 +332,19 @@ const EventCard = ({ t }: { t: Training }) => {
   const isCancelled = t.status === "cancelado";
   const borderColor = isCancelled ? RED : ORANGE;
   return (
-    <Link to={`/treinamento/${t.id}`} className="block">
+    <div
+      className="block cursor-grab active:cursor-grabbing"
+      draggable
+      onDragStart={(e) => {
+        e.dataTransfer.effectAllowed = "move";
+        e.dataTransfer.setData("text/plain", t.id);
+        onDragStart();
+      }}
+      onDragEnd={onDragEnd}
+      onClick={onOpen}
+      role="button"
+      tabIndex={0}
+    >
       <div
         className="border-2 rounded-sm px-2.5 py-2 text-[13px] leading-snug bg-white hover:bg-orange-50/40 transition-colors"
         style={{
@@ -271,7 +421,7 @@ const EventCard = ({ t }: { t: Training }) => {
           </div>
         )}
       </div>
-    </Link>
+    </div>
   );
 };
 
