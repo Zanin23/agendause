@@ -17,6 +17,7 @@ type Props = {
 export const CreateTrainingDialog = ({ open, onOpenChange, onCreated }: Props) => {
   const { user } = useAuth();
   const [title, setTitle] = useState("");
+  const [client, setClient] = useState("");
   const [description, setDescription] = useState("");
   const [date, setDate] = useState("");
   const [time, setTime] = useState("09:00");
@@ -25,7 +26,7 @@ export const CreateTrainingDialog = ({ open, onOpenChange, onCreated }: Props) =
   const [loading, setLoading] = useState(false);
 
   const reset = () => {
-    setTitle(""); setDescription(""); setDate(""); setTime("09:00");
+    setTitle(""); setClient(""); setDescription(""); setDate(""); setTime("09:00");
     setDuration(60); setLocation("");
   };
 
@@ -36,6 +37,7 @@ export const CreateTrainingDialog = ({ open, onOpenChange, onCreated }: Props) =
     const scheduled_at = new Date(`${date}T${time}`).toISOString();
     const { error } = await supabase.from("trainings").insert({
       title,
+      client: client || null,
       description: description || null,
       scheduled_at,
       duration_minutes: duration,
@@ -65,8 +67,12 @@ export const CreateTrainingDialog = ({ open, onOpenChange, onCreated }: Props) =
             <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} required />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="desc">Descrição</Label>
-            <Textarea id="desc" value={description} onChange={(e) => setDescription(e.target.value)} rows={3} />
+            <Label htmlFor="client">Cliente</Label>
+            <Input id="client" value={client} onChange={(e) => setClient(e.target.value)} placeholder="Nome do cliente" />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="desc">O que foi treinado</Label>
+            <Textarea id="desc" value={description} onChange={(e) => setDescription(e.target.value)} rows={3} placeholder="Descreva os tópicos / conteúdos treinados" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
