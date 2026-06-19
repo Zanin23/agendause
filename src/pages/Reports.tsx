@@ -11,7 +11,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Loader2,
-  CalendarCheck2,
   CalendarX2,
   CalendarClock,
   CheckCircle2,
