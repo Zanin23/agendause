@@ -78,7 +78,7 @@ const Dashboard = () => {
             <Link to="/agenda/imprimir">
               <Button variant="outline">
                 <Printer className="h-4 w-4" />
-                Imprimir agenda
+                Visualizar Agenda
               </Button>
             </Link>
             <Button onClick={() => setOpen(true)}>
