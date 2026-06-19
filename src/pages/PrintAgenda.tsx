@@ -21,7 +21,8 @@ type Training = {
   scheduled_at: string;
   duration_minutes: number;
   location: string | null;
-  status: "agendado" | "realizado" | "reagendado";
+  status: "agendado" | "realizado" | "reagendado" | "cancelado" | "concluido";
+  cancellation_reason?: string | null;
 };
 
 const DAY_LABELS = ["SEG", "TER", "QUA", "QUI", "SEX"];
@@ -186,15 +187,20 @@ const PrintAgenda = () => {
 };
 
 const EventCard = ({ t }: { t: Training }) => {
-  const hour = format(new Date(t.scheduled_at), "HH");
+  const hour = format(new Date(t.scheduled_at), "HH:mm");
   const label = t.client?.trim() ? t.client : t.title;
-  const isDone = t.status === "realizado";
+  const isDone = t.status === "realizado" || t.status === "concluido";
   const isResched = t.status === "reagendado";
+  const isCancelled = t.status === "cancelado";
+  const borderColor = isCancelled ? RED : ORANGE;
   return (
     <Link to={`/treinamento/${t.id}`} className="block">
       <div
         className="border-2 rounded-sm px-2.5 py-2 text-[13px] leading-snug bg-white hover:bg-orange-50/40 transition-colors"
-        style={{ borderColor: ORANGE }}
+        style={{
+          borderColor,
+          background: isCancelled ? "#FDECEC" : "white",
+        }}
       >
         <div className="flex items-start gap-1.5">
           {isDone && (
@@ -214,9 +220,38 @@ const EventCard = ({ t }: { t: Training }) => {
               aria-label="Reagendado"
             />
           )}
-          <span className="font-medium text-black">
+          {isCancelled && (
+            <X
+              className="h-4 w-4 mt-0.5 shrink-0"
+              style={{ color: RED }}
+              strokeWidth={3.5}
+              aria-label="Cancelado"
+            />
+          )}
+          <span
+            className="font-semibold"
+            style={{
+              color: isCancelled ? RED : "#000",
+              textDecoration: isCancelled ? "line-through" : "none",
+            }}
+          >
             {hour} - {label}
           </span>
+        </div>
+        {t.client?.trim() && t.title && t.client.trim() !== t.title && (
+          <div
+            className="text-[10.5px] mt-0.5 text-neutral-700 truncate"
+            style={{ color: isCancelled ? RED : "#444" }}
+          >
+            {t.title}
+          </div>
+        )}
+        <div
+          className="text-[10px] mt-0.5 text-neutral-600 flex flex-wrap gap-x-2"
+          style={{ color: isCancelled ? RED : "#555" }}
+        >
+          <span>{t.duration_minutes} min</span>
+          {t.location && <span>• {t.location}</span>}
         </div>
         {isResched && t.description && (
           <div
@@ -225,6 +260,14 @@ const EventCard = ({ t }: { t: Training }) => {
           >
             <X className="h-2.5 w-2.5" strokeWidth={3} />
             {t.description}
+          </div>
+        )}
+        {isCancelled && t.cancellation_reason && (
+          <div
+            className="text-[10px] mt-0.5 italic"
+            style={{ color: RED }}
+          >
+            Cancelado: {t.cancellation_reason}
           </div>
         )}
       </div>
@@ -253,6 +296,13 @@ const Legend = () => (
     <div className="flex items-center gap-2">
       <X className="w-4 h-4" style={{ color: RED }} strokeWidth={3} />
       <span>Reagendado</span>
+    </div>
+    <div className="flex items-center gap-2">
+      <span
+        className="w-4 h-4 rounded-sm inline-block border-2"
+        style={{ background: "#FDECEC", borderColor: RED }}
+      />
+      <span>Cancelado</span>
     </div>
   </div>
 );
