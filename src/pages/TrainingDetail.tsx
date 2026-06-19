@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ArrowLeft, Calendar as CalIcon, Clock, MapPin, CheckCircle2, Trash2, Users, Building2 } from "lucide-react";
+import { ArrowLeft, Calendar as CalIcon, Clock, MapPin, CheckCircle2, Trash2, Users, Building2, Link2, FileText, UserCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { AppHeader } from "@/components/AppHeader";
@@ -29,12 +29,20 @@ type Acceptance = {
   profiles: { full_name: string | null; email: string | null } | null;
 };
 
+type GuestAcceptance = {
+  id: string;
+  full_name: string;
+  email: string | null;
+  accepted_at: string;
+};
+
 const TrainingDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
   const [training, setTraining] = useState<Training | null>(null);
   const [acceptances, setAcceptances] = useState<Acceptance[]>([]);
+  const [guests, setGuests] = useState<GuestAcceptance[]>([]);
   const [loading, setLoading] = useState(true);
   const [acting, setActing] = useState(false);
 
@@ -48,6 +56,12 @@ const TrainingDetail = () => {
       .eq("training_id", id)
       .order("accepted_at", { ascending: false });
     setAcceptances((a as any) || []);
+    const { data: g } = await supabase
+      .from("guest_acceptances")
+      .select("id, full_name, email, accepted_at")
+      .eq("training_id", id)
+      .order("accepted_at", { ascending: false });
+    setGuests((g as GuestAcceptance[]) || []);
     setLoading(false);
   };
 
@@ -86,6 +100,25 @@ const TrainingDetail = () => {
     if (error) return toast.error(error.message);
     toast.success("Treinamento excluído");
     navigate("/");
+  };
+
+  const publicLink = `${window.location.origin}/aceite/${id}`;
+
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(publicLink);
+      toast.success("Link copiado!");
+    } catch {
+      toast.error("Não foi possível copiar");
+    }
+  };
+
+  const removeGuest = async (gid: string) => {
+    if (!confirm("Remover este aceite?")) return;
+    const { error } = await supabase.from("guest_acceptances").delete().eq("id", gid);
+    if (error) return toast.error(error.message);
+    toast.success("Aceite removido");
+    load();
   };
 
   if (loading) {
@@ -164,6 +197,35 @@ const TrainingDetail = () => {
           </CardContent>
         </Card>
 
+        <Card>
+          <CardContent className="p-6 space-y-4">
+            <div>
+              <h3 className="font-semibold flex items-center gap-2">
+                <Link2 className="h-4 w-4" /> Link público de aceite
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                Envie este link para quem precisa confirmar o recebimento sem precisar se cadastrar.
+              </p>
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              <input
+                readOnly
+                value={publicLink}
+                onFocus={(e) => e.currentTarget.select()}
+                className="flex-1 min-w-0 h-10 px-3 rounded-md border border-input bg-muted/40 text-sm font-mono"
+              />
+              <Button onClick={copyLink} variant="outline">
+                <Link2 className="h-4 w-4" /> Copiar
+              </Button>
+              <Button asChild>
+                <Link to={`/treinamento/${id}/termo`}>
+                  <FileText className="h-4 w-4" /> Imprimir termo
+                </Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
         <section>
           <h2 className="flex items-center gap-2 text-sm uppercase tracking-wider text-muted-foreground mb-3">
             <Users className="h-4 w-4" /> Quem confirmou ({acceptances.length})
@@ -182,6 +244,35 @@ const TrainingDetail = () => {
                     <CheckCircle2 className="h-3 w-3" />
                     {format(new Date(a.accepted_at), "d MMM HH:mm", { locale: ptBR })}
                   </Badge>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section>
+          <h2 className="flex items-center gap-2 text-sm uppercase tracking-wider text-muted-foreground mb-3">
+            <UserCheck className="h-4 w-4" /> Aceites via link público ({guests.length})
+          </h2>
+          {guests.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Nenhum aceite recebido pelo link ainda.</p>
+          ) : (
+            <div className="space-y-2">
+              {guests.map((g) => (
+                <div key={g.id} className="flex items-center justify-between text-sm border-b border-border py-2 gap-3">
+                  <div className="min-w-0">
+                    <p className="font-medium truncate">{g.full_name}</p>
+                    {g.email && <p className="text-xs text-muted-foreground truncate">{g.email}</p>}
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Badge variant="success" className="gap-1">
+                      <CheckCircle2 className="h-3 w-3" />
+                      {format(new Date(g.accepted_at), "d MMM HH:mm", { locale: ptBR })}
+                    </Badge>
+                    <Button variant="ghost" size="sm" onClick={() => removeGuest(g.id)} className="text-muted-foreground hover:text-destructive">
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
