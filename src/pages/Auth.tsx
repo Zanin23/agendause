@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { CalendarCheck2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import logoAsset from "@/assets/logo-use-sistemas.png.asset.json";
 import { lovable } from "@/integrations/lovable";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -60,10 +60,8 @@ const Auth = () => {
     <div className="min-h-screen flex items-center justify-center px-4 bg-background">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center space-y-2">
-          <div className="mx-auto h-12 w-12 rounded-full bg-primary/15 flex items-center justify-center">
-            <CalendarCheck2 className="h-6 w-6 text-primary" />
-          </div>
-          <CardTitle>TreinaCheck - Use Sistemas</CardTitle>
+          <img src={logoAsset.url} alt="Use Sistemas" className="mx-auto h-16 w-auto" />
+          <CardTitle>TreinaCheck</CardTitle>
           <CardDescription>
             {mode === "signin" ? "Entre para acessar a agenda" : "Crie sua conta"}
           </CardDescription>

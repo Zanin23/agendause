@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { CalendarDays, CalendarPlus, FileCheck2, ArrowRight } from "lucide-react";
+import logoAsset from "@/assets/logo-use-sistemas.png.asset.json";
 import { useState } from "react";
 import { AppHeader } from "@/components/AppHeader";
 import { Card, CardContent } from "@/components/ui/card";
@@ -15,12 +16,18 @@ const Home = () => {
     <div className="min-h-screen bg-background">
       <AppHeader />
       <main className="max-w-5xl mx-auto px-6 py-16 space-y-12">
-        <div>
-          <p className="text-sm uppercase tracking-[0.25em] text-muted-foreground">TreinaCheck - Use Sistemas</p>
-          <h1 className="text-4xl font-semibold tracking-tight mt-2">
-            Olá{firstName ? `, ${firstName}` : ""}. O que você quer fazer?
-          </h1>
-          <p className="text-muted-foreground mt-2">Escolha uma das opções abaixo para começar.</p>
+        <div className="relative overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-card via-card to-background p-8 md:p-10">
+          <div className="absolute inset-0 opacity-[0.07] pointer-events-none" style={{ background: "var(--gradient-hero)" }} />
+          <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+            <div>
+              <p className="text-xs uppercase tracking-[0.3em] text-primary font-semibold">TreinaCheck · Use Sistemas</p>
+              <h1 className="text-4xl md:text-5xl font-semibold tracking-tight mt-3">
+                Olá{firstName ? `, ${firstName}` : ""}.
+              </h1>
+              <p className="text-muted-foreground mt-2 text-base">O que você quer fazer hoje?</p>
+            </div>
+            <img src={logoAsset.url} alt="Use Sistemas" className="h-16 md:h-20 w-auto opacity-90" />
+          </div>
         </div>
 
         <div className="grid md:grid-cols-3 gap-5">
