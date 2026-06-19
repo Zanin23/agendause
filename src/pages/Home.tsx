@@ -1,0 +1,93 @@
+import { Link } from "react-router-dom";
+import { CalendarDays, CalendarPlus, FileCheck2, ArrowRight } from "lucide-react";
+import { useState } from "react";
+import { AppHeader } from "@/components/AppHeader";
+import { Card, CardContent } from "@/components/ui/card";
+import { CreateTrainingDialog } from "@/components/CreateTrainingDialog";
+import { useAuth } from "@/hooks/useAuth";
+
+const Home = () => {
+  const { user } = useAuth();
+  const [open, setOpen] = useState(false);
+  const firstName = (user?.user_metadata?.full_name || user?.email || "").split(" ")[0];
+
+  return (
+    <div className="min-h-screen bg-background">
+      <AppHeader />
+      <main className="max-w-5xl mx-auto px-6 py-16 space-y-12">
+        <div>
+          <p className="text-sm uppercase tracking-[0.25em] text-muted-foreground">TreinaCheck</p>
+          <h1 className="text-4xl font-semibold tracking-tight mt-2">
+            Olá{firstName ? `, ${firstName}` : ""}. O que você quer fazer?
+          </h1>
+          <p className="text-muted-foreground mt-2">Escolha uma das opções abaixo para começar.</p>
+        </div>
+
+        <div className="grid md:grid-cols-3 gap-5">
+          <ActionCard
+            to="/agenda"
+            icon={<CalendarDays className="h-6 w-6" />}
+            title="Visualizar agenda"
+            description="Veja os treinamentos agendados no calendário e na lista."
+          />
+          <ActionCard
+            onClick={() => setOpen(true)}
+            icon={<CalendarPlus className="h-6 w-6" />}
+            title="Agendar novo treinamento"
+            description="Crie um novo treinamento com cliente, data, hora e local."
+            highlight
+          />
+          <ActionCard
+            to="/relatorios"
+            icon={<FileCheck2 className="h-6 w-6" />}
+            title="Relatórios de aceite"
+            description="Acompanhe e imprima os termos de recebimento dos treinamentos."
+          />
+        </div>
+      </main>
+
+      <CreateTrainingDialog open={open} onOpenChange={setOpen} onCreated={() => setOpen(false)} />
+    </div>
+  );
+};
+
+type ActionCardProps = {
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+  to?: string;
+  onClick?: () => void;
+  highlight?: boolean;
+};
+
+const ActionCard = ({ icon, title, description, to, onClick, highlight }: ActionCardProps) => {
+  const inner = (
+    <Card
+      className={`group cursor-pointer h-full transition-all hover:-translate-y-1 hover:shadow-lg ${
+        highlight ? "border-primary/60 bg-primary/5" : "hover:border-primary/50"
+      }`}
+    >
+      <CardContent className="p-6 flex flex-col h-full gap-4">
+        <div
+          className={`h-12 w-12 rounded-lg grid place-items-center ${
+            highlight ? "bg-primary text-primary-foreground" : "bg-primary/10 text-primary"
+          }`}
+        >
+          {icon}
+        </div>
+        <div className="space-y-1 flex-1">
+          <h2 className="text-lg font-semibold tracking-tight">{title}</h2>
+          <p className="text-sm text-muted-foreground">{description}</p>
+        </div>
+        <div className="flex items-center gap-1 text-sm font-medium text-primary opacity-0 group-hover:opacity-100 transition-opacity">
+          Abrir <ArrowRight className="h-4 w-4" />
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  if (to) return <Link to={to} className="block h-full">{inner}</Link>;
+  return <button onClick={onClick} className="text-left h-full">{inner}</button>;
+};
+
+export default Home;

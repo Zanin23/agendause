@@ -5,7 +5,9 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Auth from "./pages/Auth";
+import Home from "./pages/Home";
 import Dashboard from "./pages/Dashboard";
+import Reports from "./pages/Reports";
 import TrainingDetail from "./pages/TrainingDetail";
 import PrintAgenda from "./pages/PrintAgenda";
 import TrainingTerm from "./pages/TrainingTerm";
@@ -23,7 +25,9 @@ const App = () => (
           <Routes>
             <Route path="/auth" element={<Auth />} />
             <Route path="/aceite/:id" element={<GuestAccept />} />
-            <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+            <Route path="/agenda" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/relatorios" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
             <Route path="/treinamento/:id" element={<ProtectedRoute><TrainingDetail /></ProtectedRoute>} />
             <Route path="/treinamento/:id/termo" element={<ProtectedRoute><TrainingTerm /></ProtectedRoute>} />
             <Route path="/agenda/imprimir" element={<ProtectedRoute><PrintAgenda /></ProtectedRoute>} />
