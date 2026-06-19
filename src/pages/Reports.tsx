@@ -1,8 +1,26 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { addWeeks, endOfWeek, format, startOfWeek } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ArrowLeft, FileText, Users, Search, Sparkles, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import {
+  ArrowLeft,
+  FileText,
+  Users,
+  Search,
+  Sparkles,
+  ChevronLeft,
+  ChevronRight,
+  Loader2,
+  CalendarCheck2,
+  CalendarX2,
+  CalendarClock,
+  CheckCircle2,
+  TrendingUp,
+  Building2,
+  Copy,
+  Printer,
+  AlertTriangle,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppHeader } from "@/components/AppHeader";
 import { Card, CardContent } from "@/components/ui/card";
@@ -10,6 +28,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 type TrainingRow = {
   id: string;
@@ -103,49 +123,15 @@ const Reports = () => {
           </div>
         </div>
 
-        <Card>
-          <CardContent className="p-5 space-y-4">
-            <div className="flex items-center justify-between flex-wrap gap-3">
-              <div className="flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-primary" />
-                <h2 className="font-semibold">Relatório semanal com IA</h2>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={() => setWeekStart((d) => addWeeks(d, -1))} disabled={generating}>
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <span className="text-sm capitalize min-w-[180px] text-center">{weekLabel}</span>
-                <Button variant="outline" size="sm" onClick={() => setWeekStart((d) => addWeeks(d, 1))} disabled={generating}>
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-                <Button onClick={generateReport} disabled={generating} size="sm">
-                  {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                  {generating ? "Gerando..." : "Gerar relatório"}
-                </Button>
-              </div>
-            </div>
-
-            {stats && (
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
-                <StatBox label="Visitas" value={stats.total_visits} />
-                <StatBox label="Concluídas" value={stats.concluded_count} />
-                <StatBox label="Canceladas" value={stats.cancelled_count} tone="destructive" />
-                <StatBox label="Confirmação" value={`${stats.confirmation_rate_pct}%`} />
-              </div>
-            )}
-
-            {report && (
-              <div className="prose prose-sm dark:prose-invert max-w-none whitespace-pre-wrap rounded-md border bg-muted/40 p-4 text-sm leading-relaxed">
-                {report}
-              </div>
-            )}
-            {!report && !generating && (
-              <p className="text-xs text-muted-foreground">
-                Selecione a semana desejada e clique em "Gerar relatório" para obter um resumo automático com cancelamentos, taxa de confirmação e recomendações.
-              </p>
-            )}
-          </CardContent>
-        </Card>
+        <WeeklyAIReport
+          weekStart={weekStart}
+          setWeekStart={setWeekStart}
+          weekLabel={weekLabel}
+          generating={generating}
+          report={report}
+          stats={stats}
+          onGenerate={generateReport}
+        />
 
         <div className="relative max-w-md">
           <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
