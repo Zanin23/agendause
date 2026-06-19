@@ -22,7 +22,7 @@ const Home = () => {
             <div>
               <p className="text-xs uppercase tracking-[0.3em] text-primary font-semibold">TreinaCheck · Use Sistemas</p>
               <h1 className="text-4xl md:text-5xl font-semibold tracking-tight mt-3">
-                Olá{firstName ? `, ${firstName}` : ""}.
+                Olá{firstName ? `,\u00a0 ${firstName}` : ""}.
               </h1>
               <p className="text-muted-foreground mt-2 text-base">O que você quer fazer hoje?</p>
             </div>
