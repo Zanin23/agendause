@@ -212,7 +212,7 @@ const TrainingDetail = () => {
                 readOnly
                 value={publicLink}
                 onFocus={(e) => e.currentTarget.select()}
-                className="flex-1 min-w-0 h-10 px-3 rounded-md border border-input bg-muted/40 text-sm font-mono"
+                className="flex-1 min-w-0 h-10 px-3 rounded-md border border-input bg-background text-foreground text-sm font-mono"
               />
               <Button onClick={copyLink} variant="outline">
                 <Link2 className="h-4 w-4" /> Copiar
