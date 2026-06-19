@@ -1,0 +1,2 @@
+ALTER TABLE public.trainings DROP CONSTRAINT IF EXISTS trainings_status_check;
+ALTER TABLE public.trainings ADD CONSTRAINT trainings_status_check CHECK (status IN ('agendado','concluido','cancelado'));
