@@ -1,0 +1,1 @@
+ALTER TABLE public.trainings ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'agendado' CHECK (status IN ('agendado','realizado','reagendado'));
