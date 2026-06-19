@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { format, isSameDay, isAfter, startOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CalendarPlus, MapPin, Clock, CheckCircle2 } from "lucide-react";
+import { CalendarPlus, MapPin, Clock, CheckCircle2, Printer } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { AppHeader } from "@/components/AppHeader";
@@ -72,10 +72,18 @@ const Dashboard = () => {
             <h1 className="text-3xl font-semibold tracking-tight">Agenda de treinamentos</h1>
             <p className="text-muted-foreground mt-1">Acompanhe sessões agendadas e confirme seu recebimento.</p>
           </div>
-          <Button onClick={() => setOpen(true)}>
-            <CalendarPlus className="h-4 w-4" />
-            Novo treinamento
-          </Button>
+          <div className="flex gap-2">
+            <Link to="/agenda/imprimir">
+              <Button variant="outline">
+                <Printer className="h-4 w-4" />
+                Imprimir agenda
+              </Button>
+            </Link>
+            <Button onClick={() => setOpen(true)}>
+              <CalendarPlus className="h-4 w-4" />
+              Novo treinamento
+            </Button>
+          </div>
         </div>
 
         <div className="grid lg:grid-cols-[auto_1fr] gap-8 items-start">
