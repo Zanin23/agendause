@@ -283,6 +283,42 @@ const TrainingDetail = () => {
               </p>
             </div>
           )}
+
+          <div className="rounded-md border border-border bg-muted/40 p-4 space-y-2">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <h2 className="text-sm font-semibold flex items-center gap-2">
+                <Lock className="h-4 w-4 text-primary" />
+                Observações internas
+                <span className="text-xs font-normal text-muted-foreground">(não visível ao cliente)</span>
+              </h2>
+              {!editingNotes ? (
+                <Button variant="ghost" size="sm" onClick={startEditNotes}>
+                  <Pencil className="h-3.5 w-3.5" /> Editar
+                </Button>
+              ) : (
+                <div className="flex items-center gap-1">
+                  <Button variant="ghost" size="sm" onClick={() => setEditingNotes(false)} disabled={savingNotes}>
+                    <X className="h-3.5 w-3.5" /> Cancelar
+                  </Button>
+                  <Button size="sm" onClick={saveNotes} disabled={savingNotes}>
+                    <Save className="h-3.5 w-3.5" /> {savingNotes ? "Salvando..." : "Salvar"}
+                  </Button>
+                </div>
+              )}
+            </div>
+            {editingNotes ? (
+              <Textarea
+                value={notesDraft}
+                onChange={(e) => setNotesDraft(e.target.value)}
+                rows={4}
+                placeholder="Anotações da equipe, lembretes, contexto do cliente..."
+              />
+            ) : training.internal_notes ? (
+              <p className="text-sm whitespace-pre-wrap text-foreground/90">{training.internal_notes}</p>
+            ) : (
+              <p className="text-sm text-muted-foreground italic">Nenhuma observação interna.</p>
+            )}
+          </div>
         </div>
 
         <Card className="border-primary/40">
