@@ -2,13 +2,22 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ArrowLeft, Calendar as CalIcon, Clock, MapPin, CheckCircle2, Trash2, Users, Building2, Link2, FileText, UserCheck } from "lucide-react";
+import { ArrowLeft, Calendar as CalIcon, Clock, MapPin, CheckCircle2, Trash2, Users, Building2, Link2, FileText, UserCheck, XCircle, RotateCcw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { AppHeader } from "@/components/AppHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 
 type Training = {
@@ -20,6 +29,9 @@ type Training = {
   duration_minutes: number;
   location: string | null;
   created_by: string;
+  status: string;
+  cancellation_reason: string | null;
+  cancelled_at: string | null;
 };
 
 type Acceptance = {
@@ -45,6 +57,8 @@ const TrainingDetail = () => {
   const [guests, setGuests] = useState<GuestAcceptance[]>([]);
   const [loading, setLoading] = useState(true);
   const [acting, setActing] = useState(false);
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
 
   const load = async () => {
     if (!id) return;
@@ -102,6 +116,42 @@ const TrainingDetail = () => {
     navigate("/");
   };
 
+  const cancelTraining = async () => {
+    if (!id) return;
+    if (!cancelReason.trim()) {
+      toast.error("Informe o motivo do cancelamento");
+      return;
+    }
+    setActing(true);
+    const { error } = await supabase
+      .from("trainings")
+      .update({
+        status: "cancelado",
+        cancellation_reason: cancelReason.trim(),
+        cancelled_at: new Date().toISOString(),
+      })
+      .eq("id", id);
+    setActing(false);
+    if (error) return toast.error(error.message);
+    toast.success("Visita cancelada");
+    setCancelOpen(false);
+    setCancelReason("");
+    load();
+  };
+
+  const reactivateTraining = async () => {
+    if (!id) return;
+    setActing(true);
+    const { error } = await supabase
+      .from("trainings")
+      .update({ status: "agendado", cancellation_reason: null, cancelled_at: null })
+      .eq("id", id);
+    setActing(false);
+    if (error) return toast.error(error.message);
+    toast.success("Visita reativada");
+    load();
+  };
+
   const publicLink = `${window.location.origin}/aceite/${id}`;
 
   const copyLink = async () => {
@@ -154,10 +204,28 @@ const TrainingDetail = () => {
 
         <div className="space-y-4">
           <div className="flex items-start justify-between gap-4 flex-wrap">
-            <h1 className="text-3xl font-semibold tracking-tight">{training.title}</h1>
-            <Button variant="ghost" size="sm" onClick={deleteTraining} className="text-muted-foreground hover:text-destructive">
-              <Trash2 className="h-4 w-4" /> Excluir
-            </Button>
+            <div className="flex items-center gap-3 flex-wrap">
+              <h1 className="text-3xl font-semibold tracking-tight">{training.title}</h1>
+              {training.status === "cancelado" && (
+                <Badge variant="destructive" className="gap-1">
+                  <XCircle className="h-3 w-3" /> Cancelado
+                </Badge>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              {training.status === "cancelado" ? (
+                <Button variant="ghost" size="sm" onClick={reactivateTraining} disabled={acting}>
+                  <RotateCcw className="h-4 w-4" /> Reativar
+                </Button>
+              ) : (
+                <Button variant="ghost" size="sm" onClick={() => setCancelOpen(true)} className="text-muted-foreground hover:text-destructive">
+                  <XCircle className="h-4 w-4" /> Cancelar visita
+                </Button>
+              )}
+              <Button variant="ghost" size="sm" onClick={deleteTraining} className="text-muted-foreground hover:text-destructive">
+                <Trash2 className="h-4 w-4" /> Excluir
+              </Button>
+            </div>
           </div>
 
           <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
@@ -173,6 +241,23 @@ const TrainingDetail = () => {
             <div>
               <h2 className="text-sm uppercase tracking-wider text-muted-foreground mb-2">O que foi treinado</h2>
               <p className="text-foreground/90 whitespace-pre-wrap leading-relaxed">{training.description}</p>
+            </div>
+          )}
+
+          {training.status === "cancelado" && training.cancellation_reason && (
+            <div className="rounded-md border border-destructive/40 bg-destructive/10 p-4">
+              <h2 className="text-sm font-semibold text-destructive mb-1 flex items-center gap-2">
+                <XCircle className="h-4 w-4" /> Visita cancelada
+              </h2>
+              {training.cancelled_at && (
+                <p className="text-xs text-muted-foreground mb-2">
+                  Em {format(new Date(training.cancelled_at), "d 'de' MMMM 'de' yyyy 'às' HH:mm", { locale: ptBR })}
+                </p>
+              )}
+              <p className="text-sm whitespace-pre-wrap">
+                <span className="text-muted-foreground">Motivo: </span>
+                {training.cancellation_reason}
+              </p>
             </div>
           )}
         </div>
@@ -279,6 +364,32 @@ const TrainingDetail = () => {
           )}
         </section>
       </main>
+
+      <Dialog open={cancelOpen} onOpenChange={setCancelOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Cancelar visita</DialogTitle>
+            <DialogDescription>
+              Informe o motivo do cancelamento. Essa informação ficará registrada no treinamento.
+            </DialogDescription>
+          </DialogHeader>
+          <Textarea
+            value={cancelReason}
+            onChange={(e) => setCancelReason(e.target.value)}
+            placeholder="Ex: cliente solicitou reagendamento..."
+            rows={4}
+            maxLength={500}
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCancelOpen(false)} disabled={acting}>
+              Voltar
+            </Button>
+            <Button variant="destructive" onClick={cancelTraining} disabled={acting}>
+              Confirmar cancelamento
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
