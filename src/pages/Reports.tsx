@@ -1,14 +1,15 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { format } from "date-fns";
+import { addWeeks, endOfWeek, format, startOfWeek } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ArrowLeft, FileText, Users, Search } from "lucide-react";
+import { ArrowLeft, FileText, Users, Search, Sparkles, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppHeader } from "@/components/AppHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "@/hooks/use-toast";
 
 type TrainingRow = {
   id: string;
@@ -24,6 +25,14 @@ const Reports = () => {
   const [rows, setRows] = useState<TrainingRow[]>([]);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
+  const [weekStart, setWeekStart] = useState<Date>(() => {
+    // default to last week's Monday
+    const thisMon = startOfWeek(new Date(), { weekStartsOn: 1 });
+    return addWeeks(thisMon, -1);
+  });
+  const [generating, setGenerating] = useState(false);
+  const [report, setReport] = useState<string | null>(null);
+  const [stats, setStats] = useState<any | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -59,6 +68,27 @@ const Reports = () => {
     );
   });
 
+  const weekLabel = `${format(weekStart, "d MMM", { locale: ptBR })} – ${format(endOfWeek(weekStart, { weekStartsOn: 1 }), "d MMM yyyy", { locale: ptBR })}`;
+
+  const generateReport = async () => {
+    setGenerating(true);
+    setReport(null);
+    setStats(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("weekly-report", {
+        body: { week_start: weekStart.toISOString() },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      setReport((data as any).report);
+      setStats((data as any).stats);
+    } catch (e: any) {
+      toast({ title: "Erro ao gerar relatório", description: e.message || String(e), variant: "destructive" });
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <AppHeader />
@@ -72,6 +102,50 @@ const Reports = () => {
             <p className="text-muted-foreground mt-1">Veja quantos participantes confirmaram cada treinamento e imprima os termos.</p>
           </div>
         </div>
+
+        <Card>
+          <CardContent className="p-5 space-y-4">
+            <div className="flex items-center justify-between flex-wrap gap-3">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-primary" />
+                <h2 className="font-semibold">Relatório semanal com IA</h2>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={() => setWeekStart((d) => addWeeks(d, -1))} disabled={generating}>
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="text-sm capitalize min-w-[180px] text-center">{weekLabel}</span>
+                <Button variant="outline" size="sm" onClick={() => setWeekStart((d) => addWeeks(d, 1))} disabled={generating}>
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+                <Button onClick={generateReport} disabled={generating} size="sm">
+                  {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                  {generating ? "Gerando..." : "Gerar relatório"}
+                </Button>
+              </div>
+            </div>
+
+            {stats && (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+                <StatBox label="Visitas" value={stats.total_visits} />
+                <StatBox label="Concluídas" value={stats.concluded_count} />
+                <StatBox label="Canceladas" value={stats.cancelled_count} tone="destructive" />
+                <StatBox label="Confirmação" value={`${stats.confirmation_rate_pct}%`} />
+              </div>
+            )}
+
+            {report && (
+              <div className="prose prose-sm dark:prose-invert max-w-none whitespace-pre-wrap rounded-md border bg-muted/40 p-4 text-sm leading-relaxed">
+                {report}
+              </div>
+            )}
+            {!report && !generating && (
+              <p className="text-xs text-muted-foreground">
+                Selecione a semana desejada e clique em "Gerar relatório" para obter um resumo automático com cancelamentos, taxa de confirmação e recomendações.
+              </p>
+            )}
+          </CardContent>
+        </Card>
 
         <div className="relative max-w-md">
           <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -131,5 +205,12 @@ const Reports = () => {
     </div>
   );
 };
+
+const StatBox = ({ label, value, tone }: { label: string; value: string | number; tone?: "destructive" }) => (
+  <div className={`rounded-md border p-3 ${tone === "destructive" ? "border-destructive/40 bg-destructive/5" : "bg-muted/30"}`}>
+    <div className="text-xs text-muted-foreground">{label}</div>
+    <div className={`text-2xl font-semibold mt-0.5 ${tone === "destructive" ? "text-destructive" : ""}`}>{value}</div>
+  </div>
+);
 
 export default Reports;
