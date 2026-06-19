@@ -45,18 +45,17 @@ const GuestAccept = () => {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!id || !fullName.trim()) return;
+    const acceptedAt = new Date().toISOString();
     setSubmitting(true);
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from("guest_acceptances")
-      .insert({ training_id: id, full_name: fullName.trim(), email: email.trim() || null })
-      .select("accepted_at")
-      .single();
+      .insert({ training_id: id, full_name: fullName.trim(), email: email.trim() || null, accepted_at: acceptedAt });
     setSubmitting(false);
     if (error) {
       toast.error(error.message);
       return;
     }
-    setDone({ name: fullName.trim(), at: (data as any).accepted_at });
+    setDone({ name: fullName.trim(), at: acceptedAt });
   };
 
   if (loading) {
