@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { format, isSameDay, isAfter, startOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CalendarPlus, MapPin, Clock, CheckCircle2, Printer } from "lucide-react";
+import { CalendarPlus, MapPin, Clock, CheckCircle2, Printer, XCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { AppHeader } from "@/components/AppHeader";
@@ -20,6 +20,8 @@ type Training = {
   duration_minutes: number;
   location: string | null;
   created_by: string;
+  status?: string;
+  cancellation_reason?: string | null;
 };
 
 const Dashboard = () => {
@@ -150,20 +152,45 @@ const Dashboard = () => {
 
 const TrainingCard = ({ training, accepted }: { training: Training; accepted: boolean }) => {
   const date = new Date(training.scheduled_at);
+  const isCancelled = training.status === "cancelado";
   return (
     <Link to={`/treinamento/${training.id}`}>
-      <Card className="hover:border-primary/50 transition-colors">
+      <Card
+        className={
+          isCancelled
+            ? "border-destructive/60 bg-destructive/5 hover:border-destructive transition-colors"
+            : "hover:border-primary/50 transition-colors"
+        }
+      >
         <CardContent className="p-5 flex items-start justify-between gap-4">
           <div className="space-y-2 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="font-semibold truncate">{training.title}</h3>
-              {accepted && (
+              <h3
+                className={
+                  isCancelled
+                    ? "font-semibold truncate text-destructive line-through"
+                    : "font-semibold truncate"
+                }
+              >
+                {training.title}
+              </h3>
+              {isCancelled && (
+                <Badge variant="destructive" className="gap-1">
+                  <XCircle className="h-3 w-3" /> Cancelada
+                </Badge>
+              )}
+              {!isCancelled && accepted && (
                 <Badge variant="success" className="gap-1">
                   <CheckCircle2 className="h-3 w-3" /> Aceito
                 </Badge>
               )}
             </div>
-            <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
+            <div
+              className={
+                "flex items-center gap-4 text-xs flex-wrap " +
+                (isCancelled ? "text-destructive/80" : "text-muted-foreground")
+              }
+            >
               <span className="flex items-center gap-1">
                 <Clock className="h-3 w-3" />
                 {format(date, "d MMM • HH:mm", { locale: ptBR })} ({training.duration_minutes} min)
@@ -175,7 +202,15 @@ const TrainingCard = ({ training, accepted }: { training: Training; accepted: bo
                 </span>
               )}
             </div>
+            {isCancelled && training.cancellation_reason && (
+              <p className="text-xs text-destructive">
+                Motivo: {training.cancellation_reason}
+              </p>
+            )}
           </div>
+          {isCancelled && (
+            <XCircle className="h-6 w-6 text-destructive shrink-0" />
+          )}
         </CardContent>
       </Card>
     </Link>
