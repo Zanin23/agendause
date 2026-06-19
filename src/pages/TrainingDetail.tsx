@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ArrowLeft, Calendar as CalIcon, Clock, MapPin, CheckCircle2, Trash2, Users, Building2, Link2, FileText, UserCheck, XCircle, RotateCcw } from "lucide-react";
+import { ArrowLeft, Calendar as CalIcon, Clock, MapPin, CheckCircle2, Trash2, Users, Building2, Link2, FileText, UserCheck, XCircle, RotateCcw, Lock, Pencil, Save, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { AppHeader } from "@/components/AppHeader";
@@ -32,6 +32,7 @@ type Training = {
   status: string;
   cancellation_reason: string | null;
   cancelled_at: string | null;
+  internal_notes: string | null;
 };
 
 type Acceptance = {
@@ -59,6 +60,9 @@ const TrainingDetail = () => {
   const [acting, setActing] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
+  const [editingNotes, setEditingNotes] = useState(false);
+  const [notesDraft, setNotesDraft] = useState("");
+  const [savingNotes, setSavingNotes] = useState(false);
 
   const load = async () => {
     if (!id) return;
@@ -149,6 +153,25 @@ const TrainingDetail = () => {
     setActing(false);
     if (error) return toast.error(error.message);
     toast.success("Visita reativada");
+    load();
+  };
+
+  const startEditNotes = () => {
+    setNotesDraft(training?.internal_notes || "");
+    setEditingNotes(true);
+  };
+
+  const saveNotes = async () => {
+    if (!id) return;
+    setSavingNotes(true);
+    const { error } = await supabase
+      .from("trainings")
+      .update({ internal_notes: notesDraft.trim() || null })
+      .eq("id", id);
+    setSavingNotes(false);
+    if (error) return toast.error(error.message);
+    toast.success("Observações salvas");
+    setEditingNotes(false);
     load();
   };
 
