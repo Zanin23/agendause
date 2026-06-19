@@ -66,6 +66,7 @@ export type Database = {
       }
       trainings: {
         Row: {
+          client: string | null
           created_at: string
           created_by: string
           description: string | null
@@ -78,6 +79,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          client?: string | null
           created_at?: string
           created_by: string
           description?: string | null
@@ -90,6 +92,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          client?: string | null
           created_at?: string
           created_by?: string
           description?: string | null

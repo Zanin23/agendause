@@ -1,0 +1,1 @@
+ALTER TABLE public.trainings ADD COLUMN IF NOT EXISTS client TEXT;
