@@ -14,6 +14,38 @@ export type Database = {
   }
   public: {
     Tables: {
+      guest_acceptances: {
+        Row: {
+          accepted_at: string
+          email: string | null
+          full_name: string
+          id: string
+          training_id: string
+        }
+        Insert: {
+          accepted_at?: string
+          email?: string | null
+          full_name: string
+          id?: string
+          training_id: string
+        }
+        Update: {
+          accepted_at?: string
+          email?: string | null
+          full_name?: string
+          id?: string
+          training_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "guest_acceptances_training_id_fkey"
+            columns: ["training_id"]
+            isOneToOne: false
+            referencedRelation: "trainings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
