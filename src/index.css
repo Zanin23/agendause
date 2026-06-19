@@ -1,0 +1,359 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Design system with --color-* OKLCH tokens for Lovable theme compatibility */
+
+@layer base {
+  :root {
+    --font-heading-weight: 600;
+    --font-body-weight: 400;
+
+    /* Core theme tokens (overridden by Lovable style packs) */
+    --color-background: oklch(10.5% 0.012 255.5); /* dark navy ~hsl(220,20%,3%) */
+    --color-foreground: oklch(98.4% 0 0); /* near-white ~hsl(0,0%,98%) */
+
+    --color-card: oklch(14.8% 0.013 255.5); /* ~hsl(220,20%,5%) */
+    --color-card-foreground: oklch(98.4% 0 0);
+
+    --color-popover: oklch(14.8% 0.013 255.5);
+    --color-popover-foreground: oklch(98.4% 0 0);
+
+    /* Blue to Pink to Orange gradient theme */
+    --color-primary: oklch(64.8% 0.178 255.1); /* #4E93FF */
+    --color-primary-foreground: oklch(100% 0 0);
+
+    --color-secondary: oklch(72.5% 0.196 338.5); /* #FF7EEA */
+    --color-secondary-foreground: oklch(100% 0 0);
+
+    --color-accent: oklch(67.2% 0.17 52.5); /* #F38300 */
+    --color-accent-foreground: oklch(100% 0 0);
+
+    --color-muted: oklch(21.8% 0.012 255.5); /* ~hsl(220,20%,12%) */
+    --color-muted-foreground: oklch(63.8% 0 0); /* ~#999 */
+
+    --color-destructive: oklch(62.8% 0.208 22.7);
+    --color-destructive-foreground: oklch(100% 0 0);
+
+    --color-border: oklch(25.8% 0.012 255.5); /* ~hsl(220,20%,15%) */
+    --color-input: oklch(25.8% 0.012 255.5);
+    --color-ring: oklch(64.8% 0.178 255.1);
+
+    --radius: 1.2rem;
+
+    /* Template-specific tokens (not overridden by theme system) */
+    --primary-light: oklch(70.5% 0.148 260); /* #639CF2 */
+    --primary-glow: oklch(95.8% 0.03 200); /* #E4F9FF */
+    --accent-red: oklch(59% 0.24 18); /* red accent */
+
+    --editorial-text: oklch(98.4% 0 0);
+    --editorial-text-light: oklch(55% 0.01 255);
+    --editorial-tag: oklch(68% 0.17 255);
+    --editorial-tag-bg: oklch(21.8% 0.012 255.5);
+    --editorial-hover: oklch(17% 0.012 255.5);
+
+    /* Gradient definitions */
+    --gradient-primary: linear-gradient(
+      135deg,
+      oklch(67.2% 0.17 52.5),
+      oklch(64.8% 0.178 255.1)
+    );
+    --gradient-hero: linear-gradient(
+      135deg,
+      oklch(67.2% 0.17 52.5) 0%,
+      oklch(64% 0.2 30) 30%,
+      oklch(58% 0.22 310) 60%,
+      oklch(64.8% 0.178 255.1) 100%
+    );
+    --gradient-accent: linear-gradient(
+      90deg,
+      oklch(67.2% 0.17 52.5),
+      oklch(64% 0.2 30),
+      oklch(64.8% 0.178 255.1)
+    );
+
+    /* Sidebar — derives from theme tokens */
+    --sidebar-background: var(--color-muted);
+    --sidebar-foreground: var(--color-foreground);
+    --sidebar-primary: var(--color-primary);
+    --sidebar-primary-foreground: var(--color-primary-foreground);
+    --sidebar-accent: var(--color-accent);
+    --sidebar-accent-foreground: var(--color-accent-foreground);
+    --sidebar-border: var(--color-border);
+    --sidebar-ring: var(--color-ring);
+  }
+
+  .dark {
+    --color-background: oklch(17% 0.012 255.5);
+    --color-foreground: oklch(96% 0.005 255);
+
+    --color-card: oklch(19.5% 0.012 255.5);
+    --color-card-foreground: oklch(96% 0.005 255);
+
+    --color-popover: oklch(19.5% 0.012 255.5);
+    --color-popover-foreground: oklch(96% 0.005 255);
+
+    --color-primary: oklch(68% 0.17 255);
+    --color-primary-foreground: oklch(100% 0 0);
+
+    --color-secondary: oklch(78% 0.18 338);
+    --color-secondary-foreground: oklch(19.5% 0.012 255.5);
+
+    --color-accent: oklch(70% 0.17 52);
+    --color-accent-foreground: oklch(100% 0 0);
+
+    --color-muted: oklch(25.8% 0.012 255.5);
+    --color-muted-foreground: oklch(63.8% 0 0);
+
+    --color-destructive: oklch(55% 0.2 22);
+    --color-destructive-foreground: oklch(100% 0 0);
+
+    --color-border: oklch(30.5% 0.012 255.5);
+    --color-input: oklch(30.5% 0.012 255.5);
+    --color-ring: oklch(68% 0.17 255);
+
+    --primary-light: oklch(73% 0.14 260);
+    --primary-glow: oklch(38% 0.08 200);
+    --accent-red: oklch(62% 0.24 18);
+
+    --editorial-text: oklch(94% 0.005 255);
+    --editorial-text-light: oklch(55% 0.01 255);
+    --editorial-tag: oklch(68% 0.17 255);
+    --editorial-tag-bg: oklch(28% 0.04 255);
+    --editorial-hover: oklch(21.8% 0.012 255.5);
+
+    --gradient-primary: linear-gradient(
+      135deg,
+      oklch(70% 0.17 52),
+      oklch(68% 0.17 255)
+    );
+    --gradient-hero: linear-gradient(
+      135deg,
+      oklch(70% 0.17 52) 0%,
+      oklch(67% 0.2 30) 30%,
+      oklch(62% 0.22 310) 60%,
+      oklch(68% 0.17 255) 100%
+    );
+    --gradient-accent: linear-gradient(
+      90deg,
+      oklch(70% 0.17 52),
+      oklch(67% 0.2 30),
+      oklch(68% 0.17 255)
+    );
+
+    --sidebar-background: var(--color-muted);
+    --sidebar-foreground: var(--color-foreground);
+    --sidebar-primary: var(--color-primary);
+    --sidebar-primary-foreground: var(--color-primary-foreground);
+    --sidebar-accent: var(--color-accent);
+    --sidebar-accent-foreground: var(--color-accent-foreground);
+    --sidebar-border: var(--color-border);
+    --sidebar-ring: var(--color-ring);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-body, Archivo), system-ui, sans-serif;
+    font-weight: var(--font-body-weight);
+    font-size: 1rem;
+    -webkit-font-smoothing: antialiased;
+    -moz-font-smoothing: antialiased;
+    -o-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    line-height: 2;
+  }
+
+  @media (min-width: 40em) {
+    body {
+      font-size: 1.125rem;
+    }
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading, 'Clash Display'), system-ui, sans-serif;
+    font-weight: var(--font-heading-weight);
+  }
+
+  a, button, input, label {
+    font-family: var(--font-heading, 'Clash Display'), system-ui, sans-serif;
+  }
+}
+
+/* Add the keyframes definition */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@layer components {
+  .blog-feed__item {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+
+  .blog-feed__item.animate-fadeInUp {
+    animation: fadeInUp 0.3s ease-out forwards;
+  }
+
+  /* Stagger delays for grid layouts */
+  @media (min-width: 32em) {
+    .blog-feed__item:nth-child(2).animate-fadeInUp {
+      animation-delay: 150ms;
+    }
+  }
+
+  @media (min-width: 60em) {
+    .blog-feed__item:nth-child(2).animate-fadeInUp {
+      animation-delay: 150ms;
+    }
+    .blog-feed__item:nth-child(3).animate-fadeInUp {
+      animation-delay: 300ms;
+    }
+  }
+
+  /* Fluid typography for article titles */
+  .fluid-title {
+    font-size: clamp(2.5rem, 8vw + 0.625rem, 12.5rem);
+    line-height: 0.9;
+    letter-spacing: -0.03em;
+  }
+
+  @media (min-width: 768px) {
+    .fluid-title {
+      font-size: clamp(5rem, 10vw + 1.25rem, 15rem);
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .fluid-title {
+      font-size: clamp(6.25rem, 12vw + 1.875rem, 18.75rem);
+    }
+  }
+
+  /* Grid System - Article Layout (Tailwind @layer components) */
+  @layer components {
+    /* Main Article Grid Container */
+    .article-grid {
+      @apply grid w-full max-w-[1920px] mx-auto gap-0;
+      @apply grid-cols-18 mb-[2.734375rem];
+      @apply md:grid-cols-22;
+      @apply lgPlus:grid-cols-30 lgPlus:mb-[3.75rem];
+    }
+
+    /* Article Header Grid - Grid for navigation without vertical margins */
+    .article-header-grid {
+      @apply grid w-full max-w-[1920px] mx-auto gap-0;
+      @apply grid-cols-18;
+      @apply md:grid-cols-22;
+      @apply lgPlus:grid-cols-30;
+    }
+  }
+
+    /* Article Body - Narrow reading width with responsive typography */
+    .article-body {
+      @apply col-start-2 col-span-16;
+      @apply md:col-start-3 md:col-span-18;
+      @apply lgPlus:col-start-8 lgPlus:col-span-16;
+      @apply text-[1.125rem] leading-[1.45] tracking-[-0.01em];
+      @apply md:text-[1.5rem];
+      @apply lgPlus:text-[1.625rem];
+      @apply 3xl:text-[2.25rem];
+    }
+
+    /* Article Standard Content - Standard width, no typography */
+    .article-content-standard {
+      @apply col-start-2 col-span-16;
+      @apply md:col-start-3 md:col-span-18;
+      @apply lgPlus:col-start-3 lgPlus:col-span-19;
+    }
+
+    /* Article Hero - Narrow width for hero content */
+    .article-hero {
+      @apply col-start-2 col-span-16;
+      @apply md:col-start-3 md:col-span-18;
+      @apply lgPlus:col-start-8 lgPlus:col-span-16;
+    }
+
+    /* Article Wide Content - For wider layouts */
+    .article-wide-content {
+      @apply self-center;
+      @apply col-start-2 col-span-16;
+      @apply md:col-start-3 md:col-span-18;
+      @apply lgPlus:col-start-3 lgPlus:col-span-19;
+    }
+
+    /* Article Centered Content - Extra narrow, centered */
+    .article-centered-content {
+      @apply self-center;
+      @apply col-start-2 col-span-16;
+      @apply md:col-start-3 md:col-span-18;
+      @apply lgPlus:col-start-9 lgPlus:col-span-14;
+    }
+
+    /* Article Full Width - Spans entire grid */
+    .article-full-width {
+      @apply col-span-full self-center;
+    }
+
+    /* Article Two Column Grid - For related articles, blog listings */
+    .article-two-columns {
+      @apply list-none m-0 p-0 grid gap-12;
+      @apply md:grid-cols-2 md:gap-[70px];
+      @apply lgPlus:gap-24;
+      @apply 3xl:gap-32;
+    }
+
+    /* Article Column Left - Left side of two-column layout */
+    .article-column-left {
+      @apply col-start-1 col-end-9;
+      @apply md:col-start-1 md:col-end-11;
+      @apply lgPlus:col-start-1 lgPlus:col-end-15;
+    }
+
+    /* Article Column Right - Right side of two-column layout */
+    .article-column-right {
+      @apply col-start-10 col-end-[-1];
+      @apply md:col-start-12 md:col-end-[-1];
+      @apply lgPlus:col-start-16 lgPlus:col-end-[-1];
+    }
+    /* Article Section Grid - For section-based layouts */
+    .article-section-grid {
+      @apply grid w-full max-w-[1920px] gap-0;
+      @apply grid-cols-18 my-5;
+      @apply md:grid-cols-22 md:my-[2.734375rem];
+      @apply lgPlus:grid-cols-30 lgPlus:my-[3.75rem];
+      @apply 3xl:my-20;
+    }
+
+    /* Article Section Content - Inner grid for sections */
+    .article-section-content {
+      @apply grid w-full max-w-[1920px] gap-0;
+      @apply grid-cols-16 my-8 mb-12;
+      @apply md:grid-cols-18;
+      @apply lgPlus:grid-cols-26;
+    }
+
+    /* Article Wrapper Full - Full width wrapper */
+    .article-wrapper-full {
+      @apply col-span-full;
+    }
+
+    /* Article Wrapper Constrained - Constrained width wrapper */
+    .article-wrapper-constrained {
+      @apply col-start-2 col-span-16;
+      @apply md:col-start-3 md:col-span-18;
+      @apply lgPlus:col-start-3 lgPlus:col-span-26;
+    }
+  }
