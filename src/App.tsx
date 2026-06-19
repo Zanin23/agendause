@@ -8,6 +8,8 @@ import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import TrainingDetail from "./pages/TrainingDetail";
 import PrintAgenda from "./pages/PrintAgenda";
+import TrainingTerm from "./pages/TrainingTerm";
+import GuestAccept from "./pages/GuestAccept";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -20,8 +22,10 @@ const App = () => (
         <AuthProvider>
           <Routes>
             <Route path="/auth" element={<Auth />} />
+            <Route path="/aceite/:id" element={<GuestAccept />} />
             <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/treinamento/:id" element={<ProtectedRoute><TrainingDetail /></ProtectedRoute>} />
+            <Route path="/treinamento/:id/termo" element={<ProtectedRoute><TrainingTerm /></ProtectedRoute>} />
             <Route path="/agenda/imprimir" element={<ProtectedRoute><PrintAgenda /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
