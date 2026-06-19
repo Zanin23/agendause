@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 type Training = {
   id: string;
   title: string;
+  client: string | null;
   description: string | null;
   scheduled_at: string;
   duration_minutes: number;
@@ -186,6 +187,7 @@ const PrintAgenda = () => {
 
 const EventCard = ({ t }: { t: Training }) => {
   const hour = format(new Date(t.scheduled_at), "HH");
+  const label = t.client?.trim() ? t.client : t.title;
   const isDone = t.status === "realizado";
   const isResched = t.status === "reagendado";
   return (
@@ -213,7 +215,7 @@ const EventCard = ({ t }: { t: Training }) => {
             />
           )}
           <span className="font-medium text-black">
-            {hour} - {t.title}
+            {hour} - {label}
           </span>
         </div>
         {isResched && t.description && (

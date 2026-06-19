@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ArrowLeft, Calendar as CalIcon, Clock, MapPin, CheckCircle2, Trash2, Users } from "lucide-react";
+import { ArrowLeft, Calendar as CalIcon, Clock, MapPin, CheckCircle2, Trash2, Users, Building2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { AppHeader } from "@/components/AppHeader";
@@ -14,6 +14,7 @@ import { toast } from "sonner";
 type Training = {
   id: string;
   title: string;
+  client: string | null;
   description: string | null;
   scheduled_at: string;
   duration_minutes: number;
@@ -127,13 +128,19 @@ const TrainingDetail = () => {
           </div>
 
           <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+            {training.client && (
+              <span className="flex items-center gap-1.5"><Building2 className="h-4 w-4" />{training.client}</span>
+            )}
             <span className="flex items-center gap-1.5"><CalIcon className="h-4 w-4" />{format(date, "EEEE, d 'de' MMMM 'de' yyyy", { locale: ptBR })}</span>
             <span className="flex items-center gap-1.5"><Clock className="h-4 w-4" />{format(date, "HH:mm")} • {training.duration_minutes} min</span>
             {training.location && <span className="flex items-center gap-1.5"><MapPin className="h-4 w-4" />{training.location}</span>}
           </div>
 
           {training.description && (
-            <p className="text-foreground/90 whitespace-pre-wrap leading-relaxed">{training.description}</p>
+            <div>
+              <h2 className="text-sm uppercase tracking-wider text-muted-foreground mb-2">O que foi treinado</h2>
+              <p className="text-foreground/90 whitespace-pre-wrap leading-relaxed">{training.description}</p>
+            </div>
           )}
         </div>
 
