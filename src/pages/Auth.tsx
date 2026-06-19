@@ -63,7 +63,7 @@ const Auth = () => {
           <div className="mx-auto h-12 w-12 rounded-full bg-primary/15 flex items-center justify-center">
             <CalendarCheck2 className="h-6 w-6 text-primary" />
           </div>
-          <CardTitle>TreinaCheck</CardTitle>
+          <CardTitle>TreinaCheck - Use Sistemas</CardTitle>
           <CardDescription>
             {mode === "signin" ? "Entre para acessar a agenda" : "Crie sua conta"}
           </CardDescription>

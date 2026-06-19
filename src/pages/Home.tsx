@@ -16,7 +16,7 @@ const Home = () => {
       <AppHeader />
       <main className="max-w-5xl mx-auto px-6 py-16 space-y-12">
         <div>
-          <p className="text-sm uppercase tracking-[0.25em] text-muted-foreground">TreinaCheck</p>
+          <p className="text-sm uppercase tracking-[0.25em] text-muted-foreground">TreinaCheck - Use Sistemas</p>
           <h1 className="text-4xl font-semibold tracking-tight mt-2">
             Olá{firstName ? `, ${firstName}` : ""}. O que você quer fazer?
           </h1>

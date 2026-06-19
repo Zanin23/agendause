@@ -25,7 +25,7 @@ export const AppHeader = () => {
       <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2 text-foreground">
           <CalendarCheck2 className="h-5 w-5 text-primary" />
-          <span className="font-semibold tracking-tight">TreinaCheck</span>
+          <span className="font-semibold tracking-tight">TreinaCheck - Use Sistemas</span>
         </Link>
         {user && (
           <div className="flex items-center gap-3">
