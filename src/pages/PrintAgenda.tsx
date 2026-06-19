@@ -9,7 +9,7 @@ import {
   startOfWeek,
 } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Printer, ArrowLeft, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { Printer, ArrowLeft, ChevronLeft, ChevronRight, X, Layers } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 
@@ -147,16 +147,7 @@ const PrintAgenda = () => {
 
           <div className="flex items-center gap-6 pt-2 shrink-0">
             <Legend />
-            <div
-              className="w-12 h-12 shrink-0"
-              style={{
-                background:
-                  "linear-gradient(135deg, #111 0 33%, transparent 33% 40%, #111 40% 73%, transparent 73% 80%, #111 80%)",
-                clipPath:
-                  "polygon(50% 0, 100% 50%, 50% 100%, 0 50%)",
-              }}
-              aria-hidden
-            />
+            <Layers className="h-12 w-12 shrink-0 text-black" strokeWidth={2.5} />
           </div>
         </header>
 
