@@ -23,11 +23,12 @@ export const CreateTrainingDialog = ({ open, onOpenChange, onCreated }: Props) =
   const [time, setTime] = useState("09:00");
   const [duration, setDuration] = useState(60);
   const [location, setLocation] = useState("");
+  const [internalNotes, setInternalNotes] = useState("");
   const [loading, setLoading] = useState(false);
 
   const reset = () => {
     setTitle(""); setClient(""); setDescription(""); setDate(""); setTime("09:00");
-    setDuration(60); setLocation("");
+    setDuration(60); setLocation(""); setInternalNotes("");
   };
 
   const submit = async (e: React.FormEvent) => {
@@ -42,6 +43,7 @@ export const CreateTrainingDialog = ({ open, onOpenChange, onCreated }: Props) =
       scheduled_at,
       duration_minutes: duration,
       location: location || null,
+      internal_notes: internalNotes.trim() || null,
       created_by: user.id,
     });
     setLoading(false);
@@ -73,6 +75,17 @@ export const CreateTrainingDialog = ({ open, onOpenChange, onCreated }: Props) =
           <div className="space-y-1.5">
             <Label htmlFor="desc">O que foi treinado</Label>
             <Textarea id="desc" value={description} onChange={(e) => setDescription(e.target.value)} rows={3} placeholder="Descreva os tópicos / conteúdos treinados" />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="notes">Observações internas</Label>
+            <Textarea
+              id="notes"
+              value={internalNotes}
+              onChange={(e) => setInternalNotes(e.target.value)}
+              rows={2}
+              placeholder="Visível apenas para a equipe — não aparece para o cliente"
+            />
+            <p className="text-xs text-muted-foreground">Visível apenas internamente. Não aparece para o cliente no aceite.</p>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">

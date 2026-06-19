@@ -106,6 +106,7 @@ export type Database = {
           description: string | null
           duration_minutes: number
           id: string
+          internal_notes: string | null
           location: string | null
           scheduled_at: string
           status: string
@@ -121,6 +122,7 @@ export type Database = {
           description?: string | null
           duration_minutes?: number
           id?: string
+          internal_notes?: string | null
           location?: string | null
           scheduled_at: string
           status?: string
@@ -136,6 +138,7 @@ export type Database = {
           description?: string | null
           duration_minutes?: number
           id?: string
+          internal_notes?: string | null
           location?: string | null
           scheduled_at?: string
           status?: string

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ArrowLeft, Calendar as CalIcon, Clock, MapPin, CheckCircle2, Trash2, Users, Building2, Link2, FileText, UserCheck, XCircle, RotateCcw } from "lucide-react";
+import { ArrowLeft, Calendar as CalIcon, Clock, MapPin, CheckCircle2, Trash2, Users, Building2, Link2, FileText, UserCheck, XCircle, RotateCcw, Lock, Pencil, Save, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { AppHeader } from "@/components/AppHeader";
@@ -32,6 +32,7 @@ type Training = {
   status: string;
   cancellation_reason: string | null;
   cancelled_at: string | null;
+  internal_notes: string | null;
 };
 
 type Acceptance = {
@@ -59,6 +60,9 @@ const TrainingDetail = () => {
   const [acting, setActing] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
+  const [editingNotes, setEditingNotes] = useState(false);
+  const [notesDraft, setNotesDraft] = useState("");
+  const [savingNotes, setSavingNotes] = useState(false);
 
   const load = async () => {
     if (!id) return;
@@ -149,6 +153,25 @@ const TrainingDetail = () => {
     setActing(false);
     if (error) return toast.error(error.message);
     toast.success("Visita reativada");
+    load();
+  };
+
+  const startEditNotes = () => {
+    setNotesDraft(training?.internal_notes || "");
+    setEditingNotes(true);
+  };
+
+  const saveNotes = async () => {
+    if (!id) return;
+    setSavingNotes(true);
+    const { error } = await supabase
+      .from("trainings")
+      .update({ internal_notes: notesDraft.trim() || null })
+      .eq("id", id);
+    setSavingNotes(false);
+    if (error) return toast.error(error.message);
+    toast.success("Observações salvas");
+    setEditingNotes(false);
     load();
   };
 
@@ -260,6 +283,42 @@ const TrainingDetail = () => {
               </p>
             </div>
           )}
+
+          <div className="rounded-md border border-border bg-muted/40 p-4 space-y-2">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <h2 className="text-sm font-semibold flex items-center gap-2">
+                <Lock className="h-4 w-4 text-primary" />
+                Observações internas
+                <span className="text-xs font-normal text-muted-foreground">(não visível ao cliente)</span>
+              </h2>
+              {!editingNotes ? (
+                <Button variant="ghost" size="sm" onClick={startEditNotes}>
+                  <Pencil className="h-3.5 w-3.5" /> Editar
+                </Button>
+              ) : (
+                <div className="flex items-center gap-1">
+                  <Button variant="ghost" size="sm" onClick={() => setEditingNotes(false)} disabled={savingNotes}>
+                    <X className="h-3.5 w-3.5" /> Cancelar
+                  </Button>
+                  <Button size="sm" onClick={saveNotes} disabled={savingNotes}>
+                    <Save className="h-3.5 w-3.5" /> {savingNotes ? "Salvando..." : "Salvar"}
+                  </Button>
+                </div>
+              )}
+            </div>
+            {editingNotes ? (
+              <Textarea
+                value={notesDraft}
+                onChange={(e) => setNotesDraft(e.target.value)}
+                rows={4}
+                placeholder="Anotações da equipe, lembretes, contexto do cliente..."
+              />
+            ) : training.internal_notes ? (
+              <p className="text-sm whitespace-pre-wrap text-foreground/90">{training.internal_notes}</p>
+            ) : (
+              <p className="text-sm text-muted-foreground italic">Nenhuma observação interna.</p>
+            )}
+          </div>
         </div>
 
         <Card className="border-primary/40">
