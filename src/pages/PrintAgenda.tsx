@@ -582,20 +582,22 @@ const EventCard = ({
         )}
         {showConfirmation && (
           <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
-            <span
-              className="inline-flex items-center gap-1 rounded-full px-1.5 py-[1px] text-[9px] font-semibold uppercase tracking-wide border"
-              style={
-                confirmed
-                  ? { color: GREEN, borderColor: GREEN, background: "#EAF7EF" }
-                  : { color: "#9A6B00", borderColor: "#E0B84A", background: "#FFF7E0" }
-              }
-            >
+            {!teamConfirmed && (
               <span
-                className="inline-block w-1.5 h-1.5 rounded-full"
-                style={{ background: confirmed ? GREEN : "#E0B84A" }}
-              />
-              {confirmed ? "Confirmada" : "Pendente"}
-            </span>
+                className="inline-flex items-center gap-1 rounded-full px-1.5 py-[1px] text-[9px] font-semibold uppercase tracking-wide border"
+                style={
+                  confirmed
+                    ? { color: GREEN, borderColor: GREEN, background: "#EAF7EF" }
+                    : { color: "#9A6B00", borderColor: "#E0B84A", background: "#FFF7E0" }
+                }
+              >
+                <span
+                  className="inline-block w-1.5 h-1.5 rounded-full"
+                  style={{ background: confirmed ? GREEN : "#E0B84A" }}
+                />
+                {confirmed ? "Confirmada" : "Pendente"}
+              </span>
+            )}
             <button
               type="button"
               onClick={(e) => {
