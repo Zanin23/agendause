@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppHeader } from "@/components/AppHeader";
+import { SEO } from "@/components/SEO";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -164,6 +165,11 @@ const Reports = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title="Relatórios de aceite — TreinaCheck"
+        description="Veja quantos participantes confirmaram cada treinamento e imprima os termos de aceite."
+        path="/relatorios"
+      />
       <AppHeader />
       <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-6">
         <div className="flex items-end justify-between flex-wrap gap-4">
