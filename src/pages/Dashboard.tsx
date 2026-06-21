@@ -68,29 +68,30 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-background">
       <AppHeader />
-      <main className="max-w-6xl mx-auto px-6 py-10 space-y-8">
-        <div className="flex items-end justify-between flex-wrap gap-4">
-          <div>
-            <h1 className="text-3xl font-semibold tracking-tight">Agenda de treinamentos</h1>
-            <p className="text-muted-foreground mt-1">Acompanhe sessões agendadas e confirme seu recebimento.</p>
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-6 sm:space-y-8">
+        <div className="flex items-start sm:items-end justify-between flex-wrap gap-3 sm:gap-4">
+          <div className="min-w-0">
+            <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Agenda de treinamentos</h1>
+            <p className="text-muted-foreground mt-1 text-sm sm:text-base">Acompanhe sessões agendadas e confirme seu recebimento.</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 w-full sm:w-auto">
             <Link to="/agenda/imprimir">
-              <Button variant="outline">
+              <Button variant="outline" size="sm" className="w-full sm:w-auto sm:h-10">
                 <Printer className="h-4 w-4" />
-                Visualizar Agenda
+                <span className="hidden xs:inline sm:inline">Visualizar</span>
+                <span className="hidden sm:inline">&nbsp;Agenda</span>
               </Button>
             </Link>
-            <Button onClick={() => setOpen(true)}>
+            <Button onClick={() => setOpen(true)} size="sm" className="flex-1 sm:flex-none sm:h-10">
               <CalendarPlus className="h-4 w-4" />
-              Novo treinamento
+              <span className="sm:inline">Novo treinamento</span>
             </Button>
           </div>
         </div>
 
-        <div className="grid lg:grid-cols-[auto_1fr] gap-8 items-start">
-          <Card className="lg:sticky lg:top-20">
-            <CardContent className="p-2">
+        <div className="grid lg:grid-cols-[auto_1fr] gap-6 lg:gap-8 items-start">
+          <Card className="lg:sticky lg:top-20 w-full lg:w-auto">
+            <CardContent className="p-2 flex justify-center">
               <Calendar
                 mode="single"
                 selected={selectedDate}
@@ -162,14 +163,14 @@ const TrainingCard = ({ training, accepted }: { training: Training; accepted: bo
             : "hover:border-primary/50 transition-colors"
         }
       >
-        <CardContent className="p-5 flex items-start justify-between gap-4">
+        <CardContent className="p-4 sm:p-5 flex items-start justify-between gap-3 sm:gap-4">
           <div className="space-y-2 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <h3
                 className={
                   isCancelled
-                    ? "font-semibold truncate text-destructive line-through"
-                    : "font-semibold truncate"
+                    ? "font-semibold text-destructive line-through break-words"
+                    : "font-semibold break-words"
                 }
               >
                 {training.title}

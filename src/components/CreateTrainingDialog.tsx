@@ -59,7 +59,7 @@ export const CreateTrainingDialog = ({ open, onOpenChange, onCreated }: Props) =
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-h-[90vh] overflow-y-auto w-[calc(100vw-2rem)] sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Novo treinamento</DialogTitle>
         </DialogHeader>
@@ -107,9 +107,9 @@ export const CreateTrainingDialog = ({ open, onOpenChange, onCreated }: Props) =
               <Input id="loc" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Sala 2 ou URL" />
             </div>
           </div>
-          <DialogFooter className="pt-2">
-            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancelar</Button>
-            <Button type="submit" disabled={loading}>{loading ? "Salvando..." : "Criar"}</Button>
+          <DialogFooter className="pt-2 flex-col-reverse sm:flex-row gap-2">
+            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="w-full sm:w-auto">Cancelar</Button>
+            <Button type="submit" disabled={loading} className="w-full sm:w-auto">{loading ? "Salvando..." : "Criar"}</Button>
           </DialogFooter>
         </form>
       </DialogContent>

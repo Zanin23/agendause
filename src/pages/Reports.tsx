@@ -165,14 +165,14 @@ const Reports = () => {
   return (
     <div className="min-h-screen bg-background">
       <AppHeader />
-      <main className="max-w-5xl mx-auto px-6 py-10 space-y-6">
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-6">
         <div className="flex items-end justify-between flex-wrap gap-4">
-          <div>
+          <div className="min-w-0">
             <Link to="/" className="text-sm text-muted-foreground inline-flex items-center gap-1 hover:text-foreground">
               <ArrowLeft className="h-3 w-3" /> Início
             </Link>
-            <h1 className="text-3xl font-semibold tracking-tight mt-2">Relatórios de aceite</h1>
-            <p className="text-muted-foreground mt-1">Veja quantos participantes confirmaram cada treinamento e imprima os termos.</p>
+            <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight mt-2">Relatórios de aceite</h1>
+            <p className="text-muted-foreground mt-1 text-sm sm:text-base">Veja quantos participantes confirmaram cada treinamento e imprima os termos.</p>
           </div>
         </div>
 
@@ -293,10 +293,10 @@ const Reports = () => {
               const total = t.user_count + t.guest_count;
               return (
                 <Card key={t.id} className="hover:border-primary/50 transition-colors">
-                  <CardContent className="p-5 flex items-center justify-between gap-4 flex-wrap">
-                    <div className="min-w-0 space-y-1">
+                  <CardContent className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+                    <div className="min-w-0 space-y-1 flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="font-semibold truncate">{t.title}</h3>
+                        <h3 className="font-semibold break-words">{t.title}</h3>
                         {t.client && <Badge variant="secondary">{t.client}</Badge>}
                       </div>
                       <div className="text-xs text-muted-foreground flex items-center gap-3 flex-wrap">
@@ -307,12 +307,12 @@ const Reports = () => {
                         </span>
                       </div>
                     </div>
-                    <div className="flex gap-2">
-                      <Link to={`/treinamento/${t.id}`}>
-                        <Button variant="outline" size="sm">Detalhes</Button>
+                    <div className="flex gap-2 w-full sm:w-auto">
+                      <Link to={`/treinamento/${t.id}`} className="flex-1 sm:flex-none">
+                        <Button variant="outline" size="sm" className="w-full sm:w-auto">Detalhes</Button>
                       </Link>
-                      <Link to={`/treinamento/${t.id}/termo`}>
-                        <Button size="sm">
+                      <Link to={`/treinamento/${t.id}/termo`} className="flex-1 sm:flex-none">
+                        <Button size="sm" className="w-full sm:w-auto">
                           <FileText className="h-4 w-4" /> Termo
                         </Button>
                       </Link>
@@ -368,20 +368,20 @@ const WeeklyAIReport = ({
   return (
     <Card className="overflow-hidden border-primary/20">
       {/* Hero */}
-      <div className="relative bg-gradient-to-br from-primary/10 via-primary/5 to-transparent px-6 py-5 border-b">
-        <div className="flex items-start justify-between gap-4 flex-wrap">
+      <div className="relative bg-gradient-to-br from-primary/10 via-primary/5 to-transparent px-4 sm:px-6 py-4 sm:py-5 border-b">
+        <div className="flex items-start justify-between gap-3 sm:gap-4 flex-wrap">
           <div className="flex items-start gap-3">
             <div className="h-10 w-10 rounded-lg bg-primary/15 text-primary flex items-center justify-center shrink-0">
               <Sparkles className="h-5 w-5" />
             </div>
-            <div>
+            <div className="min-w-0">
               <h2 className="text-lg font-semibold tracking-tight">Relatório semanal com IA</h2>
               <p className="text-xs text-muted-foreground mt-0.5 capitalize">
                 Semana de {weekLabel}
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 flex-wrap w-full sm:w-auto">
             <Button variant="outline" size="icon" onClick={() => setWeekStart((d) => addWeeks(d, -1))} disabled={generating} aria-label="Semana anterior">
               <ChevronLeft className="h-4 w-4" />
             </Button>
@@ -391,6 +391,7 @@ const WeeklyAIReport = ({
               onClick={() => setWeekStart(() => startOfWeek(new Date(), { weekStartsOn: 1 }))}
               disabled={generating}
               title="Voltar para a semana atual"
+              className="flex-1 sm:flex-none"
             >
               {(() => {
                 const thisMon = startOfWeek(new Date(), { weekStartsOn: 1 });
@@ -407,7 +408,7 @@ const WeeklyAIReport = ({
             <Button variant="outline" size="icon" onClick={() => setWeekStart((d) => addWeeks(d, 1))} disabled={generating} aria-label="Próxima semana">
               <ChevronRight className="h-4 w-4" />
             </Button>
-            <Button onClick={onGenerate} disabled={generating} size="sm" className="ml-2">
+            <Button onClick={onGenerate} disabled={generating} size="sm" className="ml-0 sm:ml-2 w-full sm:w-auto">
               {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
               {generating ? "Gerando..." : report ? "Atualizar" : "Gerar relatório"}
             </Button>
@@ -415,7 +416,7 @@ const WeeklyAIReport = ({
         </div>
       </div>
 
-      <CardContent className="p-6 space-y-6">
+      <CardContent className="p-4 sm:p-6 space-y-6">
         {/* Empty state */}
         {!stats && !generating && (
           <div className="text-center py-10 px-4">
