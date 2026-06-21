@@ -316,7 +316,7 @@ const PrintAgenda = () => {
                 >
                   {format(day, "dd")} {DAY_LABELS[idx]}
                 </div>
-                <div className="p-2 space-y-2 flex-1">
+                <div className="agenda-day-body p-2 space-y-2 flex-1 overflow-hidden">
                   {events.length === 0 ? (
                     <div className="h-full" />
                   ) : (
