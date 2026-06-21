@@ -153,6 +153,58 @@
 }
 
 @layer base {
+  /* Light theme — warm paper background with Use Sistemas brand orange/red */
+  .light {
+    --color-background: oklch(98% 0.005 70);
+    --color-foreground: oklch(20% 0.01 40);
+
+    --color-card: oklch(100% 0 0);
+    --color-card-foreground: oklch(20% 0.01 40);
+
+    --color-popover: oklch(100% 0 0);
+    --color-popover-foreground: oklch(20% 0.01 40);
+
+    --color-primary: oklch(62% 0.2 42);
+    --color-primary-foreground: oklch(100% 0 0);
+
+    --color-secondary: oklch(94% 0.02 60);
+    --color-secondary-foreground: oklch(25% 0.05 30);
+
+    --color-accent: oklch(70% 0.2 50);
+    --color-accent-foreground: oklch(20% 0.01 40);
+
+    --color-muted: oklch(95% 0.008 60);
+    --color-muted-foreground: oklch(45% 0.015 50);
+
+    --color-destructive: oklch(55% 0.22 22);
+    --color-destructive-foreground: oklch(100% 0 0);
+
+    --color-border: oklch(90% 0.01 60);
+    --color-input: oklch(90% 0.01 60);
+    --color-ring: oklch(62% 0.2 42);
+
+    --primary-light: oklch(74% 0.17 50);
+    --primary-glow: oklch(80% 0.16 55);
+    --accent-red: oklch(55% 0.22 22);
+
+    --editorial-text: oklch(20% 0.01 40);
+    --editorial-text-light: oklch(45% 0.015 50);
+    --editorial-tag: oklch(62% 0.2 42);
+    --editorial-tag-bg: oklch(95% 0.02 60);
+    --editorial-hover: oklch(95% 0.008 60);
+
+    --sidebar-background: var(--color-muted);
+    --sidebar-foreground: var(--color-foreground);
+    --sidebar-primary: var(--color-primary);
+    --sidebar-primary-foreground: var(--color-primary-foreground);
+    --sidebar-accent: var(--color-accent);
+    --sidebar-accent-foreground: var(--color-accent-foreground);
+    --sidebar-border: var(--color-border);
+    --sidebar-ring: var(--color-ring);
+  }
+}
+
+@layer base {
   * {
     @apply border-border;
   }
