@@ -13,6 +13,7 @@ import { Printer, ArrowLeft, ChevronLeft, ChevronRight, X, Layers, FileDown } fr
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import { supabase } from "@/integrations/supabase/client";
+import { SEO } from "@/components/SEO";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import {
@@ -183,6 +184,11 @@ const PrintAgenda = () => {
 
   return (
     <div className="min-h-screen bg-white text-black">
+      <SEO
+        title="Imprimir agenda — TreinaCheck"
+        description="Visualize e exporte a agenda semanal de treinamentos em PDF ou para impressão."
+        path="/agenda/imprimir"
+      />
       <style>{`
         .agenda-title { font-family: 'Clash Display', 'Archivo', sans-serif; font-weight: 700; letter-spacing: -0.02em; }
         .agenda-sub { font-family: 'Clash Display', 'Archivo', sans-serif; font-weight: 600; font-style: italic; }
