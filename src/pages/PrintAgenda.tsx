@@ -355,10 +355,14 @@ const PrintAgenda = () => {
                   {format(day, "dd")} {DAY_LABELS[idx]}
                 </div>
                 <div className="agenda-day-body p-2 space-y-2 flex-1 overflow-hidden">
-                  {events.length === 0 ? (
-                    <div className="h-full" />
-                  ) : (
-                    events.map((t) => (
+                  {(() => {
+                    const morning = events.filter(
+                      (e) => new Date(e.scheduled_at).getHours() < 12
+                    );
+                    const afternoon = events.filter(
+                      (e) => new Date(e.scheduled_at).getHours() >= 12
+                    );
+                    const renderCard = (t: Training) => (
                       <EventCard
                         key={t.id}
                         t={t}
@@ -371,8 +375,46 @@ const PrintAgenda = () => {
                         }}
                         onOpen={() => navigate(`/treinamento/${t.id}`)}
                       />
-                    ))
-                  )}
+                    );
+                    return (
+                      <>
+                        <div
+                          className="agenda-period-label text-[10px] font-bold uppercase tracking-wider px-1 pt-0.5 pb-1"
+                          style={{ color: ORANGE }}
+                        >
+                          Manhã
+                        </div>
+                        <div className="space-y-2">
+                          {morning.length === 0 ? (
+                            <div className="text-[10px] text-neutral-400 italic px-1">
+                              —
+                            </div>
+                          ) : (
+                            morning.map(renderCard)
+                          )}
+                        </div>
+                        <div
+                          className="agenda-period-divider border-t border-dashed mt-2 pt-1"
+                          style={{ borderColor: ORANGE }}
+                        />
+                        <div
+                          className="agenda-period-label text-[10px] font-bold uppercase tracking-wider px-1 pb-1"
+                          style={{ color: ORANGE }}
+                        >
+                          Tarde
+                        </div>
+                        <div className="space-y-2">
+                          {afternoon.length === 0 ? (
+                            <div className="text-[10px] text-neutral-400 italic px-1">
+                              —
+                            </div>
+                          ) : (
+                            afternoon.map(renderCard)
+                          )}
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
             );
