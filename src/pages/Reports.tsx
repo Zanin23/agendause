@@ -249,10 +249,21 @@ const WeeklyAIReport = ({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setWeekStart(() => addWeeks(startOfWeek(new Date(), { weekStartsOn: 1 }), -1))}
+              onClick={() => setWeekStart(() => startOfWeek(new Date(), { weekStartsOn: 1 }))}
               disabled={generating}
+              title="Voltar para a semana atual"
             >
-              Semana passada
+              {(() => {
+                const thisMon = startOfWeek(new Date(), { weekStartsOn: 1 });
+                const diff = Math.round(
+                  (weekStart.getTime() - thisMon.getTime()) / (7 * 24 * 60 * 60 * 1000)
+                );
+                if (diff === 0) return "Semana atual";
+                if (diff === -1) return "Semana passada";
+                if (diff === 1) return "Próxima semana";
+                if (diff < -1) return `Há ${Math.abs(diff)} semanas`;
+                return `Em ${diff} semanas`;
+              })()}
             </Button>
             <Button variant="outline" size="icon" onClick={() => setWeekStart((d) => addWeeks(d, 1))} disabled={generating} aria-label="Próxima semana">
               <ChevronRight className="h-4 w-4" />
