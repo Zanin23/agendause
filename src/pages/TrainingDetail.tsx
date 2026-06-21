@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -63,6 +65,11 @@ const TrainingDetail = () => {
   const [editingNotes, setEditingNotes] = useState(false);
   const [notesDraft, setNotesDraft] = useState("");
   const [savingNotes, setSavingNotes] = useState(false);
+  const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [schedDate, setSchedDate] = useState("");
+  const [schedTime, setSchedTime] = useState("");
+  const [schedDuration, setSchedDuration] = useState(60);
+  const [savingSched, setSavingSched] = useState(false);
 
   const load = async () => {
     if (!id) return;
@@ -175,6 +182,34 @@ const TrainingDetail = () => {
     load();
   };
 
+  const openSchedule = () => {
+    if (!training) return;
+    const d = new Date(training.scheduled_at);
+    setSchedDate(format(d, "yyyy-MM-dd"));
+    setSchedTime(format(d, "HH:mm"));
+    setSchedDuration(training.duration_minutes);
+    setScheduleOpen(true);
+  };
+
+  const saveSchedule = async () => {
+    if (!id) return;
+    if (!schedDate || !schedTime) {
+      toast.error("Informe data e horário");
+      return;
+    }
+    const iso = new Date(`${schedDate}T${schedTime}`).toISOString();
+    setSavingSched(true);
+    const { error } = await supabase
+      .from("trainings")
+      .update({ scheduled_at: iso, duration_minutes: Number(schedDuration) || 60 })
+      .eq("id", id);
+    setSavingSched(false);
+    if (error) return toast.error(error.message);
+    toast.success("Data atualizada");
+    setScheduleOpen(false);
+    load();
+  };
+
   const publicLink = `${window.location.origin}/aceite/${id}`;
 
   const copyLink = async () => {
@@ -258,6 +293,9 @@ const TrainingDetail = () => {
             <span className="flex items-center gap-1.5"><CalIcon className="h-4 w-4" />{format(date, "EEEE, d 'de' MMMM 'de' yyyy", { locale: ptBR })}</span>
             <span className="flex items-center gap-1.5"><Clock className="h-4 w-4" />{format(date, "HH:mm")} • {training.duration_minutes} min</span>
             {training.location && <span className="flex items-center gap-1.5"><MapPin className="h-4 w-4" />{training.location}</span>}
+            <Button variant="ghost" size="sm" onClick={openSchedule} className="h-6 px-2 -my-1 text-xs">
+              <Pencil className="h-3 w-3" /> Editar data
+            </Button>
           </div>
 
           {training.description && (
@@ -445,6 +483,57 @@ const TrainingDetail = () => {
             </Button>
             <Button variant="destructive" onClick={cancelTraining} disabled={acting}>
               Confirmar cancelamento
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={scheduleOpen} onOpenChange={setScheduleOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar data e horário</DialogTitle>
+            <DialogDescription>
+              Atualize a data, horário de início e duração deste treinamento.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="sched-date">Data</Label>
+                <Input
+                  id="sched-date"
+                  type="date"
+                  value={schedDate}
+                  onChange={(e) => setSchedDate(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="sched-time">Horário</Label>
+                <Input
+                  id="sched-time"
+                  type="time"
+                  value={schedTime}
+                  onChange={(e) => setSchedTime(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="sched-duration">Duração (minutos)</Label>
+              <Input
+                id="sched-duration"
+                type="number"
+                min={1}
+                value={schedDuration}
+                onChange={(e) => setSchedDuration(Number(e.target.value))}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setScheduleOpen(false)} disabled={savingSched}>
+              Cancelar
+            </Button>
+            <Button onClick={saveSchedule} disabled={savingSched}>
+              <Save className="h-4 w-4" /> {savingSched ? "Salvando..." : "Salvar"}
             </Button>
           </DialogFooter>
         </DialogContent>
