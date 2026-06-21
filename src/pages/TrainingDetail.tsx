@@ -484,6 +484,71 @@ const TrainingDetail = () => {
           </div>
         </div>
 
+        {/* Attachments */}
+        <Card>
+          <CardContent className="p-6 space-y-3">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <h3 className="font-semibold flex items-center gap-2">
+                <Paperclip className="h-4 w-4" /> Anexos
+                <span className="text-xs font-normal text-muted-foreground">
+                  ({attachments.length})
+                </span>
+              </h3>
+              <label>
+                <input
+                  type="file"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => {
+                    onUploadFiles(e.target.files);
+                    e.currentTarget.value = "";
+                  }}
+                  disabled={uploading}
+                />
+                <Button asChild size="sm" variant="outline" disabled={uploading}>
+                  <span className="cursor-pointer">
+                    <Upload className="h-4 w-4" /> {uploading ? "Enviando..." : "Adicionar arquivos"}
+                  </span>
+                </Button>
+              </label>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Materiais ficam visíveis no link público de aceite. Até 20 MB por arquivo.
+            </p>
+            {attachments.length === 0 ? (
+              <p className="text-sm text-muted-foreground italic">Nenhum anexo ainda.</p>
+            ) : (
+              <div className="space-y-2">
+                {attachments.map((a) => (
+                  <div
+                    key={a.id}
+                    className="flex items-center gap-3 rounded-md border border-border p-2.5 text-sm"
+                  >
+                    <FileIcon className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium truncate">{a.file_name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatBytes(a.size_bytes)} · {format(new Date(a.created_at), "d MMM yyyy HH:mm", { locale: ptBR })}
+                      </p>
+                    </div>
+                    <Button variant="ghost" size="sm" onClick={() => downloadAttachment(a)}>
+                      <Download className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => deleteAttachment(a)}
+                      className="text-muted-foreground hover:text-destructive"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         <Card className="border-primary/40">
           <CardContent className="p-6 flex items-center justify-between gap-4 flex-wrap">
             <div>
@@ -585,6 +650,40 @@ const TrainingDetail = () => {
             </div>
           )}
         </section>
+
+        {reschedules.length > 0 && (
+          <section>
+            <h2 className="flex items-center gap-2 text-sm uppercase tracking-wider text-muted-foreground mb-3">
+              <History className="h-4 w-4" /> Histórico de reagendamentos ({reschedules.length})
+            </h2>
+            <div className="space-y-2">
+              {reschedules.map((r) => (
+                <div key={r.id} className="rounded-md border border-border p-3 text-sm space-y-1">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <span className="line-through">
+                        {format(new Date(r.previous_scheduled_at), "d MMM yyyy 'às' HH:mm", { locale: ptBR })}
+                        {" · "}{r.previous_duration_minutes} min
+                      </span>
+                      <span>→</span>
+                      <span className="text-foreground font-medium">
+                        {format(new Date(r.new_scheduled_at), "d MMM yyyy 'às' HH:mm", { locale: ptBR })}
+                        {" · "}{r.new_duration_minutes} min
+                      </span>
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      {format(new Date(r.created_at), "d MMM HH:mm", { locale: ptBR })}
+                      {r.changed_by_name ? ` · ${r.changed_by_name}` : ""}
+                    </span>
+                  </div>
+                  <p className="text-foreground/90 whitespace-pre-wrap">
+                    <span className="text-muted-foreground">Motivo: </span>{r.reason}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
       </main>
 
       <Dialog open={cancelOpen} onOpenChange={setCancelOpen}>
@@ -651,6 +750,18 @@ const TrainingDetail = () => {
                 value={schedDuration}
                 onChange={(e) => setSchedDuration(Number(e.target.value))}
               />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="sched-reason">Motivo do reagendamento *</Label>
+              <Textarea
+                id="sched-reason"
+                value={schedReason}
+                onChange={(e) => setSchedReason(e.target.value)}
+                placeholder="Ex: cliente pediu para adiar..."
+                rows={3}
+                maxLength={500}
+              />
+              <p className="text-xs text-muted-foreground">Ficará registrado no histórico.</p>
             </div>
           </div>
           <DialogFooter>
