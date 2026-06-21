@@ -356,7 +356,7 @@ const WeeklyAIReport = ({
   generating: boolean;
   report: string | null;
   stats: WeeklyStats | null;
-  comparison: WeeklyComparison | null;
+  comparison: any | null;
   onGenerate: () => void;
 }) => {
   const copyReport = async () => {
