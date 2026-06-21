@@ -24,6 +24,10 @@ const Home = () => {
       <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-16 space-y-8 sm:space-y-12">
         <div className="relative overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-card via-card to-background p-6 sm:p-8 md:p-10">
           <div className="absolute inset-0 opacity-[0.07] pointer-events-none" style={{ background: "var(--gradient-hero)" }} />
+          <div className="hero-grid" />
+          <div className="hero-orb hero-orb-1" />
+          <div className="hero-orb hero-orb-2" />
+          <div className="hero-shimmer" />
           <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-6">
             <div className="min-w-0">
               <p className="text-xs uppercase tracking-[0.3em] text-primary font-semibold">TreinaCheck · Use Sistemas</p>
@@ -32,7 +36,7 @@ const Home = () => {
               </h1>
               <p className="text-muted-foreground mt-2 text-sm sm:text-base">O que você quer fazer hoje?</p>
             </div>
-            <img src={logoAsset.url} alt="Use Sistemas" className="hidden sm:block h-16 md:h-20 w-auto opacity-90 self-start md:self-auto" />
+            <img src={logoAsset.url} alt="Use Sistemas" className="hero-float hidden sm:block h-16 md:h-20 w-auto opacity-90 self-start md:self-auto" />
           </div>
         </div>
 
