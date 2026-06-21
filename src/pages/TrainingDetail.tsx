@@ -6,6 +6,7 @@ import { ArrowLeft, Calendar as CalIcon, Clock, MapPin, CheckCircle2, Trash2, Us
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { AppHeader } from "@/components/AppHeader";
+import { SEO } from "@/components/SEO";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -392,6 +393,11 @@ const TrainingDetail = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title={`${training.title} — TreinaCheck`}
+        description={`Detalhes do treinamento "${training.title}"${training.client ? ` (${training.client})` : ""}. Gerencie participantes, anexos e aceites.`}
+        path={`/treinamento/${id ?? ""}`}
+      />
       <AppHeader />
       <main className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-6 sm:space-y-8">
         <Link to="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">

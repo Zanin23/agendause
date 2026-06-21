@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
+import { SEO } from "@/components/SEO";
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -58,6 +59,11 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 bg-background">
+      <SEO
+        title={mode === "signin" ? "Entrar — TreinaCheck" : "Criar conta — TreinaCheck"}
+        description="Acesse o TreinaCheck para gerenciar a agenda de treinamentos da sua equipe e registrar aceites."
+        path="/auth"
+      />
       <Card className="w-full max-w-md">
         <CardHeader className="text-center space-y-2">
           <img src={logoAsset.url} alt="Use Sistemas" className="mx-auto h-16 w-auto" />

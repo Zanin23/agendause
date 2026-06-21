@@ -5,6 +5,7 @@ import { ptBR } from "date-fns/locale";
 import { Printer, ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { SEO } from "@/components/SEO";
 
 type Training = {
   id: string;
@@ -63,6 +64,11 @@ const TrainingTerm = () => {
 
   return (
     <div className="min-h-screen bg-white text-black">
+      <SEO
+        title={`Termo de aceite: ${training.title} — TreinaCheck`}
+        description={`Termo de aceite do treinamento "${training.title}" para impressão.`}
+        path={`/treinamento/${id ?? ""}/termo`}
+      />
       <style>{`
         @media print {
           .no-print { display: none !important; }

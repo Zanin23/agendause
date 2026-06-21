@@ -3,6 +3,7 @@ import { CalendarDays, CalendarPlus, FileCheck2, ArrowRight } from "lucide-react
 import logoAsset from "@/assets/logo-use-sistemas.png.asset.json";
 import { useState } from "react";
 import { AppHeader } from "@/components/AppHeader";
+import { SEO } from "@/components/SEO";
 import { Card, CardContent } from "@/components/ui/card";
 import { CreateTrainingDialog } from "@/components/CreateTrainingDialog";
 import { useAuth } from "@/hooks/useAuth";
@@ -14,6 +15,11 @@ const Home = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title="TreinaCheck — Início"
+        description="Painel inicial do TreinaCheck: agende treinamentos, gerencie a equipe e acompanhe aceites em um só lugar."
+        path="/"
+      />
       <AppHeader />
       <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-16 space-y-8 sm:space-y-12">
         <div className="relative overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-card via-card to-background p-6 sm:p-8 md:p-10">
