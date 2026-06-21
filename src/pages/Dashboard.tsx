@@ -6,6 +6,7 @@ import { CalendarPlus, MapPin, Clock, CheckCircle2, Printer, XCircle } from "luc
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { AppHeader } from "@/components/AppHeader";
+import { SEO } from "@/components/SEO";
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -67,6 +68,11 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title="Agenda de treinamentos — TreinaCheck"
+        description="Acompanhe sessões agendadas, confirme recebimento e gerencie a agenda da equipe."
+        path="/agenda"
+      />
       <AppHeader />
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-6 sm:space-y-8">
         <div className="flex items-start sm:items-end justify-between flex-wrap gap-3 sm:gap-4">
