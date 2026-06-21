@@ -11,6 +11,7 @@ import {
 import { ptBR } from "date-fns/locale";
 import { Printer, ArrowLeft, ChevronLeft, ChevronRight, X, Layers } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -33,6 +34,7 @@ type Training = {
   location: string | null;
   status: "agendado" | "realizado" | "reagendado" | "cancelado" | "concluido";
   cancellation_reason?: string | null;
+  confirmed_at?: string | null;
 };
 
 const DAY_LABELS = ["SEG", "TER", "QUA", "QUI", "SEX"];
@@ -43,6 +45,7 @@ const GREEN = "#1F9D55";
 
 const PrintAgenda = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [trainings, setTrainings] = useState<Training[]>([]);
   const [confirmedIds, setConfirmedIds] = useState<Set<string>>(new Set());
   const [weekStart, setWeekStart] = useState<Date>(() =>
@@ -71,6 +74,20 @@ const PrintAgenda = () => {
       setConfirmedIds(ids);
     })();
   }, []);
+
+  const toggleConfirm = async (t: Training) => {
+    const isConfirmed = !!t.confirmed_at;
+    const patch = isConfirmed
+      ? { confirmed_at: null, confirmed_by: null }
+      : { confirmed_at: new Date().toISOString(), confirmed_by: user?.id ?? null };
+    const { error } = await supabase.from("trainings").update(patch).eq("id", t.id);
+    if (error) {
+      toast({ title: "Erro ao atualizar", description: error.message, variant: "destructive" });
+      return;
+    }
+    setTrainings((prev) => prev.map((x) => (x.id === t.id ? { ...x, ...patch } as Training : x)));
+    toast({ title: isConfirmed ? "Confirmação removida" : "Agendamento confirmado" });
+  };
 
   const weekDays = useMemo(
     () => Array.from({ length: 5 }, (_, i) => addDays(weekStart, i)),
@@ -271,6 +288,7 @@ const PrintAgenda = () => {
                         key={t.id}
                         t={t}
                         confirmed={confirmedIds.has(t.id)}
+                        onToggleConfirm={() => toggleConfirm(t)}
                         onDragStart={() => setDragId(t.id)}
                         onDragEnd={() => {
                           setDragId(null);
@@ -336,12 +354,14 @@ const PrintAgenda = () => {
 const EventCard = ({
   t,
   confirmed,
+  onToggleConfirm,
   onDragStart,
   onDragEnd,
   onOpen,
 }: {
   t: Training;
   confirmed: boolean;
+  onToggleConfirm: () => void;
   onDragStart: () => void;
   onDragEnd: () => void;
   onOpen: () => void;
@@ -353,6 +373,7 @@ const EventCard = ({
   const isCancelled = t.status === "cancelado";
   const borderColor = isCancelled ? RED : ORANGE;
   const showConfirmation = !isCancelled;
+  const teamConfirmed = !!t.confirmed_at;
   return (
     <div
       className="block cursor-grab active:cursor-grabbing"
@@ -443,7 +464,7 @@ const EventCard = ({
           </div>
         )}
         {showConfirmation && (
-          <div className="mt-1.5">
+          <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
             <span
               className="inline-flex items-center gap-1 rounded-full px-1.5 py-[1px] text-[9px] font-semibold uppercase tracking-wide border"
               style={
@@ -458,6 +479,24 @@ const EventCard = ({
               />
               {confirmed ? "Confirmada" : "Pendente"}
             </span>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleConfirm();
+              }}
+              onMouseDown={(e) => e.stopPropagation()}
+              draggable={false}
+              className="no-print inline-flex items-center gap-1 rounded-full px-2 py-[2px] text-[9px] font-semibold uppercase tracking-wide border transition-colors"
+              style={
+                teamConfirmed
+                  ? { color: GREEN, borderColor: GREEN, background: "white" }
+                  : { color: "white", borderColor: ORANGE, background: ORANGE }
+              }
+              title={teamConfirmed ? "Clique para desfazer a confirmação interna" : "Confirmar agendamento com o cliente"}
+            >
+              {teamConfirmed ? "✓ Confirmado" : "Confirmar"}
+            </button>
           </div>
         )}
       </div>
