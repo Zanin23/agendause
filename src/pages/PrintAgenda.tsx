@@ -157,9 +157,46 @@ const PrintAgenda = () => {
         .day-head { font-family: 'Clash Display', 'Archivo', sans-serif; font-weight: 700; letter-spacing: 0.01em; }
         @media print {
           .no-print { display: none !important; }
-          @page { size: A4 landscape; margin: 10mm; }
+          @page { size: A4 landscape; margin: 6mm; }
           body { background: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          .agenda-page { padding: 0 !important; }
+          html, body { height: auto !important; }
+          .agenda-page {
+            padding: 0 !important;
+            max-width: 100% !important;
+            width: 100% !important;
+            height: 195mm !important;
+            overflow: hidden !important;
+            display: flex !important;
+            flex-direction: column !important;
+          }
+          .agenda-header { margin-bottom: 4mm !important; }
+          .agenda-title-print { font-size: 36pt !important; line-height: 0.95 !important; }
+          .agenda-sub-print { font-size: 13pt !important; margin-top: 0 !important; }
+          .agenda-note-print { font-size: 7pt !important; margin-top: 1mm !important; }
+          .agenda-legend-print { font-size: 9pt !important; gap: 2px !important; }
+          .agenda-layers-print { width: 28px !important; height: 28px !important; }
+          .agenda-grid {
+            flex: 1 1 auto !important;
+            min-height: 0 !important;
+            gap: 2mm !important;
+          }
+          .agenda-day {
+            min-height: 0 !important;
+            height: 100% !important;
+            border-width: 2px !important;
+            overflow: hidden !important;
+          }
+          .agenda-day .day-head {
+            font-size: 16pt !important;
+            padding: 1mm 2mm !important;
+            border-bottom-width: 2px !important;
+          }
+          .agenda-day-body { padding: 1.5mm !important; gap: 1.5mm !important; }
+          .agenda-event { padding: 1mm 1.5mm !important; font-size: 8pt !important; line-height: 1.15 !important; border-width: 1px !important; }
+          .agenda-event .agenda-event-title { font-size: 8.5pt !important; }
+          .agenda-event .agenda-event-meta { font-size: 7pt !important; }
+          .agenda-event-extra { font-size: 7pt !important; }
+          .agenda-tip { display: none !important; }
         }
       `}</style>
 
@@ -221,31 +258,31 @@ const PrintAgenda = () => {
 
       <main className="agenda-page max-w-[1200px] mx-auto px-8 py-8">
         {/* Header */}
-        <header className="flex items-start justify-between gap-8 mb-6">
+        <header className="agenda-header flex items-start justify-between gap-8 mb-6">
           <div className="min-w-0">
-            <h1 className="agenda-title text-[64px] leading-[0.95] uppercase">
+            <h1 className="agenda-title agenda-title-print text-[64px] leading-[0.95] uppercase">
               Agenda Semanal
             </h1>
             <p
-              className="agenda-sub text-[22px] mt-1"
+              className="agenda-sub agenda-sub-print text-[22px] mt-1"
               style={{ color: ORANGE }}
             >
               visitas, reuniões e configurações internas
             </p>
-            <p className="text-[11px] text-neutral-600 mt-1">
+            <p className="agenda-note-print text-[11px] text-neutral-600 mt-1">
               *Algumas visitas podem ainda não terem sido confirmadas, agenda
               pode mudar
             </p>
           </div>
 
-          <div className="flex items-center gap-6 pt-2 shrink-0">
+          <div className="agenda-legend-print flex items-center gap-6 pt-2 shrink-0">
             <Legend />
-            <Layers className="h-12 w-12 shrink-0 text-black" strokeWidth={2.5} />
+            <Layers className="agenda-layers-print h-12 w-12 shrink-0 text-black" strokeWidth={2.5} />
           </div>
         </header>
 
         {/* Week grid */}
-        <div className="grid grid-cols-5 gap-3">
+        <div className="agenda-grid grid grid-cols-5 gap-3">
           {weekDays.map((day, idx) => {
             const events = eventsByDay[idx];
             const isToday = isSameDay(day, new Date());
@@ -253,7 +290,7 @@ const PrintAgenda = () => {
             return (
               <div
                 key={idx}
-                className="border-[3px] rounded-md flex flex-col transition-colors"
+                className="agenda-day border-[3px] rounded-md flex flex-col transition-colors"
                 style={{
                   borderColor: isOver ? BLUE : ORANGE,
                   minHeight: 520,
