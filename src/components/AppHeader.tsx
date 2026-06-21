@@ -1,13 +1,15 @@
 import { Link, useNavigate } from "react-router-dom";
-import { LogOut } from "lucide-react";
+import { LogOut, Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
+import { useTheme } from "@/hooks/useTheme";
 import logoAsset from "@/assets/logo-use-sistemas.png.asset.json";
 
 export const AppHeader = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const { theme, toggleTheme } = useTheme();
 
   const initials = (user?.user_metadata?.full_name || user?.email || "?")
     .split(" ")
@@ -33,6 +35,16 @@ export const AppHeader = () => {
         </Link>
         {user && (
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={toggleTheme}
+              className="text-muted-foreground px-2"
+              aria-label={theme === "dark" ? "Ativar modo claro" : "Ativar modo escuro"}
+              title={theme === "dark" ? "Modo claro" : "Modo escuro"}
+            >
+              {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </Button>
             <Avatar className="h-8 w-8 sm:h-9 sm:w-9">
               <AvatarFallback className="bg-primary/15 text-primary text-xs font-semibold">{initials}</AvatarFallback>
             </Avatar>
@@ -41,6 +53,18 @@ export const AppHeader = () => {
               <span className="hidden sm:inline">Sair</span>
             </Button>
           </div>
+        )}
+        {!user && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={toggleTheme}
+            className="text-muted-foreground px-2"
+            aria-label={theme === "dark" ? "Ativar modo claro" : "Ativar modo escuro"}
+            title={theme === "dark" ? "Modo claro" : "Modo escuro"}
+          >
+            {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </Button>
         )}
       </div>
     </header>
