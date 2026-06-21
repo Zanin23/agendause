@@ -488,7 +488,7 @@ const EventCard = ({
   const isDone = t.status === "realizado" || t.status === "concluido";
   const isResched = t.status === "reagendado";
   const isCancelled = t.status === "cancelado";
-  const borderColor = isCancelled ? RED : ORANGE;
+  const borderColor = isCancelled ? RED : isDone ? BLUE : ORANGE;
   const showConfirmation = !isCancelled;
   const teamConfirmed = !!t.confirmed_at;
   return (
@@ -509,7 +509,7 @@ const EventCard = ({
         className="agenda-event border-2 rounded-sm px-2.5 py-2 text-[13px] leading-snug bg-white hover:bg-orange-50/40 transition-colors"
         style={{
           borderColor,
-          background: isCancelled ? "#FDECEC" : "white",
+          background: isCancelled ? "#FDECEC" : isDone ? "#EEF1FB" : "white",
         }}
       >
         <div className="flex items-start gap-1.5">
@@ -541,7 +541,7 @@ const EventCard = ({
           <span
             className="agenda-event-title font-semibold"
             style={{
-              color: isCancelled ? RED : "#000",
+              color: isCancelled ? RED : isDone ? BLUE : "#000",
               textDecoration: isCancelled ? "line-through" : "none",
             }}
           >
