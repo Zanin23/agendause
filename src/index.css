@@ -357,3 +357,74 @@
       @apply lgPlus:col-start-3 lgPlus:col-span-26;
     }
   }
+
+/* Hero card animated background */
+@keyframes hero-orb-1 {
+  0%, 100% { transform: translate3d(-10%, -20%, 0) scale(1); }
+  50%      { transform: translate3d(15%, 10%, 0) scale(1.15); }
+}
+@keyframes hero-orb-2 {
+  0%, 100% { transform: translate3d(20%, 30%, 0) scale(1.1); }
+  50%      { transform: translate3d(-15%, -10%, 0) scale(0.95); }
+}
+@keyframes hero-shimmer {
+  0%   { transform: translateX(-120%) skewX(-12deg); }
+  100% { transform: translateX(220%)  skewX(-12deg); }
+}
+@keyframes hero-float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-6px); }
+}
+@keyframes hero-grid-pan {
+  0%   { background-position: 0 0; }
+  100% { background-position: 60px 60px; }
+}
+
+.hero-orb {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(60px);
+  pointer-events: none;
+  will-change: transform;
+}
+.hero-orb-1 {
+  width: 380px; height: 380px;
+  top: -120px; left: -80px;
+  background: radial-gradient(circle, hsl(var(--primary) / 0.45), transparent 70%);
+  animation: hero-orb-1 14s ease-in-out infinite;
+}
+.hero-orb-2 {
+  width: 320px; height: 320px;
+  bottom: -140px; right: -60px;
+  background: radial-gradient(circle, hsl(var(--secondary) / 0.40), transparent 70%);
+  animation: hero-orb-2 18s ease-in-out infinite;
+}
+.hero-shimmer {
+  position: absolute;
+  top: 0; left: 0;
+  width: 40%; height: 100%;
+  background: linear-gradient(90deg, transparent, hsl(var(--primary) / 0.10), transparent);
+  animation: hero-shimmer 6s ease-in-out infinite;
+  pointer-events: none;
+}
+.hero-grid {
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(hsl(var(--border) / 0.35) 1px, transparent 1px),
+    linear-gradient(90deg, hsl(var(--border) / 0.35) 1px, transparent 1px);
+  background-size: 60px 60px;
+  mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
+  -webkit-mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
+  opacity: 0.18;
+  animation: hero-grid-pan 22s linear infinite;
+  pointer-events: none;
+}
+.hero-float {
+  animation: hero-float 5s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-orb-1, .hero-orb-2, .hero-shimmer, .hero-grid, .hero-float {
+    animation: none !important;
+  }
+}
