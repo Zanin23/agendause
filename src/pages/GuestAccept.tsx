@@ -103,7 +103,7 @@ const GuestAccept = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <main className="max-w-xl mx-auto px-6 py-12 space-y-6">
+      <main className="max-w-xl mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-6">
         <header className="space-y-1">
           <p className="text-xs uppercase tracking-wider text-muted-foreground">Confirmação de recebimento</p>
           <h1 className="text-2xl font-semibold tracking-tight">{training.title}</h1>

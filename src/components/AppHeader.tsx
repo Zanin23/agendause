@@ -23,22 +23,22 @@ export const AppHeader = () => {
 
   return (
     <header className="border-b border-border bg-card/40 backdrop-blur sticky top-0 z-30">
-      <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-3 text-foreground">
-          <img src={logoAsset.url} alt="Use Sistemas" className="h-8 w-auto" />
-          <span className="flex flex-col leading-tight">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-2">
+        <Link to="/" className="flex items-center gap-2 sm:gap-3 text-foreground min-w-0">
+          <img src={logoAsset.url} alt="Use Sistemas" className="h-7 sm:h-8 w-auto shrink-0" />
+          <span className="flex flex-col leading-tight min-w-0">
             <span className="font-semibold tracking-tight">TreinaCheck</span>
-            <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Use Sistemas</span>
+            <span className="hidden sm:inline text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Use Sistemas</span>
           </span>
         </Link>
         {user && (
-          <div className="flex items-center gap-3">
-            <Avatar className="h-9 w-9">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+            <Avatar className="h-8 w-8 sm:h-9 sm:w-9">
               <AvatarFallback className="bg-primary/15 text-primary text-xs font-semibold">{initials}</AvatarFallback>
             </Avatar>
-            <Button variant="ghost" size="sm" onClick={handleSignOut} className="text-muted-foreground">
+            <Button variant="ghost" size="sm" onClick={handleSignOut} className="text-muted-foreground px-2 sm:px-3" aria-label="Sair">
               <LogOut className="h-4 w-4" />
-              Sair
+              <span className="hidden sm:inline">Sair</span>
             </Button>
           </div>
         )}

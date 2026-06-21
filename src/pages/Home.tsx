@@ -15,22 +15,22 @@ const Home = () => {
   return (
     <div className="min-h-screen bg-background">
       <AppHeader />
-      <main className="max-w-5xl mx-auto px-6 py-16 space-y-12">
-        <div className="relative overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-card via-card to-background p-8 md:p-10">
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-16 space-y-8 sm:space-y-12">
+        <div className="relative overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-card via-card to-background p-6 sm:p-8 md:p-10">
           <div className="absolute inset-0 opacity-[0.07] pointer-events-none" style={{ background: "var(--gradient-hero)" }} />
           <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-            <div>
+            <div className="min-w-0">
               <p className="text-xs uppercase tracking-[0.3em] text-primary font-semibold">TreinaCheck · Use Sistemas</p>
-              <h1 className="text-4xl md:text-5xl font-semibold tracking-tight mt-3">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl font-semibold tracking-tight mt-3 break-words">
                 Olá{firstName ? `,\u00a0 ${firstName}` : ""}.
               </h1>
-              <p className="text-muted-foreground mt-2 text-base">O que você quer fazer hoje?</p>
+              <p className="text-muted-foreground mt-2 text-sm sm:text-base">O que você quer fazer hoje?</p>
             </div>
-            <img src={logoAsset.url} alt="Use Sistemas" className="h-16 md:h-20 w-auto opacity-90" />
+            <img src={logoAsset.url} alt="Use Sistemas" className="hidden sm:block h-16 md:h-20 w-auto opacity-90 self-start md:self-auto" />
           </div>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-5">
+        <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-5">
           <ActionCard
             to="/agenda"
             icon={<CalendarDays className="h-6 w-6" />}

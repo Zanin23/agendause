@@ -380,29 +380,29 @@ const TrainingDetail = () => {
   return (
     <div className="min-h-screen bg-background">
       <AppHeader />
-      <main className="max-w-3xl mx-auto px-6 py-10 space-y-8">
+      <main className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-6 sm:space-y-8">
         <Link to="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
           <ArrowLeft className="h-4 w-4" /> Voltar para a agenda
         </Link>
 
         <div className="space-y-4">
-          <div className="flex items-start justify-between gap-4 flex-wrap">
-            <div className="flex items-center gap-3 flex-wrap">
-              <h1 className="text-3xl font-semibold tracking-tight">{training.title}</h1>
+          <div className="flex items-start justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-3 flex-wrap min-w-0">
+              <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight break-words">{training.title}</h1>
               {training.status === "cancelado" && (
                 <Badge variant="destructive" className="gap-1">
                   <XCircle className="h-3 w-3" /> Cancelado
                 </Badge>
               )}
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
               {training.status === "cancelado" ? (
                 <Button variant="ghost" size="sm" onClick={reactivateTraining} disabled={acting}>
                   <RotateCcw className="h-4 w-4" /> Reativar
                 </Button>
               ) : (
                 <Button variant="ghost" size="sm" onClick={() => setCancelOpen(true)} className="text-muted-foreground hover:text-destructive">
-                  <XCircle className="h-4 w-4" /> Cancelar visita
+                  <XCircle className="h-4 w-4" /> <span className="hidden sm:inline">Cancelar visita</span><span className="sm:hidden">Cancelar</span>
                 </Button>
               )}
               <Button variant="ghost" size="sm" onClick={deleteTraining} className="text-muted-foreground hover:text-destructive">
