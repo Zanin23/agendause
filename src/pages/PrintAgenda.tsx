@@ -9,7 +9,9 @@ import {
   startOfWeek,
 } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Printer, ArrowLeft, ChevronLeft, ChevronRight, X, Layers } from "lucide-react";
+import { Printer, ArrowLeft, ChevronLeft, ChevronRight, X, Layers, FileDown } from "lucide-react";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -59,6 +61,36 @@ const PrintAgenda = () => {
   } | null>(null);
   const [newTime, setNewTime] = useState<string>("09:00");
   const [saving, setSaving] = useState(false);
+  const [exporting, setExporting] = useState(false);
+
+  const exportPDF = async () => {
+    const el = document.querySelector(".agenda-page") as HTMLElement | null;
+    if (!el) return;
+    setExporting(true);
+    try {
+      const canvas = await html2canvas(el, {
+        scale: 2,
+        backgroundColor: "#ffffff",
+        useCORS: true,
+      });
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+      const pageW = pdf.internal.pageSize.getWidth();
+      const pageH = pdf.internal.pageSize.getHeight();
+      const margin = 6;
+      const maxW = pageW - margin * 2;
+      const maxH = pageH - margin * 2;
+      const ratio = Math.min(maxW / canvas.width, maxH / canvas.height);
+      const w = canvas.width * ratio;
+      const h = canvas.height * ratio;
+      pdf.addImage(imgData, "PNG", (pageW - w) / 2, (pageH - h) / 2, w, h);
+      pdf.save(`agenda-${format(weekStart, "yyyy-MM-dd")}.pdf`);
+    } catch (e) {
+      toast({ title: "Erro ao gerar PDF", description: String(e), variant: "destructive" });
+    } finally {
+      setExporting(false);
+    }
+  };
 
   useEffect(() => {
     (async () => {
@@ -249,10 +281,16 @@ const PrintAgenda = () => {
             </span>
           </div>
 
-          <Button onClick={() => window.print()}>
-            <Printer className="h-4 w-4" />
-            Imprimir
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={exportPDF} disabled={exporting}>
+              <FileDown className="h-4 w-4" />
+              {exporting ? "Gerando..." : "Exportar PDF"}
+            </Button>
+            <Button onClick={() => window.print()}>
+              <Printer className="h-4 w-4" />
+              Imprimir
+            </Button>
+          </div>
         </div>
       </div>
 
