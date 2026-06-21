@@ -64,6 +64,7 @@ const Reports = () => {
   const [generating, setGenerating] = useState(false);
   const [report, setReport] = useState<string | null>(null);
   const [stats, setStats] = useState<any | null>(null);
+  const [comparison, setComparison] = useState<any | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -144,6 +145,7 @@ const Reports = () => {
     setGenerating(true);
     setReport(null);
     setStats(null);
+    setComparison(null);
     try {
       const { data, error } = await supabase.functions.invoke("weekly-report", {
         body: { week_start: weekStart.toISOString() },
@@ -152,6 +154,7 @@ const Reports = () => {
       if ((data as any)?.error) throw new Error((data as any).error);
       setReport((data as any).report);
       setStats((data as any).stats);
+      setComparison((data as any).comparison ?? null);
     } catch (e: any) {
       toast({ title: "Erro ao gerar relatório", description: e.message || String(e), variant: "destructive" });
     } finally {
@@ -180,6 +183,7 @@ const Reports = () => {
           generating={generating}
           report={report}
           stats={stats}
+          comparison={comparison}
           onGenerate={generateReport}
         />
 
