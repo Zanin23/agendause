@@ -340,7 +340,7 @@ const PrintAgenda = () => {
             );
           })}
         </div>
-        <p className="no-print text-[11px] text-neutral-500 mt-3">
+        <p className="agenda-tip no-print text-[11px] text-neutral-500 mt-3">
           Dica: arraste uma visita para outro dia para reagendar.
         </p>
       </main>
@@ -426,7 +426,7 @@ const EventCard = ({
       tabIndex={0}
     >
       <div
-        className="border-2 rounded-sm px-2.5 py-2 text-[13px] leading-snug bg-white hover:bg-orange-50/40 transition-colors"
+        className="agenda-event border-2 rounded-sm px-2.5 py-2 text-[13px] leading-snug bg-white hover:bg-orange-50/40 transition-colors"
         style={{
           borderColor,
           background: isCancelled ? "#FDECEC" : "white",
@@ -459,7 +459,7 @@ const EventCard = ({
             />
           )}
           <span
-            className="font-semibold"
+            className="agenda-event-title font-semibold"
             style={{
               color: isCancelled ? RED : "#000",
               textDecoration: isCancelled ? "line-through" : "none",
@@ -470,14 +470,14 @@ const EventCard = ({
         </div>
         {t.client?.trim() && t.title && t.client.trim() !== t.title && (
           <div
-            className="text-[10.5px] mt-0.5 text-neutral-700 truncate"
+            className="agenda-event-extra text-[10.5px] mt-0.5 text-neutral-700 truncate"
             style={{ color: isCancelled ? RED : "#444" }}
           >
             {t.title}
           </div>
         )}
         <div
-          className="text-[10px] mt-0.5 text-neutral-600 flex flex-wrap gap-x-2"
+          className="agenda-event-meta text-[10px] mt-0.5 text-neutral-600 flex flex-wrap gap-x-2"
           style={{ color: isCancelled ? RED : "#555" }}
         >
           <span>{t.duration_minutes} min</span>
