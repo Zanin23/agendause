@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ArrowLeft, Calendar as CalIcon, Clock, MapPin, CheckCircle2, Trash2, Users, Building2, Link2, FileText, UserCheck, XCircle, RotateCcw, Lock, Pencil, Save, X, History, Paperclip, Upload, Download, File as FileIcon } from "lucide-react";
+import { ArrowLeft, Calendar as CalIcon, Clock, MapPin, CheckCircle2, Trash2, Users, Building2, Link2, FileText, UserCheck, XCircle, RotateCcw, Lock, Pencil, Save, X, History, Paperclip, Upload, Download, File as FileIcon, Flag } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { AppHeader } from "@/components/AppHeader";
@@ -206,6 +206,19 @@ const TrainingDetail = () => {
     load();
   };
 
+  const finalizeTraining = async () => {
+    if (!id) return;
+    setActing(true);
+    const { error } = await supabase
+      .from("trainings")
+      .update({ status: "concluido" })
+      .eq("id", id);
+    setActing(false);
+    if (error) return toast.error(error.message);
+    toast.success("Treinamento finalizado");
+    load();
+  };
+
   const startEditNotes = () => {
     setNotesDraft(training?.internal_notes || "");
     setEditingNotes(true);
@@ -394,16 +407,36 @@ const TrainingDetail = () => {
                   <XCircle className="h-3 w-3" /> Cancelado
                 </Badge>
               )}
+              {(training.status === "concluido" || training.status === "realizado") && (
+                <Badge className="gap-1 bg-blue-600 hover:bg-blue-600 text-white border-transparent">
+                  <CheckCircle2 className="h-3 w-3" /> Finalizado
+                </Badge>
+              )}
             </div>
             <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
               {training.status === "cancelado" ? (
                 <Button variant="ghost" size="sm" onClick={reactivateTraining} disabled={acting}>
                   <RotateCcw className="h-4 w-4" /> Reativar
                 </Button>
-              ) : (
-                <Button variant="ghost" size="sm" onClick={() => setCancelOpen(true)} className="text-muted-foreground hover:text-destructive">
-                  <XCircle className="h-4 w-4" /> <span className="hidden sm:inline">Cancelar visita</span><span className="sm:hidden">Cancelar</span>
+              ) : training.status === "concluido" || training.status === "realizado" ? (
+                <Button variant="ghost" size="sm" onClick={reactivateTraining} disabled={acting}>
+                  <RotateCcw className="h-4 w-4" /> Reabrir
                 </Button>
+              ) : (
+                <>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={finalizeTraining}
+                    disabled={acting}
+                    className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950/40"
+                  >
+                    <Flag className="h-4 w-4" /> <span className="hidden sm:inline">Finalizar treinamento</span><span className="sm:hidden">Finalizar</span>
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => setCancelOpen(true)} className="text-muted-foreground hover:text-destructive">
+                    <XCircle className="h-4 w-4" /> <span className="hidden sm:inline">Cancelar visita</span><span className="sm:hidden">Cancelar</span>
+                  </Button>
+                </>
               )}
               <Button variant="ghost" size="sm" onClick={deleteTraining} className="text-muted-foreground hover:text-destructive">
                 <Trash2 className="h-4 w-4" /> Excluir
