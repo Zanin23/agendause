@@ -46,6 +46,99 @@ export type Database = {
           },
         ]
       }
+      implementation_schedules: {
+        Row: {
+          accepted_at: string | null
+          accepted_by: string | null
+          accepted_ip: string | null
+          cadence: Database["public"]["Enums"]["schedule_cadence"]
+          client_email: string | null
+          client_name: string
+          created_at: string
+          id: string
+          modality: Database["public"]["Enums"]["schedule_modality"]
+          observations: string | null
+          owner_id: string
+          public_token: string | null
+          start_date: string
+          status: string
+          updated_at: string
+          use_team: string[]
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          accepted_ip?: string | null
+          cadence?: Database["public"]["Enums"]["schedule_cadence"]
+          client_email?: string | null
+          client_name: string
+          created_at?: string
+          id?: string
+          modality?: Database["public"]["Enums"]["schedule_modality"]
+          observations?: string | null
+          owner_id: string
+          public_token?: string | null
+          start_date: string
+          status?: string
+          updated_at?: string
+          use_team?: string[]
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          accepted_ip?: string | null
+          cadence?: Database["public"]["Enums"]["schedule_cadence"]
+          client_email?: string | null
+          client_name?: string
+          created_at?: string
+          id?: string
+          modality?: Database["public"]["Enums"]["schedule_modality"]
+          observations?: string | null
+          owner_id?: string
+          public_token?: string | null
+          start_date?: string
+          status?: string
+          updated_at?: string
+          use_team?: string[]
+        }
+        Relationships: []
+      }
+      implementation_templates: {
+        Row: {
+          content: Json
+          created_at: string
+          description: string | null
+          id: string
+          is_default: boolean
+          is_global: boolean
+          name: string
+          owner_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          content: Json
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_default?: boolean
+          is_global?: boolean
+          name: string
+          owner_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          content?: Json
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_default?: boolean
+          is_global?: boolean
+          name?: string
+          owner_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -66,6 +159,132 @@ export type Database = {
           id?: string
         }
         Relationships: []
+      }
+      schedule_comments: {
+        Row: {
+          author_id: string | null
+          author_name: string | null
+          body: string
+          created_at: string
+          id: string
+          item_id: string
+        }
+        Insert: {
+          author_id?: string | null
+          author_name?: string | null
+          body: string
+          created_at?: string
+          id?: string
+          item_id: string
+        }
+        Update: {
+          author_id?: string | null
+          author_name?: string | null
+          body?: string
+          created_at?: string
+          id?: string
+          item_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schedule_comments_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "schedule_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      schedule_items: {
+        Row: {
+          assignee: string | null
+          created_at: string
+          description: string | null
+          done_date: string | null
+          id: string
+          notes: string | null
+          phase_id: string
+          planned_date: string | null
+          position: number
+          status: Database["public"]["Enums"]["schedule_item_status"]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assignee?: string | null
+          created_at?: string
+          description?: string | null
+          done_date?: string | null
+          id?: string
+          notes?: string | null
+          phase_id: string
+          planned_date?: string | null
+          position?: number
+          status?: Database["public"]["Enums"]["schedule_item_status"]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assignee?: string | null
+          created_at?: string
+          description?: string | null
+          done_date?: string | null
+          id?: string
+          notes?: string | null
+          phase_id?: string
+          planned_date?: string | null
+          position?: number
+          status?: Database["public"]["Enums"]["schedule_item_status"]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schedule_items_phase_id_fkey"
+            columns: ["phase_id"]
+            isOneToOne: false
+            referencedRelation: "schedule_phases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      schedule_phases: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          position: number
+          schedule_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          position?: number
+          schedule_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          position?: number
+          schedule_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schedule_phases_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "implementation_schedules"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       training_acceptances: {
         Row: {
@@ -246,10 +465,22 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      accept_schedule_by_token: {
+        Args: { _ip: string; _name: string; _token: string }
+        Returns: boolean
+      }
+      get_schedule_by_token: { Args: { _token: string }; Returns: Json }
     }
     Enums: {
-      [_ in never]: never
+      schedule_cadence: "semanal" | "quinzenal" | "mensal" | "customizada"
+      schedule_item_status:
+        | "pending"
+        | "in_progress"
+        | "done"
+        | "blocked"
+        | "rescheduled"
+        | "not_applicable"
+      schedule_modality: "presencial" | "remoto" | "hibrido"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -376,6 +607,17 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      schedule_cadence: ["semanal", "quinzenal", "mensal", "customizada"],
+      schedule_item_status: [
+        "pending",
+        "in_progress",
+        "done",
+        "blocked",
+        "rescheduled",
+        "not_applicable",
+      ],
+      schedule_modality: ["presencial", "remoto", "hibrido"],
+    },
   },
 } as const
