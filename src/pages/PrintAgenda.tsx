@@ -39,10 +39,12 @@ const DAY_LABELS = ["SEG", "TER", "QUA", "QUI", "SEX"];
 const ORANGE = "#F26B1F";
 const BLUE = "#6F7FB8";
 const RED = "#E22B2B";
+const GREEN = "#1F9D55";
 
 const PrintAgenda = () => {
   const navigate = useNavigate();
   const [trainings, setTrainings] = useState<Training[]>([]);
+  const [confirmedIds, setConfirmedIds] = useState<Set<string>>(new Set());
   const [weekStart, setWeekStart] = useState<Date>(() =>
     startOfWeek(new Date(), { weekStartsOn: 1 })
   );
@@ -57,11 +59,16 @@ const PrintAgenda = () => {
 
   useEffect(() => {
     (async () => {
-      const { data } = await supabase
-        .from("trainings")
-        .select("*")
-        .order("scheduled_at", { ascending: true });
+      const [{ data }, { data: ua }, { data: ga }] = await Promise.all([
+        supabase.from("trainings").select("*").order("scheduled_at", { ascending: true }),
+        supabase.from("training_acceptances").select("training_id"),
+        supabase.from("guest_acceptances").select("training_id"),
+      ]);
       setTrainings((data as Training[]) || []);
+      const ids = new Set<string>();
+      ((ua as any[]) || []).forEach((r) => ids.add(r.training_id));
+      ((ga as any[]) || []).forEach((r) => ids.add(r.training_id));
+      setConfirmedIds(ids);
     })();
   }, []);
 
@@ -263,6 +270,7 @@ const PrintAgenda = () => {
                       <EventCard
                         key={t.id}
                         t={t}
+                        confirmed={confirmedIds.has(t.id)}
                         onDragStart={() => setDragId(t.id)}
                         onDragEnd={() => {
                           setDragId(null);
@@ -327,11 +335,13 @@ const PrintAgenda = () => {
 
 const EventCard = ({
   t,
+  confirmed,
   onDragStart,
   onDragEnd,
   onOpen,
 }: {
   t: Training;
+  confirmed: boolean;
   onDragStart: () => void;
   onDragEnd: () => void;
   onOpen: () => void;
@@ -342,6 +352,7 @@ const EventCard = ({
   const isResched = t.status === "reagendado";
   const isCancelled = t.status === "cancelado";
   const borderColor = isCancelled ? RED : ORANGE;
+  const showConfirmation = !isCancelled;
   return (
     <div
       className="block cursor-grab active:cursor-grabbing"
@@ -431,6 +442,24 @@ const EventCard = ({
             Cancelado: {t.cancellation_reason}
           </div>
         )}
+        {showConfirmation && (
+          <div className="mt-1.5">
+            <span
+              className="inline-flex items-center gap-1 rounded-full px-1.5 py-[1px] text-[9px] font-semibold uppercase tracking-wide border"
+              style={
+                confirmed
+                  ? { color: GREEN, borderColor: GREEN, background: "#EAF7EF" }
+                  : { color: "#9A6B00", borderColor: "#E0B84A", background: "#FFF7E0" }
+              }
+            >
+              <span
+                className="inline-block w-1.5 h-1.5 rounded-full"
+                style={{ background: confirmed ? GREEN : "#E0B84A" }}
+              />
+              {confirmed ? "Confirmada" : "Pendente"}
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -464,6 +493,20 @@ const Legend = () => (
         style={{ background: "#FDECEC", borderColor: RED }}
       />
       <span>Cancelado</span>
+    </div>
+    <div className="flex items-center gap-2 pt-1 border-t border-neutral-200 mt-1">
+      <span
+        className="w-2 h-2 rounded-full inline-block"
+        style={{ background: GREEN }}
+      />
+      <span>Confirmada</span>
+    </div>
+    <div className="flex items-center gap-2">
+      <span
+        className="w-2 h-2 rounded-full inline-block"
+        style={{ background: "#E0B84A" }}
+      />
+      <span>Pendente</span>
     </div>
   </div>
 );
