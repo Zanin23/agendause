@@ -19,6 +19,11 @@ import {
   Copy,
   Printer,
   AlertTriangle,
+  Filter,
+  X as XIcon,
+  ArrowUp,
+  ArrowDown,
+  Minus,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppHeader } from "@/components/AppHeader";
@@ -36,6 +41,7 @@ type TrainingRow = {
   client: string | null;
   scheduled_at: string;
   location: string | null;
+  status: string;
   user_count: number;
   guest_count: number;
 };
@@ -43,6 +49,12 @@ type TrainingRow = {
 const Reports = () => {
   const [rows, setRows] = useState<TrainingRow[]>([]);
   const [query, setQuery] = useState("");
+  const [filterClient, setFilterClient] = useState<string>("__all__");
+  const [filterStatus, setFilterStatus] = useState<"all" | "agendado" | "cancelado" | "concluido">("all");
+  const [filterLocation, setFilterLocation] = useState("");
+  const [filterFrom, setFilterFrom] = useState("");
+  const [filterTo, setFilterTo] = useState("");
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [weekStart, setWeekStart] = useState<Date>(() => {
     // default to last week's Monday
@@ -56,7 +68,7 @@ const Reports = () => {
   useEffect(() => {
     (async () => {
       const [{ data: trainings }, { data: ua }, { data: ga }] = await Promise.all([
-        supabase.from("trainings").select("id, title, client, scheduled_at, location").order("scheduled_at", { ascending: false }),
+        supabase.from("trainings").select("id, title, client, scheduled_at, location, status").order("scheduled_at", { ascending: false }),
         supabase.from("training_acceptances").select("training_id"),
         supabase.from("guest_acceptances").select("training_id"),
       ]);
@@ -77,15 +89,54 @@ const Reports = () => {
     })();
   }, []);
 
+  const distinctClients = useMemo(() => {
+    const set = new Set<string>();
+    rows.forEach((r) => {
+      const c = (r.client || "").trim();
+      if (c) set.add(c);
+    });
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [rows]);
+
+  const activeFilterCount =
+    (filterClient !== "__all__" ? 1 : 0) +
+    (filterStatus !== "all" ? 1 : 0) +
+    (filterLocation.trim() ? 1 : 0) +
+    (filterFrom ? 1 : 0) +
+    (filterTo ? 1 : 0);
+
   const filtered = rows.filter((r) => {
     const q = query.toLowerCase().trim();
-    if (!q) return true;
-    return (
-      r.title.toLowerCase().includes(q) ||
-      (r.client || "").toLowerCase().includes(q) ||
-      (r.location || "").toLowerCase().includes(q)
-    );
+    if (q) {
+      const inText =
+        r.title.toLowerCase().includes(q) ||
+        (r.client || "").toLowerCase().includes(q) ||
+        (r.location || "").toLowerCase().includes(q);
+      if (!inText) return false;
+    }
+    if (filterClient !== "__all__" && (r.client || "") !== filterClient) return false;
+    if (filterStatus !== "all" && r.status !== filterStatus) return false;
+    if (filterLocation.trim() && !(r.location || "").toLowerCase().includes(filterLocation.toLowerCase().trim())) return false;
+    const ts = new Date(r.scheduled_at).getTime();
+    if (filterFrom) {
+      const f = new Date(filterFrom + "T00:00:00").getTime();
+      if (ts < f) return false;
+    }
+    if (filterTo) {
+      const t = new Date(filterTo + "T23:59:59").getTime();
+      if (ts > t) return false;
+    }
+    return true;
   });
+
+  const clearFilters = () => {
+    setQuery("");
+    setFilterClient("__all__");
+    setFilterStatus("all");
+    setFilterLocation("");
+    setFilterFrom("");
+    setFilterTo("");
+  };
 
   const weekLabel = `${format(weekStart, "d MMM", { locale: ptBR })} – ${format(endOfWeek(weekStart, { weekStartsOn: 1 }), "d MMM yyyy", { locale: ptBR })}`;
 
@@ -132,14 +183,96 @@ const Reports = () => {
           onGenerate={generateReport}
         />
 
-        <div className="relative max-w-md">
-          <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Buscar por título, cliente ou local..."
-            className="pl-9"
-          />
+        <div className="space-y-3">
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="relative flex-1 min-w-[220px] max-w-md">
+              <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Buscar por título, cliente ou local..."
+                className="pl-9"
+              />
+            </div>
+            <Button
+              variant={filtersOpen || activeFilterCount > 0 ? "secondary" : "outline"}
+              size="sm"
+              onClick={() => setFiltersOpen((v) => !v)}
+            >
+              <Filter className="h-4 w-4" /> Filtros
+              {activeFilterCount > 0 && (
+                <Badge variant="default" className="ml-1 h-5 px-1.5 text-[10px]">
+                  {activeFilterCount}
+                </Badge>
+              )}
+            </Button>
+            {(activeFilterCount > 0 || query) && (
+              <Button variant="ghost" size="sm" onClick={clearFilters}>
+                <XIcon className="h-3.5 w-3.5" /> Limpar
+              </Button>
+            )}
+          </div>
+
+          {filtersOpen && (
+            <div className="rounded-lg border bg-muted/20 p-4 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Cliente</label>
+                <select
+                  value={filterClient}
+                  onChange={(e) => setFilterClient(e.target.value)}
+                  className="w-full h-9 px-2 rounded-md border border-input bg-background text-sm"
+                >
+                  <option value="__all__">Todos os clientes</option>
+                  {distinctClients.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Status</label>
+                <select
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value as any)}
+                  className="w-full h-9 px-2 rounded-md border border-input bg-background text-sm"
+                >
+                  <option value="all">Todos</option>
+                  <option value="agendado">Agendado</option>
+                  <option value="cancelado">Cancelado</option>
+                  <option value="concluido">Concluído</option>
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Local contém</label>
+                <Input
+                  value={filterLocation}
+                  onChange={(e) => setFilterLocation(e.target.value)}
+                  placeholder="Ex: matriz, online..."
+                  className="h-9"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">De</label>
+                <Input
+                  type="date"
+                  value={filterFrom}
+                  onChange={(e) => setFilterFrom(e.target.value)}
+                  className="h-9"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Até</label>
+                <Input
+                  type="date"
+                  value={filterTo}
+                  onChange={(e) => setFilterTo(e.target.value)}
+                  className="h-9"
+                />
+              </div>
+              <div className="flex items-end justify-end text-xs text-muted-foreground">
+                {filtered.length} resultado{filtered.length === 1 ? "" : "s"}
+              </div>
+            </div>
+          )}
         </div>
 
         {loading ? (
@@ -210,6 +343,7 @@ const WeeklyAIReport = ({
   generating,
   report,
   stats,
+  comparison,
   onGenerate,
 }: {
   weekStart: Date;
@@ -218,6 +352,7 @@ const WeeklyAIReport = ({
   generating: boolean;
   report: string | null;
   stats: WeeklyStats | null;
+  comparison: WeeklyComparison | null;
   onGenerate: () => void;
 }) => {
   const copyReport = async () => {
