@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CheckCircle2, Building2, Calendar as CalIcon, Clock, MapPin } from "lucide-react";
+import { CheckCircle2, Building2, Calendar as CalIcon, Clock, MapPin, Paperclip, Download, File as FileIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,9 +20,24 @@ type Training = {
   location: string | null;
 };
 
+type AttachmentRow = {
+  id: string;
+  file_name: string;
+  mime_type: string | null;
+  size_bytes: number | null;
+};
+
+const formatBytes = (n: number | null) => {
+  if (!n && n !== 0) return "";
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+  return `${(n / 1024 / 1024).toFixed(1)} MB`;
+};
+
 const GuestAccept = () => {
   const { id } = useParams();
   const [training, setTraining] = useState<Training | null>(null);
+  const [attachments, setAttachments] = useState<AttachmentRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -38,9 +53,28 @@ const GuestAccept = () => {
         .eq("id", id)
         .maybeSingle();
       setTraining(data as Training | null);
+      const { data: at } = await supabase
+        .from("training_attachments")
+        .select("id, file_name, mime_type, size_bytes")
+        .eq("training_id", id)
+        .order("created_at", { ascending: false });
+      setAttachments((at as AttachmentRow[]) || []);
       setLoading(false);
     })();
   }, [id]);
+
+  const downloadAttachment = async (att: AttachmentRow) => {
+    try {
+      const { data, error } = await supabase.functions.invoke("attachment-signed-url", {
+        body: { attachment_id: att.id },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      window.open((data as any).url, "_blank");
+    } catch (e: any) {
+      toast.error(e?.message || "Falha ao baixar");
+    }
+  };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -90,6 +124,35 @@ const GuestAccept = () => {
             )}
           </CardContent>
         </Card>
+
+        {attachments.length > 0 && (
+          <Card>
+            <CardContent className="p-5 space-y-2">
+              <h3 className="font-semibold text-sm flex items-center gap-2">
+                <Paperclip className="h-4 w-4" /> Materiais do treinamento
+              </h3>
+              <div className="space-y-2">
+                {attachments.map((a) => (
+                  <button
+                    key={a.id}
+                    type="button"
+                    onClick={() => downloadAttachment(a)}
+                    className="w-full flex items-center gap-3 rounded-md border border-border p-2.5 text-sm hover:bg-accent transition-colors text-left"
+                  >
+                    <FileIcon className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium truncate">{a.file_name}</p>
+                      {a.size_bytes != null && (
+                        <p className="text-xs text-muted-foreground">{formatBytes(a.size_bytes)}</p>
+                      )}
+                    </div>
+                    <Download className="h-4 w-4 text-muted-foreground" />
+                  </button>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {done ? (
           <Card className="border-primary/40">
