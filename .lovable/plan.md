@@ -1,68 +1,63 @@
-Vou implementar quatro melhorias no TreinaCheck:
 
-## 1. Reagendamento com histórico
+# Módulo de Cronograma de Implantação
 
-- Nova tabela `training_reschedules` armazenando: treinamento, data anterior, nova data, duração anterior, nova duração, motivo, quem reagendou e quando.
-- No diálogo "Editar data" (TrainingDetail), adicionar campo obrigatório **"Motivo do reagendamento"**. Ao salvar, além de atualizar `scheduled_at`/`duration_minutes`, registrar uma linha em `training_reschedules`.
-- Nova seção **"Histórico de reagendamentos"** na página do treinamento, listando cada alteração com data antiga → nova, motivo e autor.
+Novo módulo para criar, editar e acompanhar cronogramas de implantação do ERP USE. Cada cronograma é criado a partir de um **template padrão** (baseado no documento enviado) e fica **100% editável**: fases, itens, datas, responsáveis, status e observações.
 
-## 2. Anexos do treinamento
+## Funções planejadas
 
-- Bucket privado `training-attachments` no storage com RLS:
-  - leitura/upload/delete apenas para autenticados.
-  - leitura também por anônimos via signed URLs quando o objeto pertence a um treinamento (o link público continuará exibindo só via signed URL gerada no servidor).
-- Tabela `training_attachments`: treinamento, nome do arquivo, caminho no storage, mime type, tamanho, autor, created_at.
-- Nova seção **"Anexos"** em `TrainingDetail`:
-  - botão de upload (múltiplos arquivos, até 20 MB cada)
-  - lista com ícone, nome, tamanho, botão baixar (signed URL) e excluir
-- Na página pública de aceite (`/aceite/:id`), exibir os anexos como links para download (signed URL gerada no carregamento), para o cliente conseguir baixar o material.
+**Criação**
+- Botão "Novo Cronograma" no Dashboard → wizard com: cliente, data de início, responsável Use Sistemas, equipe de implantação, modalidade (presencial/remoto/híbrido), cadência (semanal/quinzenal).
+- Geração automática das **17 fases padrão** com seus itens (Reunião de Alinhamento → Relatórios Gerenciais Financeiro). Datas sugeridas calculadas a partir da data de início e da cadência.
 
-## 3. Filtros avançados na lista de relatórios/agenda
+**Edição**
+- Reordenar fases (drag & drop) e itens dentro de cada fase.
+- Adicionar, renomear, duplicar e remover fases/itens livremente.
+- Editar datas previstas e realizadas, responsável por item, status (pendente / em andamento / concluído / bloqueado / reagendado), observação por item.
+- Marcar itens como "não aplicável" (mantém histórico sem contar no progresso).
 
-Na página `Reports.tsx`, expandir a barra de busca atual com:
+**Acompanhamento**
+- Barra de progresso geral e por fase (% de itens concluídos).
+- Vista Kanban (status) e vista Timeline/Gantt simplificada por fase.
+- Próximas visitas técnicas em destaque, alertas de itens atrasados.
+- Histórico de alterações (quem mudou o quê e quando).
 
-- Filtro de **cliente** (combobox com clientes distintos)
-- Filtro de **status** (Agendado / Cancelado / Todos)
-- Filtro de **período** (intervalo de datas com date picker)
-- Filtro de **local** (texto livre)
-- Botão "Limpar filtros"
-- Os filtros são combináveis e atuam sobre a listagem atual. A busca textual existente permanece.
+**Colaboração**
+- Comentários por item (equipe Use ↔ cliente).
+- Link público (token) para o cliente acompanhar somente leitura, similar ao GuestAccept atual.
+- Aceite digital do cronograma pelo cliente (assinatura/checkbox + IP/data), reaproveitando o padrão de `training_acceptances`.
 
-## 4. Comparativo semana a semana no relatório com IA
+**Saídas**
+- Exportar para PDF (layout próximo do .docx enviado, com logo, fases numeradas e observações padrão).
+- Exportar para .ics (cada item vira evento de agenda) e CSV.
+- Imprimir versão A4 amigável (rota `/cronograma/:id/print`).
 
-- A edge function `weekly-report` passa a calcular também as estatísticas da semana anterior à selecionada e enviá-las ao modelo para gerar uma seção de comparação.
-- No card de stats da `Reports.tsx`, cada métrica (treinamentos, confirmados, cancelados, aceites) ganha uma seta ▲ verde / ▼ vermelha / ▬ com a variação percentual vs. a semana anterior.
-- No corpo do relatório gerado pela IA, prompt atualizado para incluir um bloco "Comparativo com a semana anterior" com leitura qualitativa das variações.
+**Templates**
+- Template "Padrão ERP USE" pré-carregado (conteúdo do documento enviado).
+- Possibilidade de salvar variações como novos templates (ex.: "ERP USE - Indústria", "ERP USE - Comércio") para reuso.
+
+**Observações padrão** já incluídas em cada novo cronograma (visitas podem se estender, feedbacks via WhatsApp, melhorias entram em fila de desenvolvimento, feriados podem alterar datas, adiantamentos passam por análise) — editáveis.
 
 ## Detalhes técnicos
 
-**Migrações SQL**
+**Banco (Lovable Cloud)** — novas tabelas em `public`:
+- `implementation_templates` (id, name, description, is_default, content jsonb, owner_id)
+- `implementation_schedules` (id, client_name, start_date, cadence, modality, use_team text[], owner_id, status, public_token, accepted_at, accepted_by, accepted_ip)
+- `schedule_phases` (id, schedule_id, position, title)
+- `schedule_items` (id, phase_id, position, title, description, planned_date, done_date, status, assignee, notes)
+- `schedule_comments` (id, item_id, author_id, body)
+- `schedule_history` (id, schedule_id, actor_id, action, payload jsonb)
 
-```text
-training_reschedules(
-  id, training_id FK, previous_scheduled_at, new_scheduled_at,
-  previous_duration_minutes, new_duration_minutes,
-  reason text not null, changed_by uuid, created_at
-)
-training_attachments(
-  id, training_id FK, file_name, storage_path, mime_type,
-  size_bytes, uploaded_by uuid, created_at
-)
-```
+Todas com RLS escopada por `owner_id = auth.uid()`, GRANTs explícitos para `authenticated` e `service_role`, leitura `anon` apenas via `public_token` (RPC `get_schedule_by_token`). Triggers `updated_at` reaproveitando `public.update_updated_at_column`.
 
-- GRANTs para `authenticated`/`service_role`, RLS por `auth.uid() is not null`, leitura pública de anexos via política `SELECT` para `anon` (o caminho do storage exige signed URL de qualquer forma).  
+**Frontend (React + Vite + Tailwind + shadcn)**:
+- Rotas: `/cronogramas` (lista), `/cronogramas/novo`, `/cronogramas/:id` (editor), `/cronogramas/:id/print`, `/c/:token` (visão pública do cliente).
+- Componentes: `ScheduleEditor`, `PhaseCard`, `ItemRow`, `ProgressBar`, `KanbanView`, `TimelineView`, `TemplatePicker`, `PublicScheduleView`.
+- Drag & drop com `@dnd-kit/core` (adicionar dependência).
+- Export PDF via `jspdf` + `jspdf-autotable` (já leve), ICS gerado client-side.
+- Seed do template padrão executado no primeiro carregamento se `implementation_templates` estiver vazio para o usuário.
 
-**Storage**
+**SEO/Header**: entrada "Cronogramas" no `AppHeader`, SEO por rota via componente `SEO` existente.
 
-- bucket `training-attachments` (privado)
-- políticas em `storage.objects`: insert/delete por autenticados; select por autenticados; signed URLs cobrem o caso público.
-
-**Frontend**
-
-- `TrainingDetail.tsx`: novos estados/seções para histórico, anexos e motivo no diálogo de reagendamento.
-- `GuestAccept.tsx`: nova seção de anexos com download via edge function que retorna signed URL (para não exigir auth do cliente).
-- Nova edge function `attachment-signed-url` para gerar signed URL no link público.
-- `Reports.tsx`: barra de filtros + deltas semana-a-semana nos cards.
-- `supabase/functions/weekly-report/index.ts`: calcular stats da semana anterior, retornar `previousStats` e ajustar prompt.
-
-Vou criar uma migração agrupando as duas tabelas + GRANTs + RLS, criar o bucket via tool dedicada, atualizar a edge function `weekly-report`, criar a edge function `attachment-signed-url` e depois aplicar todas as mudanças de frontend.
+## Fora do escopo desta entrega
+- Integração real com WhatsApp/Email automático (fica como gancho futuro).
+- App mobile dedicado (a versão web já é responsiva).
