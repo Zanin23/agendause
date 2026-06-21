@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ArrowLeft, Calendar as CalIcon, Clock, MapPin, CheckCircle2, Trash2, Users, Building2, Link2, FileText, UserCheck, XCircle, RotateCcw, Lock, Pencil, Save, X, History, Paperclip, Upload, Download, File as FileIcon } from "lucide-react";
+import { ArrowLeft, Calendar as CalIcon, Clock, MapPin, CheckCircle2, Trash2, Users, Building2, Link2, FileText, UserCheck, XCircle, RotateCcw, Lock, Pencil, Save, X, History, Paperclip, Upload, Download, File as FileIcon, Flag } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { AppHeader } from "@/components/AppHeader";
@@ -203,6 +203,19 @@ const TrainingDetail = () => {
     setActing(false);
     if (error) return toast.error(error.message);
     toast.success("Visita reativada");
+    load();
+  };
+
+  const finalizeTraining = async () => {
+    if (!id) return;
+    setActing(true);
+    const { error } = await supabase
+      .from("trainings")
+      .update({ status: "concluido" })
+      .eq("id", id);
+    setActing(false);
+    if (error) return toast.error(error.message);
+    toast.success("Treinamento finalizado");
     load();
   };
 
