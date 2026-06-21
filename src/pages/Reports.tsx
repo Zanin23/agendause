@@ -455,6 +455,8 @@ const WeeklyAIReport = ({
                 label="Total de visitas"
                 value={stats.total_visits}
                 tint="primary"
+                delta={comparison?.total_visits?.delta_pct}
+                deltaInvert={false}
               />
               <MetricCard
                 icon={CheckCircle2}
@@ -469,6 +471,8 @@ const WeeklyAIReport = ({
                 value={stats.cancelled_count}
                 tint="destructive"
                 hint={stats.total_visits > 0 ? `${Math.round((stats.cancelled_count / stats.total_visits) * 100)}% do total` : undefined}
+                delta={comparison?.cancelled_count?.delta_pct}
+                deltaInvert={true}
               />
               <MetricCard
                 icon={TrendingUp}
@@ -476,6 +480,9 @@ const WeeklyAIReport = ({
                 value={`${stats.confirmation_rate_pct}%`}
                 tint="primary"
                 hint={`${stats.confirmed_trainings} confirmadas`}
+                delta={comparison?.confirmation_rate_pct?.delta_pct}
+                deltaInvert={false}
+                deltaSuffix="p.p."
               />
             </div>
 
