@@ -162,8 +162,19 @@ const PrintAgenda = () => {
               onClick={() =>
                 setWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }))
               }
+              title="Voltar para a semana atual"
             >
-              Esta semana
+              {(() => {
+                const thisMon = startOfWeek(new Date(), { weekStartsOn: 1 });
+                const diff = Math.round(
+                  (weekStart.getTime() - thisMon.getTime()) / (7 * 24 * 60 * 60 * 1000)
+                );
+                if (diff === 0) return "Esta semana";
+                if (diff === -1) return "Semana passada";
+                if (diff === 1) return "Próxima semana";
+                if (diff < -1) return `Há ${Math.abs(diff)} semanas`;
+                return `Em ${diff} semanas`;
+              })()}
             </Button>
             <Button
               variant="outline"
