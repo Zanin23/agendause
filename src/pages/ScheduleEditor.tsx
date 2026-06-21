@@ -65,7 +65,7 @@ export default function ScheduleEditor() {
     if (!schedule) return;
     const next = { ...schedule, ...patch };
     setSchedule(next);
-    const { error } = await supabase.from("implementation_schedules").update(patch).eq("id", schedule.id);
+    const { error } = await supabase.from("implementation_schedules").update(patch as any).eq("id", schedule.id);
     if (error) toast.error(error.message);
   };
 
@@ -80,7 +80,8 @@ export default function ScheduleEditor() {
   };
   const updatePhase = async (phaseId: string, patch: Partial<Phase>) => {
     setPhases(phases.map((p) => p.id === phaseId ? { ...p, ...patch } : p));
-    const { error } = await supabase.from("schedule_phases").update(patch).eq("id", phaseId);
+    const { items, ...dbPatch } = patch as any;
+    const { error } = await supabase.from("schedule_phases").update(dbPatch).eq("id", phaseId);
     if (error) toast.error(error.message);
   };
   const removePhase = async (phaseId: string) => {
@@ -112,7 +113,7 @@ export default function ScheduleEditor() {
     setPhases(phases.map((p) => p.id === phaseId
       ? { ...p, items: p.items.map((i) => i.id === itemId ? { ...i, ...patch } : i) }
       : p));
-    const { error } = await supabase.from("schedule_items").update(patch).eq("id", itemId);
+    const { error } = await supabase.from("schedule_items").update(patch as any).eq("id", itemId);
     if (error) toast.error(error.message);
   };
   const removeItem = async (phaseId: string, itemId: string) => {
