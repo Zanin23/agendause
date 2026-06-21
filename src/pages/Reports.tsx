@@ -608,18 +608,39 @@ const MetricCard = ({
   value,
   hint,
   tint,
+  delta,
+  deltaInvert,
+  deltaSuffix,
 }: {
   icon: any;
   label: string;
   value: string | number;
   hint?: string;
   tint: "primary" | "success" | "destructive";
+  delta?: number;
+  deltaInvert?: boolean;
+  deltaSuffix?: string;
 }) => {
   const tintMap = {
     primary: "bg-primary/10 text-primary border-primary/20",
     success: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
     destructive: "bg-destructive/10 text-destructive border-destructive/20",
   } as const;
+  let deltaNode: React.ReactNode = null;
+  if (typeof delta === "number") {
+    const isUp = delta > 0;
+    const isDown = delta < 0;
+    const good = (isUp && !deltaInvert) || (isDown && deltaInvert);
+    const bad = (isDown && !deltaInvert) || (isUp && deltaInvert);
+    const color = delta === 0 ? "text-muted-foreground" : good ? "text-emerald-600 dark:text-emerald-400" : bad ? "text-destructive" : "text-muted-foreground";
+    const Arrow = delta === 0 ? Minus : isUp ? ArrowUp : ArrowDown;
+    deltaNode = (
+      <span className={`inline-flex items-center gap-0.5 text-[11px] font-medium ${color}`}>
+        <Arrow className="h-3 w-3" />
+        {Math.abs(delta)}{deltaSuffix || "%"} vs semana anterior
+      </span>
+    );
+  }
   return (
     <div className="rounded-lg border bg-card p-4 hover:border-primary/30 transition-colors">
       <div className="flex items-start justify-between">
@@ -630,6 +651,7 @@ const MetricCard = ({
       <div className="text-2xl font-semibold mt-3 tracking-tight tabular-nums">{value}</div>
       <div className="text-xs text-muted-foreground mt-0.5">{label}</div>
       {hint && <div className="text-[11px] text-muted-foreground/80 mt-1">{hint}</div>}
+      {deltaNode && <div className="mt-1">{deltaNode}</div>}
     </div>
   );
 };
