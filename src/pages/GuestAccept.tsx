@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
+import { SEO } from "@/components/SEO";
 
 type Training = {
   id: string;
@@ -103,6 +104,11 @@ const GuestAccept = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title={`Aceite: ${training.title} — TreinaCheck`}
+        description={`Confirme o recebimento do treinamento "${training.title}"${training.client ? ` para ${training.client}` : ""}.`}
+        path={`/aceite/${id ?? ""}`}
+      />
       <main className="max-w-xl mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-6">
         <header className="space-y-1">
           <p className="text-xs uppercase tracking-wider text-muted-foreground">Confirmação de recebimento</p>
