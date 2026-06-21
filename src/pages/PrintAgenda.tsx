@@ -580,7 +580,7 @@ const EventCard = ({
             Cancelado: {t.cancellation_reason}
           </div>
         )}
-        {showConfirmation && (
+        {showConfirmation && !isDone && (
           <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
             {!teamConfirmed && (
               <span
