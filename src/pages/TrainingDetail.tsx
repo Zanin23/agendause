@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ArrowLeft, Calendar as CalIcon, Clock, MapPin, CheckCircle2, Trash2, Users, Building2, Link2, FileText, UserCheck, XCircle, RotateCcw, Lock, Pencil, Save, X } from "lucide-react";
+import { ArrowLeft, Calendar as CalIcon, Clock, MapPin, CheckCircle2, Trash2, Users, Building2, Link2, FileText, UserCheck, XCircle, RotateCcw, Lock, Pencil, Save, X, History, Paperclip, Upload, Download, File as FileIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { AppHeader } from "@/components/AppHeader";
@@ -51,6 +51,33 @@ type GuestAcceptance = {
   accepted_at: string;
 };
 
+type RescheduleRow = {
+  id: string;
+  previous_scheduled_at: string;
+  new_scheduled_at: string;
+  previous_duration_minutes: number;
+  new_duration_minutes: number;
+  reason: string;
+  changed_by_name: string | null;
+  created_at: string;
+};
+
+type AttachmentRow = {
+  id: string;
+  file_name: string;
+  storage_path: string;
+  mime_type: string | null;
+  size_bytes: number | null;
+  created_at: string;
+};
+
+const formatBytes = (n: number | null) => {
+  if (!n && n !== 0) return "";
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+  return `${(n / 1024 / 1024).toFixed(1)} MB`;
+};
+
 const TrainingDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -58,6 +85,9 @@ const TrainingDetail = () => {
   const [training, setTraining] = useState<Training | null>(null);
   const [acceptances, setAcceptances] = useState<Acceptance[]>([]);
   const [guests, setGuests] = useState<GuestAcceptance[]>([]);
+  const [reschedules, setReschedules] = useState<RescheduleRow[]>([]);
+  const [attachments, setAttachments] = useState<AttachmentRow[]>([]);
+  const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [acting, setActing] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
@@ -69,6 +99,7 @@ const TrainingDetail = () => {
   const [schedDate, setSchedDate] = useState("");
   const [schedTime, setSchedTime] = useState("");
   const [schedDuration, setSchedDuration] = useState(60);
+  const [schedReason, setSchedReason] = useState("");
   const [savingSched, setSavingSched] = useState(false);
 
   const load = async () => {
@@ -87,6 +118,18 @@ const TrainingDetail = () => {
       .eq("training_id", id)
       .order("accepted_at", { ascending: false });
     setGuests((g as GuestAcceptance[]) || []);
+    const { data: rs } = await supabase
+      .from("training_reschedules")
+      .select("id, previous_scheduled_at, new_scheduled_at, previous_duration_minutes, new_duration_minutes, reason, changed_by_name, created_at")
+      .eq("training_id", id)
+      .order("created_at", { ascending: false });
+    setReschedules((rs as RescheduleRow[]) || []);
+    const { data: at } = await supabase
+      .from("training_attachments")
+      .select("id, file_name, storage_path, mime_type, size_bytes, created_at")
+      .eq("training_id", id)
+      .order("created_at", { ascending: false });
+    setAttachments((at as AttachmentRow[]) || []);
     setLoading(false);
   };
 
@@ -188,25 +231,107 @@ const TrainingDetail = () => {
     setSchedDate(format(d, "yyyy-MM-dd"));
     setSchedTime(format(d, "HH:mm"));
     setSchedDuration(training.duration_minutes);
+    setSchedReason("");
     setScheduleOpen(true);
   };
 
   const saveSchedule = async () => {
-    if (!id) return;
+    if (!id || !training) return;
     if (!schedDate || !schedTime) {
       toast.error("Informe data e horário");
       return;
     }
+    if (!schedReason.trim()) {
+      toast.error("Informe o motivo do reagendamento");
+      return;
+    }
     const iso = new Date(`${schedDate}T${schedTime}`).toISOString();
+    const newDuration = Number(schedDuration) || 60;
+    const prevIso = training.scheduled_at;
+    const prevDuration = training.duration_minutes;
+    if (iso === prevIso && newDuration === prevDuration) {
+      toast.error("Nada para alterar");
+      return;
+    }
     setSavingSched(true);
     const { error } = await supabase
       .from("trainings")
-      .update({ scheduled_at: iso, duration_minutes: Number(schedDuration) || 60 })
+      .update({ scheduled_at: iso, duration_minutes: newDuration })
       .eq("id", id);
+    if (error) {
+      setSavingSched(false);
+      return toast.error(error.message);
+    }
+    const { error: hErr } = await supabase.from("training_reschedules").insert({
+      training_id: id,
+      previous_scheduled_at: prevIso,
+      new_scheduled_at: iso,
+      previous_duration_minutes: prevDuration,
+      new_duration_minutes: newDuration,
+      reason: schedReason.trim(),
+      changed_by: user?.id ?? null,
+      changed_by_name: user?.user_metadata?.full_name || user?.email || null,
+    });
     setSavingSched(false);
-    if (error) return toast.error(error.message);
+    if (hErr) toast.error(`Reagendado, mas falhou ao salvar histórico: ${hErr.message}`);
     toast.success("Data atualizada");
     setScheduleOpen(false);
+    load();
+  };
+
+  const onUploadFiles = async (files: FileList | null) => {
+    if (!files || !id || !user) return;
+    setUploading(true);
+    try {
+      for (const file of Array.from(files)) {
+        if (file.size > 20 * 1024 * 1024) {
+          toast.error(`${file.name}: maior que 20 MB`);
+          continue;
+        }
+        const safeName = file.name.replace(/[^\w.\-]+/g, "_");
+        const path = `${id}/${Date.now()}-${safeName}`;
+        const { error: upErr } = await supabase.storage
+          .from("training-attachments")
+          .upload(path, file, { contentType: file.type || undefined });
+        if (upErr) {
+          toast.error(`${file.name}: ${upErr.message}`);
+          continue;
+        }
+        const { error: insErr } = await supabase.from("training_attachments").insert({
+          training_id: id,
+          file_name: file.name,
+          storage_path: path,
+          mime_type: file.type || null,
+          size_bytes: file.size,
+          uploaded_by: user.id,
+        });
+        if (insErr) {
+          await supabase.storage.from("training-attachments").remove([path]);
+          toast.error(`${file.name}: ${insErr.message}`);
+        }
+      }
+      toast.success("Upload concluído");
+      load();
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const downloadAttachment = async (att: AttachmentRow) => {
+    const { data, error } = await supabase.storage
+      .from("training-attachments")
+      .createSignedUrl(att.storage_path, 60 * 10, { download: att.file_name });
+    if (error || !data) return toast.error(error?.message || "Falha ao gerar link");
+    window.open(data.signedUrl, "_blank");
+  };
+
+  const deleteAttachment = async (att: AttachmentRow) => {
+    if (!confirm(`Remover "${att.file_name}"?`)) return;
+    const { error: sErr } = await supabase.storage.from("training-attachments").remove([att.storage_path]);
+    if (sErr) return toast.error(sErr.message);
+    const { error: dErr } = await supabase.from("training_attachments").delete().eq("id", att.id);
+    if (dErr) return toast.error(dErr.message);
+    toast.success("Anexo removido");
     load();
   };
 
@@ -359,6 +484,71 @@ const TrainingDetail = () => {
           </div>
         </div>
 
+        {/* Attachments */}
+        <Card>
+          <CardContent className="p-6 space-y-3">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <h3 className="font-semibold flex items-center gap-2">
+                <Paperclip className="h-4 w-4" /> Anexos
+                <span className="text-xs font-normal text-muted-foreground">
+                  ({attachments.length})
+                </span>
+              </h3>
+              <label>
+                <input
+                  type="file"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => {
+                    onUploadFiles(e.target.files);
+                    e.currentTarget.value = "";
+                  }}
+                  disabled={uploading}
+                />
+                <Button asChild size="sm" variant="outline" disabled={uploading}>
+                  <span className="cursor-pointer">
+                    <Upload className="h-4 w-4" /> {uploading ? "Enviando..." : "Adicionar arquivos"}
+                  </span>
+                </Button>
+              </label>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Materiais ficam visíveis no link público de aceite. Até 20 MB por arquivo.
+            </p>
+            {attachments.length === 0 ? (
+              <p className="text-sm text-muted-foreground italic">Nenhum anexo ainda.</p>
+            ) : (
+              <div className="space-y-2">
+                {attachments.map((a) => (
+                  <div
+                    key={a.id}
+                    className="flex items-center gap-3 rounded-md border border-border p-2.5 text-sm"
+                  >
+                    <FileIcon className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium truncate">{a.file_name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatBytes(a.size_bytes)} · {format(new Date(a.created_at), "d MMM yyyy HH:mm", { locale: ptBR })}
+                      </p>
+                    </div>
+                    <Button variant="ghost" size="sm" onClick={() => downloadAttachment(a)}>
+                      <Download className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => deleteAttachment(a)}
+                      className="text-muted-foreground hover:text-destructive"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         <Card className="border-primary/40">
           <CardContent className="p-6 flex items-center justify-between gap-4 flex-wrap">
             <div>
@@ -460,6 +650,40 @@ const TrainingDetail = () => {
             </div>
           )}
         </section>
+
+        {reschedules.length > 0 && (
+          <section>
+            <h2 className="flex items-center gap-2 text-sm uppercase tracking-wider text-muted-foreground mb-3">
+              <History className="h-4 w-4" /> Histórico de reagendamentos ({reschedules.length})
+            </h2>
+            <div className="space-y-2">
+              {reschedules.map((r) => (
+                <div key={r.id} className="rounded-md border border-border p-3 text-sm space-y-1">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <span className="line-through">
+                        {format(new Date(r.previous_scheduled_at), "d MMM yyyy 'às' HH:mm", { locale: ptBR })}
+                        {" · "}{r.previous_duration_minutes} min
+                      </span>
+                      <span>→</span>
+                      <span className="text-foreground font-medium">
+                        {format(new Date(r.new_scheduled_at), "d MMM yyyy 'às' HH:mm", { locale: ptBR })}
+                        {" · "}{r.new_duration_minutes} min
+                      </span>
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      {format(new Date(r.created_at), "d MMM HH:mm", { locale: ptBR })}
+                      {r.changed_by_name ? ` · ${r.changed_by_name}` : ""}
+                    </span>
+                  </div>
+                  <p className="text-foreground/90 whitespace-pre-wrap">
+                    <span className="text-muted-foreground">Motivo: </span>{r.reason}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
       </main>
 
       <Dialog open={cancelOpen} onOpenChange={setCancelOpen}>
@@ -526,6 +750,18 @@ const TrainingDetail = () => {
                 value={schedDuration}
                 onChange={(e) => setSchedDuration(Number(e.target.value))}
               />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="sched-reason">Motivo do reagendamento *</Label>
+              <Textarea
+                id="sched-reason"
+                value={schedReason}
+                onChange={(e) => setSchedReason(e.target.value)}
+                placeholder="Ex: cliente pediu para adiar..."
+                rows={3}
+                maxLength={500}
+              />
+              <p className="text-xs text-muted-foreground">Ficará registrado no histórico.</p>
             </div>
           </div>
           <DialogFooter>

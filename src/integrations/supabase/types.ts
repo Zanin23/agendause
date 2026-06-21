@@ -96,6 +96,94 @@ export type Database = {
           },
         ]
       }
+      training_attachments: {
+        Row: {
+          created_at: string
+          file_name: string
+          id: string
+          mime_type: string | null
+          size_bytes: number | null
+          storage_path: string
+          training_id: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          file_name: string
+          id?: string
+          mime_type?: string | null
+          size_bytes?: number | null
+          storage_path: string
+          training_id: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          file_name?: string
+          id?: string
+          mime_type?: string | null
+          size_bytes?: number | null
+          storage_path?: string
+          training_id?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_attachments_training_id_fkey"
+            columns: ["training_id"]
+            isOneToOne: false
+            referencedRelation: "trainings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_reschedules: {
+        Row: {
+          changed_by: string | null
+          changed_by_name: string | null
+          created_at: string
+          id: string
+          new_duration_minutes: number
+          new_scheduled_at: string
+          previous_duration_minutes: number
+          previous_scheduled_at: string
+          reason: string
+          training_id: string
+        }
+        Insert: {
+          changed_by?: string | null
+          changed_by_name?: string | null
+          created_at?: string
+          id?: string
+          new_duration_minutes: number
+          new_scheduled_at: string
+          previous_duration_minutes: number
+          previous_scheduled_at: string
+          reason: string
+          training_id: string
+        }
+        Update: {
+          changed_by?: string | null
+          changed_by_name?: string | null
+          created_at?: string
+          id?: string
+          new_duration_minutes?: number
+          new_scheduled_at?: string
+          previous_duration_minutes?: number
+          previous_scheduled_at?: string
+          reason?: string
+          training_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_reschedules_training_id_fkey"
+            columns: ["training_id"]
+            isOneToOne: false
+            referencedRelation: "trainings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trainings: {
         Row: {
           cancellation_reason: string | null
