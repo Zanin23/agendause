@@ -9,7 +9,9 @@ import {
   startOfWeek,
 } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Printer, ArrowLeft, ChevronLeft, ChevronRight, X, Layers } from "lucide-react";
+import { Printer, ArrowLeft, ChevronLeft, ChevronRight, X, Layers, FileDown } from "lucide-react";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -249,10 +251,16 @@ const PrintAgenda = () => {
             </span>
           </div>
 
-          <Button onClick={() => window.print()}>
-            <Printer className="h-4 w-4" />
-            Imprimir
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={exportPDF} disabled={exporting}>
+              <FileDown className="h-4 w-4" />
+              {exporting ? "Gerando..." : "Exportar PDF"}
+            </Button>
+            <Button onClick={() => window.print()}>
+              <Printer className="h-4 w-4" />
+              Imprimir
+            </Button>
+          </div>
         </div>
       </div>
 
