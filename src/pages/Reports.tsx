@@ -626,7 +626,7 @@ const MetricCard = ({
     success: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
     destructive: "bg-destructive/10 text-destructive border-destructive/20",
   } as const;
-  let deltaNode: React.ReactNode = null;
+  let deltaNode: JSX.Element | null = null;
   if (typeof delta === "number") {
     const isUp = delta > 0;
     const isDown = delta < 0;
