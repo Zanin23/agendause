@@ -1,0 +1,9 @@
+# TreinaCheck
+
+> Gerencie a agenda de treinamentos da equipe e registre o aceite de recebimento em um clique.
+
+TreinaCheck é um aplicativo para empresas organizarem treinamentos internos: agendamento, controle de presença, confirmação pela equipe e termo de aceite assinado pelos participantes. O acesso ao app exige conta. Apenas o fluxo de aceite individual via link enviado ao participante é público.
+
+## Pages
+
+- [Entrar](/auth): Tela de login e cadastro para acessar o app.
