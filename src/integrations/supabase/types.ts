@@ -479,7 +479,38 @@ export type Database = {
         Args: { _ip: string; _name: string; _token: string }
         Returns: boolean
       }
+      get_public_training: {
+        Args: { _id: string }
+        Returns: {
+          client: string
+          description: string
+          duration_minutes: number
+          id: string
+          location: string
+          scheduled_at: string
+          title: string
+        }[]
+      }
+      get_public_training_attachments: {
+        Args: { _training_id: string }
+        Returns: {
+          file_name: string
+          id: string
+          mime_type: string
+          size_bytes: number
+        }[]
+      }
       get_schedule_by_token: { Args: { _token: string }; Returns: Json }
+      get_training_user_acceptances: {
+        Args: { _training_id: string }
+        Returns: {
+          accepted_at: string
+          email: string
+          full_name: string
+          id: string
+          user_id: string
+        }[]
+      }
     }
     Enums: {
       schedule_cadence: "semanal" | "quinzenal" | "mensal" | "customizada"
