@@ -81,7 +81,7 @@ const ActionCard = ({ icon, title, description, to, onClick, highlight }: Action
   const inner = (
     <Card
       className={`group cursor-pointer h-full transition-all hover:-translate-y-1 hover:shadow-lg ${
-        highlight ? "border-primary/60 bg-primary/5" : "hover:border-primary/50"
+        highlight ? "border-primary/60 bg-primary/5 bg-pattern-hex" : "hover:border-primary/50"
       }`}
     >
       <CardContent className="p-6 flex flex-col h-full gap-4">

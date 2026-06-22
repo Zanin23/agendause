@@ -480,3 +480,26 @@
     animation: none !important;
   }
 }
+
+/* Highlight card hex pattern background */
+.bg-pattern-hex {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+.bg-pattern-hex::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("/assets/pattern-hex.png");
+  background-size: 360px auto;
+  background-repeat: repeat;
+  opacity: 0.18;
+  mix-blend-mode: overlay;
+  pointer-events: none;
+  z-index: 0;
+}
+.bg-pattern-hex > * {
+  position: relative;
+  z-index: 1;
+}
