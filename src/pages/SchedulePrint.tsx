@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
+import { ArrowLeft, Printer } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,6 +11,7 @@ import { STATUS_LABELS } from "@/lib/schedule";
 
 export default function SchedulePrint() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [data, setData] = useState<any>(null);
 
   useEffect(() => {
@@ -22,7 +25,6 @@ export default function SchedulePrint() {
       const byPhase: Record<string, any[]> = {};
       (its || []).forEach((it: any) => { (byPhase[it.phase_id] ||= []).push(it); });
       setData({ schedule: s, phases: (ps || []).map((p: any) => ({ ...p, items: byPhase[p.id] || [] })) });
-      setTimeout(() => window.print(), 500);
     })();
   }, [id]);
 
@@ -33,6 +35,14 @@ export default function SchedulePrint() {
     <div className="min-h-screen bg-white text-black p-8 print:p-0">
       <SEO title={`Cronograma — ${schedule.client_name}`} description="Cronograma de implantação ERP USE." path={`/cronogramas/${id}/imprimir`} />
       <style>{`@media print { @page { size: A4; margin: 14mm; } body { background: white; } .no-print { display: none } }`}</style>
+      <div className="no-print max-w-[210mm] mx-auto mb-4 flex items-center justify-between">
+        <Button variant="ghost" size="sm" onClick={() => navigate(`/cronogramas/${id}`)}>
+          <ArrowLeft className="h-4 w-4 mr-2" /> Voltar ao cronograma
+        </Button>
+        <Button size="sm" onClick={() => window.print()}>
+          <Printer className="h-4 w-4 mr-2" /> Imprimir / Salvar PDF
+        </Button>
+      </div>
       <div className="max-w-[210mm] mx-auto space-y-4">
         <header className="flex items-start justify-between border-b border-black/20 pb-4">
           <div>
@@ -86,9 +96,6 @@ export default function SchedulePrint() {
           </footer>
         )}
 
-        <div className="no-print pt-4">
-          <button onClick={() => window.print()} className="text-sm underline">Imprimir novamente</button>
-        </div>
       </div>
     </div>
   );
