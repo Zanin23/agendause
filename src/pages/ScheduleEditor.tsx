@@ -4,6 +4,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
   ArrowLeft, ArrowUp, ArrowDown, Plus, Trash2, Copy, Printer, Link2, Download, Save,
+  ChevronDown, ChevronRight, CheckCircle2, Circle, Clock, Ban, CalendarClock, Settings2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -34,6 +35,9 @@ export default function ScheduleEditor() {
   const [schedule, setSchedule] = useState<Schedule | null>(null);
   const [phases, setPhases] = useState<Phase[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activePhaseId, setActivePhaseId] = useState<string | null>(null);
+  const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
+  const [showSettings, setShowSettings] = useState(false);
 
   const load = async () => {
     if (!id) return;
@@ -50,6 +54,7 @@ export default function ScheduleEditor() {
     (its || []).forEach((it: Item) => { (byPhase[it.phase_id] ||= []).push(it); });
     setPhases((ps || []).map((p: any) => ({ ...p, items: byPhase[p.id] || [] })));
     setLoading(false);
+    if (ps && ps.length && !activePhaseId) setActivePhaseId(ps[0].id);
   };
 
   useEffect(() => { load(); }, [id]);
@@ -182,31 +187,55 @@ export default function ScheduleEditor() {
         path={`/cronogramas/${schedule.id}`}
       />
       <AppHeader />
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-6">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-5">
+        {/* Toolbar */}
         <div className="flex items-center justify-between flex-wrap gap-2">
-          <Button variant="ghost" size="sm" onClick={() => navigate("/cronogramas")}>
-            <ArrowLeft className="h-4 w-4" /> Voltar
-          </Button>
-          <div className="flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" onClick={copyPublicLink}>
-              <Link2 className="h-4 w-4" /> Copiar link público
+          <div className="flex items-center gap-2 min-w-0">
+            <Button variant="ghost" size="sm" onClick={() => navigate("/cronogramas")}>
+              <ArrowLeft className="h-4 w-4" />
             </Button>
-            <Button variant="outline" size="sm" onClick={exportCsv}>
-              <Download className="h-4 w-4" /> CSV
+            <div className="min-w-0">
+              <h1 className="text-base sm:text-lg font-semibold truncate">{schedule.client_name}</h1>
+              <p className="text-xs text-muted-foreground">
+                Início {format(new Date(schedule.start_date + "T00:00"), "d MMM yyyy", { locale: ptBR })} · {schedule.cadence} · {schedule.modality}
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            <Button variant="ghost" size="sm" onClick={() => setShowSettings((s) => !s)}>
+              <Settings2 className="h-4 w-4" /> Detalhes
             </Button>
+            <Button variant="ghost" size="sm" onClick={copyPublicLink}><Link2 className="h-4 w-4" /> Link</Button>
+            <Button variant="ghost" size="sm" onClick={exportCsv}><Download className="h-4 w-4" /> CSV</Button>
             <Link to={`/cronogramas/${schedule.id}/imprimir`}>
-              <Button variant="outline" size="sm"><Printer className="h-4 w-4" /> Imprimir / PDF</Button>
+              <Button variant="ghost" size="sm"><Printer className="h-4 w-4" /> PDF</Button>
             </Link>
           </div>
         </div>
 
-        {/* Header card */}
-        <Card>
-          <CardContent className="p-5 sm:p-6 space-y-4">
-            <div className="grid sm:grid-cols-2 gap-4">
+        {/* Global progress strip */}
+        <div className="space-y-1.5">
+          <div className="flex justify-between text-xs">
+            <span className="text-muted-foreground">Progresso geral</span>
+            <span className="font-medium">{progress.done}/{progress.total} · {progress.pct}%</span>
+          </div>
+          <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+            <div className="h-full bg-primary transition-all" style={{ width: `${progress.pct}%` }} />
+          </div>
+          {schedule.accepted_at && (
+            <p className="text-xs text-emerald-600 dark:text-emerald-400">
+              ✓ Aceito por {schedule.accepted_by} em {format(new Date(schedule.accepted_at), "d MMM yyyy HH:mm", { locale: ptBR })}
+            </p>
+          )}
+        </div>
+
+        {/* Collapsible settings */}
+        {showSettings && (
+          <Card>
+            <CardContent className="p-5 grid sm:grid-cols-2 gap-4">
               <div className="space-y-1.5 sm:col-span-2">
                 <label className="text-xs uppercase tracking-wider text-muted-foreground">Cliente</label>
-                <Input value={schedule.client_name} onChange={(e) => updateSchedule({ client_name: e.target.value })} className="text-lg font-semibold" />
+                <Input value={schedule.client_name} onChange={(e) => updateSchedule({ client_name: e.target.value })} />
               </div>
               <div className="space-y-1.5">
                 <label className="text-xs uppercase tracking-wider text-muted-foreground">Início</label>
@@ -240,130 +269,200 @@ export default function ScheduleEditor() {
                 <Input value={schedule.use_team.join(", ")} onChange={(e) =>
                   updateSchedule({ use_team: e.target.value.split(",").map((s) => s.trim()).filter(Boolean) })} />
               </div>
+              <div className="space-y-1.5 sm:col-span-2">
+                <label className="text-xs uppercase tracking-wider text-muted-foreground">Observações</label>
+                <Textarea rows={4} value={schedule.observations || ""}
+                  onChange={(e) => updateSchedule({ observations: e.target.value })} />
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Two-column: phases sidebar + active phase */}
+        <div className="grid lg:grid-cols-[280px_1fr] gap-5">
+          {/* Phase stepper */}
+          <aside className="space-y-2 lg:sticky lg:top-4 lg:self-start">
+            <div className="flex items-center justify-between px-1">
+              <h2 className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Fases</h2>
+              <span className="text-xs text-muted-foreground">{phases.length}</span>
             </div>
-
-            {/* Progress */}
-            <div className="space-y-1">
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>Progresso geral</span>
-                <span>{progress.done}/{progress.total} ({progress.pct}%)</span>
-              </div>
-              <div className="h-2 rounded-full bg-muted overflow-hidden">
-                <div className="h-full bg-primary transition-all" style={{ width: `${progress.pct}%` }} />
-              </div>
-            </div>
-
-            {schedule.accepted_at && (
-              <div className="text-xs text-emerald-600 dark:text-emerald-300">
-                ✓ Aceito por {schedule.accepted_by} em {format(new Date(schedule.accepted_at), "d MMM yyyy HH:mm", { locale: ptBR })}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Phases */}
-        <div className="space-y-4">
-          {phases.map((phase, pi) => {
-            const phaseDone = phase.items.filter((i) => i.status === "done").length;
-            const phaseTotal = phase.items.filter((i) => i.status !== "not_applicable").length;
-            const pct = phaseTotal ? Math.round((phaseDone / phaseTotal) * 100) : 0;
-            return (
-              <Card key={phase.id}>
-                <CardContent className="p-4 sm:p-5 space-y-3">
-                  <div className="flex items-start gap-2">
-                    <div className="flex flex-col gap-0.5">
-                      <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => movePhase(pi, -1)}><ArrowUp className="h-3 w-3" /></Button>
-                      <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => movePhase(pi, 1)}><ArrowDown className="h-3 w-3" /></Button>
-                    </div>
-                    <div className="flex-1 min-w-0 space-y-2">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-xs text-muted-foreground font-mono">{String(pi + 1).padStart(2, "0")}</span>
-                        <Input value={phase.title} onChange={(e) => updatePhase(phase.id, { title: e.target.value })}
-                          className="font-semibold flex-1 min-w-[200px]" />
-                        <Badge variant="outline">{phaseDone}/{phaseTotal}</Badge>
-                        <Button variant="ghost" size="sm" onClick={() => removePhase(phase.id)} className="text-destructive">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+            <nav className="space-y-1">
+              {phases.map((phase, pi) => {
+                const total = phase.items.filter((i) => i.status !== "not_applicable").length;
+                const done = phase.items.filter((i) => i.status === "done").length;
+                const pct = total ? Math.round((done / total) * 100) : 0;
+                const isActive = phase.id === activePhaseId;
+                const isComplete = total > 0 && done === total;
+                return (
+                  <button
+                    key={phase.id}
+                    onClick={() => setActivePhaseId(phase.id)}
+                    className={`w-full text-left rounded-lg border px-3 py-2.5 transition-colors ${
+                      isActive ? "border-primary bg-primary/5" : "border-border hover:bg-muted/50"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className={`shrink-0 w-7 h-7 rounded-full grid place-items-center text-xs font-mono ${
+                        isComplete ? "bg-primary text-primary-foreground" :
+                        isActive ? "border border-primary text-primary" : "border border-border text-muted-foreground"
+                      }`}>
+                        {isComplete ? <CheckCircle2 className="h-4 w-4" /> : String(pi + 1).padStart(2, "0")}
                       </div>
-                      <div className="h-1 rounded-full bg-muted overflow-hidden">
-                        <div className="h-full bg-primary" style={{ width: `${pct}%` }} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{phase.title}</p>
+                        <p className="text-[11px] text-muted-foreground">{done}/{total} concluídos</p>
                       </div>
                     </div>
-                  </div>
+                    <div className="mt-2 h-1 rounded-full bg-muted overflow-hidden">
+                      <div className="h-full bg-primary transition-all" style={{ width: `${pct}%` }} />
+                    </div>
+                  </button>
+                );
+              })}
+            </nav>
+            <Button onClick={addPhase} variant="outline" size="sm" className="w-full">
+              <Plus className="h-4 w-4" /> Nova fase
+            </Button>
+          </aside>
 
-                  <div className="space-y-2">
-                    {phase.items.map((item, ii) => (
-                      <div key={item.id} className="rounded-lg border border-border p-3 space-y-2 bg-card/30">
-                        <div className="flex items-start gap-2">
-                          <div className="flex flex-col gap-0.5">
-                            <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={() => moveItem(phase, ii, -1)}><ArrowUp className="h-3 w-3" /></Button>
-                            <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={() => moveItem(phase, ii, 1)}><ArrowDown className="h-3 w-3" /></Button>
-                          </div>
-                          <Input value={item.title} onChange={(e) => updateItem(phase.id, item.id, { title: e.target.value })} className="flex-1" />
-                          <span className={`text-[10px] px-2 py-1 rounded ${STATUS_COLORS[item.status]}`}>
-                            {STATUS_LABELS[item.status]}
-                          </span>
-                        </div>
-                        <div className="grid sm:grid-cols-4 gap-2 pl-7">
-                          <div className="space-y-1">
-                            <label className="text-[10px] uppercase text-muted-foreground">Prevista</label>
-                            <Input type="date" value={item.planned_date || ""} onChange={(e) => updateItem(phase.id, item.id, { planned_date: e.target.value || null })} />
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-[10px] uppercase text-muted-foreground">Conclusão</label>
-                            <Input type="date" value={item.done_date || ""} onChange={(e) => updateItem(phase.id, item.id, { done_date: e.target.value || null })} />
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-[10px] uppercase text-muted-foreground">Status</label>
-                            <select value={item.status} onChange={(e) => updateItem(phase.id, item.id, { status: e.target.value, done_date: e.target.value === "done" ? (item.done_date || format(new Date(), "yyyy-MM-dd")) : item.done_date })}
-                              className="w-full h-9 rounded-md border border-input bg-background px-2 text-sm">
-                              {Object.entries(STATUS_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-                            </select>
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-[10px] uppercase text-muted-foreground">Responsável</label>
-                            <Input value={item.assignee || ""} onChange={(e) => updateItem(phase.id, item.id, { assignee: e.target.value || null })} />
-                          </div>
-                        </div>
-                        <div className="pl-7 space-y-1">
-                          <Textarea placeholder="Observações…" value={item.notes || ""} rows={2}
-                            onChange={(e) => updateItem(phase.id, item.id, { notes: e.target.value || null })} />
-                        </div>
-                        <div className="pl-7 flex justify-end gap-1">
-                          <Button variant="ghost" size="sm" onClick={() => duplicateItem(phase, item)}>
-                            <Copy className="h-3 w-3" /> Duplicar
-                          </Button>
-                          <Button variant="ghost" size="sm" onClick={() => removeItem(phase.id, item.id)} className="text-destructive">
-                            <Trash2 className="h-3 w-3" /> Remover
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                    <Button variant="outline" size="sm" onClick={() => addItem(phase)}>
+          {/* Active phase panel */}
+          <section>
+            {(() => {
+              const phase = phases.find((p) => p.id === activePhaseId);
+              const pi = phases.findIndex((p) => p.id === activePhaseId);
+              if (!phase) return (
+                <Card><CardContent className="p-10 text-center text-sm text-muted-foreground">
+                  Selecione ou crie uma fase.
+                </CardContent></Card>
+              );
+              return (
+                <Card>
+                  <CardContent className="p-5 space-y-4">
+                    {/* Phase header */}
+                    <div className="flex items-center gap-2 pb-3 border-b border-border">
+                      <span className="text-xs font-mono text-muted-foreground">{String(pi + 1).padStart(2, "0")}</span>
+                      <Input value={phase.title} onChange={(e) => updatePhase(phase.id, { title: e.target.value })}
+                        className="font-semibold text-base border-0 shadow-none px-2 focus-visible:ring-1 -ml-2" />
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => movePhase(pi, -1)} disabled={pi === 0}>
+                        <ArrowUp className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => movePhase(pi, 1)} disabled={pi === phases.length - 1}>
+                        <ArrowDown className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => removePhase(phase.id)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+
+                    {/* Items list */}
+                    <ul className="divide-y divide-border -mx-2">
+                      {phase.items.map((item, ii) => {
+                        const open = expandedItems[item.id];
+                        const StatusIcon =
+                          item.status === "done" ? CheckCircle2 :
+                          item.status === "in_progress" ? Clock :
+                          item.status === "blocked" ? Ban :
+                          item.status === "rescheduled" ? CalendarClock :
+                          item.status === "not_applicable" ? Ban : Circle;
+                        return (
+                          <li key={item.id} className="px-2 py-2">
+                            {/* Compact row */}
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => updateItem(phase.id, item.id, {
+                                  status: item.status === "done" ? "pending" : "done",
+                                  done_date: item.status === "done" ? null : format(new Date(), "yyyy-MM-dd"),
+                                })}
+                                className="shrink-0 p-1 rounded hover:bg-muted"
+                                title="Marcar concluído"
+                              >
+                                <StatusIcon className={`h-5 w-5 ${item.status === "done" ? "text-primary" : "text-muted-foreground"}`} />
+                              </button>
+                              <button
+                                onClick={() => setExpandedItems((s) => ({ ...s, [item.id]: !s[item.id] }))}
+                                className="flex-1 min-w-0 flex items-center gap-2 text-left group"
+                              >
+                                <span className={`flex-1 min-w-0 truncate text-sm ${item.status === "done" ? "line-through text-muted-foreground" : ""}`}>
+                                  {item.title || <span className="italic text-muted-foreground">Sem título</span>}
+                                </span>
+                                {item.planned_date && (
+                                  <span className="hidden sm:inline text-xs text-muted-foreground tabular-nums">
+                                    {format(new Date(item.planned_date + "T00:00"), "d MMM", { locale: ptBR })}
+                                  </span>
+                                )}
+                                <span className={`text-[10px] px-2 py-0.5 rounded ${STATUS_COLORS[item.status]}`}>
+                                  {STATUS_LABELS[item.status]}
+                                </span>
+                                {open ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+                              </button>
+                            </div>
+
+                            {/* Expanded details */}
+                            {open && (
+                              <div className="mt-3 ml-8 space-y-3 pb-2">
+                                <Input value={item.title} onChange={(e) => updateItem(phase.id, item.id, { title: e.target.value })}
+                                  placeholder="Título do item" />
+                                <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-2">
+                                  <div className="space-y-1">
+                                    <label className="text-[10px] uppercase text-muted-foreground">Prevista</label>
+                                    <Input type="date" value={item.planned_date || ""} onChange={(e) => updateItem(phase.id, item.id, { planned_date: e.target.value || null })} />
+                                  </div>
+                                  <div className="space-y-1">
+                                    <label className="text-[10px] uppercase text-muted-foreground">Conclusão</label>
+                                    <Input type="date" value={item.done_date || ""} onChange={(e) => updateItem(phase.id, item.id, { done_date: e.target.value || null })} />
+                                  </div>
+                                  <div className="space-y-1">
+                                    <label className="text-[10px] uppercase text-muted-foreground">Status</label>
+                                    <select value={item.status} onChange={(e) => updateItem(phase.id, item.id, { status: e.target.value, done_date: e.target.value === "done" ? (item.done_date || format(new Date(), "yyyy-MM-dd")) : item.done_date })}
+                                      className="w-full h-10 rounded-md border border-input bg-background px-2 text-sm">
+                                      {Object.entries(STATUS_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                                    </select>
+                                  </div>
+                                  <div className="space-y-1">
+                                    <label className="text-[10px] uppercase text-muted-foreground">Responsável</label>
+                                    <Input value={item.assignee || ""} onChange={(e) => updateItem(phase.id, item.id, { assignee: e.target.value || null })} />
+                                  </div>
+                                </div>
+                                <Textarea placeholder="Observações…" value={item.notes || ""} rows={2}
+                                  onChange={(e) => updateItem(phase.id, item.id, { notes: e.target.value || null })} />
+                                <div className="flex items-center justify-between">
+                                  <div className="flex gap-1">
+                                    <Button variant="ghost" size="sm" onClick={() => moveItem(phase, ii, -1)} disabled={ii === 0}>
+                                      <ArrowUp className="h-3 w-3" />
+                                    </Button>
+                                    <Button variant="ghost" size="sm" onClick={() => moveItem(phase, ii, 1)} disabled={ii === phase.items.length - 1}>
+                                      <ArrowDown className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                  <div className="flex gap-1">
+                                    <Button variant="ghost" size="sm" onClick={() => duplicateItem(phase, item)}>
+                                      <Copy className="h-3 w-3" /> Duplicar
+                                    </Button>
+                                    <Button variant="ghost" size="sm" onClick={() => removeItem(phase.id, item.id)} className="text-destructive">
+                                      <Trash2 className="h-3 w-3" /> Remover
+                                    </Button>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </li>
+                        );
+                      })}
+                    </ul>
+
+                    <Button variant="outline" size="sm" onClick={() => addItem(phase)} className="w-full">
                       <Plus className="h-4 w-4" /> Adicionar item
                     </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
 
-          <Button onClick={addPhase} variant="outline" className="w-full">
-            <Plus className="h-4 w-4" /> Adicionar fase
-          </Button>
+                    <p className="text-[11px] text-muted-foreground flex items-center gap-1 pt-2 border-t border-border">
+                      <Save className="h-3 w-3" /> Salvamento automático ativo.
+                    </p>
+                  </CardContent>
+                </Card>
+              );
+            })()}
+          </section>
         </div>
-
-        {/* Observations */}
-        <Card>
-          <CardContent className="p-5 sm:p-6 space-y-2">
-            <h3 className="font-semibold">Observações</h3>
-            <Textarea rows={6} value={schedule.observations || ""}
-              onChange={(e) => updateSchedule({ observations: e.target.value })} />
-            <p className="text-xs text-muted-foreground flex items-center gap-1">
-              <Save className="h-3 w-3" /> As alterações são salvas automaticamente.
-            </p>
-          </CardContent>
-        </Card>
       </main>
     </div>
   );
