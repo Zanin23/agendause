@@ -355,7 +355,7 @@ const PrintAgenda = () => {
                 }}
               >
                 <div
-                  className="day-head text-[28px] px-3 pt-2 pb-2 border-b-[3px]"
+                  className="day-head bg-pattern-hex-light text-[28px] px-3 pt-2 pb-2 border-b-[3px]"
                   style={{ borderColor: ORANGE, color: isToday ? ORANGE : "#111" }}
                 >
                   {format(day, "dd")} {DAY_LABELS[idx]}
