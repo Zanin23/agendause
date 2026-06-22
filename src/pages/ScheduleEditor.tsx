@@ -126,7 +126,7 @@ export default function ScheduleEditor() {
     setPhases([...phases, { ...(data as any), items: [] }]);
   };
   const updatePhase = async (phaseId: string, patch: Partial<Phase>) => {
-    setPhases(phases.map((p) => p.id === phaseId ? { ...p, ...patch } : p));
+    setPhases((prev) => prev.map((p) => p.id === phaseId ? { ...p, ...patch } : p));
     const { items, ...dbPatch } = patch as any;
     const { error } = await supabase.from("schedule_phases").update(dbPatch).eq("id", phaseId);
     if (error) toast.error(error.message);
@@ -135,7 +135,7 @@ export default function ScheduleEditor() {
     if (!confirm("Remover esta fase e todos os itens?")) return;
     const { error } = await supabase.from("schedule_phases").delete().eq("id", phaseId);
     if (error) return toast.error(error.message);
-    setPhases(phases.filter((p) => p.id !== phaseId));
+    setPhases((prev) => prev.filter((p) => p.id !== phaseId));
   };
   const movePhase = async (idx: number, dir: -1 | 1) => {
     const j = idx + dir;
@@ -154,10 +154,10 @@ export default function ScheduleEditor() {
       .insert({ phase_id: phase.id, title: "Novo item", position: phase.items.length })
       .select("*").single();
     if (error) return toast.error(error.message);
-    setPhases(phases.map((p) => p.id === phase.id ? { ...p, items: [...p.items, data as Item] } : p));
+    setPhases((prev) => prev.map((p) => p.id === phase.id ? { ...p, items: [...p.items, data as Item] } : p));
   };
   const updateItem = async (phaseId: string, itemId: string, patch: Partial<Item>) => {
-    setPhases(phases.map((p) => p.id === phaseId
+    setPhases((prev) => prev.map((p) => p.id === phaseId
       ? { ...p, items: p.items.map((i) => i.id === itemId ? { ...i, ...patch } : i) }
       : p));
     const { error } = await supabase.from("schedule_items").update(patch as any).eq("id", itemId);
@@ -166,7 +166,7 @@ export default function ScheduleEditor() {
   const removeItem = async (phaseId: string, itemId: string) => {
     const { error } = await supabase.from("schedule_items").delete().eq("id", itemId);
     if (error) return toast.error(error.message);
-    setPhases(phases.map((p) => p.id === phaseId
+    setPhases((prev) => prev.map((p) => p.id === phaseId
       ? { ...p, items: p.items.filter((i) => i.id !== itemId) } : p));
   };
   const duplicateItem = async (phase: Phase, item: Item) => {
@@ -178,14 +178,14 @@ export default function ScheduleEditor() {
       })
       .select("*").single();
     if (error) return toast.error(error.message);
-    setPhases(phases.map((p) => p.id === phase.id ? { ...p, items: [...p.items, data as Item] } : p));
+    setPhases((prev) => prev.map((p) => p.id === phase.id ? { ...p, items: [...p.items, data as Item] } : p));
   };
   const moveItem = async (phase: Phase, idx: number, dir: -1 | 1) => {
     const j = idx + dir;
     if (j < 0 || j >= phase.items.length) return;
     const next = [...phase.items];
     [next[idx], next[j]] = [next[j], next[idx]];
-    setPhases(phases.map((p) => p.id === phase.id ? { ...p, items: next } : p));
+    setPhases((prev) => prev.map((p) => p.id === phase.id ? { ...p, items: next } : p));
     await Promise.all(next.map((it, i) =>
       supabase.from("schedule_items").update({ position: i }).eq("id", it.id)
     ));
