@@ -30,10 +30,7 @@ const TrainingTerm = () => {
       if (!id) return;
       const [{ data: t }, { data: ua }, { data: ga }] = await Promise.all([
         supabase.from("trainings").select("*").eq("id", id).maybeSingle(),
-        supabase
-          .from("training_acceptances")
-          .select("accepted_at, profiles(full_name, email)")
-          .eq("training_id", id),
+        supabase.rpc("get_training_user_acceptances", { _training_id: id }),
         supabase
           .from("guest_acceptances")
           .select("full_name, email, accepted_at")
@@ -41,8 +38,8 @@ const TrainingTerm = () => {
       ]);
       setTraining(t as Training | null);
       const userRows: Row[] = ((ua as any[]) || []).map((a) => ({
-        name: a.profiles?.full_name || a.profiles?.email || "Usuário",
-        email: a.profiles?.email ?? null,
+        name: a.full_name || a.email || "Usuário",
+        email: a.email ?? null,
         accepted_at: a.accepted_at,
         kind: "user",
       }));

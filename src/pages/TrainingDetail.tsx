@@ -108,11 +108,16 @@ const TrainingDetail = () => {
     const { data: t } = await supabase.from("trainings").select("*").eq("id", id).maybeSingle();
     setTraining(t as Training | null);
     const { data: a } = await supabase
-      .from("training_acceptances")
-      .select("id, user_id, accepted_at, profiles(full_name, email)")
-      .eq("training_id", id)
-      .order("accepted_at", { ascending: false });
-    setAcceptances((a as any) || []);
+      .rpc("get_training_user_acceptances", { _training_id: id });
+    const acceptanceRows = ((a as any[]) || [])
+      .map((r) => ({
+        id: r.id,
+        user_id: r.user_id,
+        accepted_at: r.accepted_at,
+        profiles: { full_name: r.full_name, email: r.email },
+      }))
+      .sort((x, y) => (y.accepted_at || "").localeCompare(x.accepted_at || ""));
+    setAcceptances(acceptanceRows as any);
     const { data: g } = await supabase
       .from("guest_acceptances")
       .select("id, full_name, email, accepted_at")

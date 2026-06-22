@@ -48,18 +48,11 @@ const GuestAccept = () => {
   useEffect(() => {
     (async () => {
       if (!id) return;
-      const { data } = await supabase
-        .from("trainings")
-        .select("id,title,client,description,scheduled_at,duration_minutes,location")
-        .eq("id", id)
-        .maybeSingle();
-      setTraining(data as Training | null);
-      const { data: at } = await supabase
-        .from("training_attachments")
-        .select("id, file_name, mime_type, size_bytes")
-        .eq("training_id", id)
-        .order("created_at", { ascending: false });
-      setAttachments((at as AttachmentRow[]) || []);
+      const { data } = await supabase.rpc("get_public_training", { _id: id });
+      const t = Array.isArray(data) ? (data[0] as Training | undefined) : (data as Training | null);
+      setTraining((t as Training) ?? null);
+      const { data: at } = await supabase.rpc("get_public_training_attachments", { _training_id: id });
+      setAttachments(((at as AttachmentRow[]) || []));
       setLoading(false);
     })();
   }, [id]);
