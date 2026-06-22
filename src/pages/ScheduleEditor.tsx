@@ -35,6 +35,9 @@ export default function ScheduleEditor() {
   const [schedule, setSchedule] = useState<Schedule | null>(null);
   const [phases, setPhases] = useState<Phase[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activePhaseId, setActivePhaseId] = useState<string | null>(null);
+  const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
+  const [showSettings, setShowSettings] = useState(false);
 
   const load = async () => {
     if (!id) return;
@@ -51,6 +54,7 @@ export default function ScheduleEditor() {
     (its || []).forEach((it: Item) => { (byPhase[it.phase_id] ||= []).push(it); });
     setPhases((ps || []).map((p: any) => ({ ...p, items: byPhase[p.id] || [] })));
     setLoading(false);
+    if (ps && ps.length && !activePhaseId) setActivePhaseId(ps[0].id);
   };
 
   useEffect(() => { load(); }, [id]);
