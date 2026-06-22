@@ -5,6 +5,7 @@ import { ptBR } from "date-fns/locale";
 import {
   ArrowLeft, ArrowUp, ArrowDown, Plus, Trash2, Copy, Printer, Link2, Download, Save,
   ChevronDown, ChevronRight, CheckCircle2, Circle, Clock, Ban, CalendarClock, Settings2,
+  CalendarDays, Flag, Unlink,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,12 +22,16 @@ type Item = {
   id: string; phase_id: string; position: number; title: string;
   description: string | null; planned_date: string | null; done_date: string | null;
   status: string; assignee: string | null; notes: string | null;
+  training_id: string | null;
 };
 type Phase = { id: string; schedule_id: string; position: number; title: string; description: string | null; items: Item[] };
 type Schedule = {
   id: string; client_name: string; client_email: string | null; start_date: string;
   cadence: string; modality: string; use_team: string[]; status: string;
   observations: string | null; public_token: string | null; accepted_at: string | null; accepted_by: string | null;
+};
+type TrainingLite = {
+  id: string; title: string; scheduled_at: string; status: string; client: string | null;
 };
 
 export default function ScheduleEditor() {
@@ -38,6 +43,7 @@ export default function ScheduleEditor() {
   const [activePhaseId, setActivePhaseId] = useState<string | null>(null);
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
   const [showSettings, setShowSettings] = useState(false);
+  const [trainings, setTrainings] = useState<TrainingLite[]>([]);
 
   const load = async () => {
     if (!id) return;
@@ -58,6 +64,42 @@ export default function ScheduleEditor() {
   };
 
   useEffect(() => { load(); }, [id]);
+
+  // Load trainings (preferindo as do mesmo cliente)
+  useEffect(() => {
+    (async () => {
+      if (!schedule) return;
+      let q = supabase
+        .from("trainings")
+        .select("id, title, scheduled_at, status, client")
+        .order("scheduled_at", { ascending: false })
+        .limit(200);
+      if (schedule.client_name) q = q.eq("client", schedule.client_name);
+      const { data } = await q;
+      let list = (data as TrainingLite[]) || [];
+      if (list.length === 0) {
+        const { data: all } = await supabase
+          .from("trainings")
+          .select("id, title, scheduled_at, status, client")
+          .order("scheduled_at", { ascending: false })
+          .limit(200);
+        list = (all as TrainingLite[]) || [];
+      }
+      setTrainings(list);
+    })();
+  }, [schedule?.id, schedule?.client_name]);
+
+  const finalizeLinkedTraining = async (item: Item) => {
+    if (!item.training_id) return;
+    if (!confirm("Finalizar a visita vinculada? Esta etapa também será marcada como concluída.")) return;
+    const { error } = await supabase
+      .from("trainings")
+      .update({ status: "concluido" })
+      .eq("id", item.training_id);
+    if (error) return toast.error(error.message);
+    toast.success("Visita finalizada — etapa concluída");
+    await load();
+  };
 
   const progress = useMemo(() => {
     const items = phases.flatMap((p) => p.items).filter((i) => i.status !== "not_applicable");
@@ -390,6 +432,20 @@ export default function ScheduleEditor() {
                                     {format(new Date(item.planned_date + "T00:00"), "d MMM", { locale: ptBR })}
                                   </span>
                                 )}
+                                {item.training_id && (() => {
+                                  const t = trainings.find((x) => x.id === item.training_id);
+                                  if (!t) return (
+                                    <span className="hidden md:inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded bg-primary/10 text-primary">
+                                      <Link2 className="h-3 w-3" /> Visita
+                                    </span>
+                                  );
+                                  return (
+                                    <span className="hidden md:inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded bg-primary/10 text-primary">
+                                      <CalendarDays className="h-3 w-3" />
+                                      {format(new Date(t.scheduled_at), "d MMM HH:mm", { locale: ptBR })}
+                                    </span>
+                                  );
+                                })()}
                                 <span className={`text-[10px] px-2 py-0.5 rounded ${STATUS_COLORS[item.status]}`}>
                                   {STATUS_LABELS[item.status]}
                                 </span>
@@ -425,6 +481,54 @@ export default function ScheduleEditor() {
                                 </div>
                                 <Textarea placeholder="Observações…" value={item.notes || ""} rows={2}
                                   onChange={(e) => updateItem(phase.id, item.id, { notes: e.target.value || null })} />
+
+                                {/* Visita vinculada */}
+                                <div className="rounded-md border border-dashed border-border p-3 space-y-2">
+                                  <div className="flex items-center gap-2 text-xs font-medium">
+                                    <Link2 className="h-3.5 w-3.5 text-primary" />
+                                    Visita vinculada
+                                  </div>
+                                  <div className="flex flex-wrap gap-2 items-center">
+                                    <select
+                                      value={item.training_id || ""}
+                                      onChange={(e) => updateItem(phase.id, item.id, { training_id: e.target.value || null } as any)}
+                                      className="flex-1 min-w-[200px] h-10 rounded-md border border-input bg-background px-2 text-sm"
+                                    >
+                                      <option value="">— Nenhuma visita vinculada —</option>
+                                      {trainings.map((t) => (
+                                        <option key={t.id} value={t.id}>
+                                          {format(new Date(t.scheduled_at), "d MMM yyyy HH:mm", { locale: ptBR })} · {t.title}
+                                          {t.status === "concluido" ? " (finalizada)" : t.status === "cancelado" ? " (cancelada)" : ""}
+                                        </option>
+                                      ))}
+                                    </select>
+                                    {item.training_id && (
+                                      <>
+                                        <Link to={`/treinamento/${item.training_id}`}>
+                                          <Button variant="outline" size="sm" type="button">
+                                            <CalendarDays className="h-3.5 w-3.5" /> Abrir visita
+                                          </Button>
+                                        </Link>
+                                        <Button variant="outline" size="sm" type="button"
+                                          onClick={() => updateItem(phase.id, item.id, { training_id: null } as any)}>
+                                          <Unlink className="h-3.5 w-3.5" /> Desvincular
+                                        </Button>
+                                        {item.status !== "done" && (
+                                          <Button size="sm" type="button"
+                                            onClick={() => finalizeLinkedTraining(item)}>
+                                            <Flag className="h-3.5 w-3.5" /> Finalizar visita e etapa
+                                          </Button>
+                                        )}
+                                      </>
+                                    )}
+                                  </div>
+                                  {item.training_id && (
+                                    <p className="text-[11px] text-muted-foreground">
+                                      Ao marcar a visita como concluída na agenda, esta etapa é finalizada automaticamente.
+                                    </p>
+                                  )}
+                                </div>
+
                                 <div className="flex items-center justify-between">
                                   <div className="flex gap-1">
                                     <Button variant="ghost" size="sm" onClick={() => moveItem(phase, ii, -1)} disabled={ii === 0}>

@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.complete_schedule_items_for_training() FROM PUBLIC, anon, authenticated;

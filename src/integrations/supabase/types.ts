@@ -208,6 +208,7 @@ export type Database = {
           position: number
           status: Database["public"]["Enums"]["schedule_item_status"]
           title: string
+          training_id: string | null
           updated_at: string
         }
         Insert: {
@@ -222,6 +223,7 @@ export type Database = {
           position?: number
           status?: Database["public"]["Enums"]["schedule_item_status"]
           title: string
+          training_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -236,6 +238,7 @@ export type Database = {
           position?: number
           status?: Database["public"]["Enums"]["schedule_item_status"]
           title?: string
+          training_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -244,6 +247,13 @@ export type Database = {
             columns: ["phase_id"]
             isOneToOne: false
             referencedRelation: "schedule_phases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "schedule_items_training_id_fkey"
+            columns: ["training_id"]
+            isOneToOne: false
+            referencedRelation: "trainings"
             referencedColumns: ["id"]
           },
         ]
