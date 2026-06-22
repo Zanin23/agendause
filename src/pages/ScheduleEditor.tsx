@@ -5,6 +5,7 @@ import { ptBR } from "date-fns/locale";
 import {
   ArrowLeft, ArrowUp, ArrowDown, Plus, Trash2, Copy, Printer, Link2, Download, Save,
   ChevronDown, ChevronRight, CheckCircle2, Circle, Clock, Ban, CalendarClock, Settings2,
+  CalendarDays, Flag, Unlink,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,12 +22,16 @@ type Item = {
   id: string; phase_id: string; position: number; title: string;
   description: string | null; planned_date: string | null; done_date: string | null;
   status: string; assignee: string | null; notes: string | null;
+  training_id: string | null;
 };
 type Phase = { id: string; schedule_id: string; position: number; title: string; description: string | null; items: Item[] };
 type Schedule = {
   id: string; client_name: string; client_email: string | null; start_date: string;
   cadence: string; modality: string; use_team: string[]; status: string;
   observations: string | null; public_token: string | null; accepted_at: string | null; accepted_by: string | null;
+};
+type TrainingLite = {
+  id: string; title: string; scheduled_at: string; status: string; client: string | null;
 };
 
 export default function ScheduleEditor() {
@@ -38,6 +43,7 @@ export default function ScheduleEditor() {
   const [activePhaseId, setActivePhaseId] = useState<string | null>(null);
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
   const [showSettings, setShowSettings] = useState(false);
+  const [trainings, setTrainings] = useState<TrainingLite[]>([]);
 
   const load = async () => {
     if (!id) return;
@@ -58,6 +64,42 @@ export default function ScheduleEditor() {
   };
 
   useEffect(() => { load(); }, [id]);
+
+  // Load trainings (preferindo as do mesmo cliente)
+  useEffect(() => {
+    (async () => {
+      if (!schedule) return;
+      let q = supabase
+        .from("trainings")
+        .select("id, title, scheduled_at, status, client")
+        .order("scheduled_at", { ascending: false })
+        .limit(200);
+      if (schedule.client_name) q = q.eq("client", schedule.client_name);
+      const { data } = await q;
+      let list = (data as TrainingLite[]) || [];
+      if (list.length === 0) {
+        const { data: all } = await supabase
+          .from("trainings")
+          .select("id, title, scheduled_at, status, client")
+          .order("scheduled_at", { ascending: false })
+          .limit(200);
+        list = (all as TrainingLite[]) || [];
+      }
+      setTrainings(list);
+    })();
+  }, [schedule?.id, schedule?.client_name]);
+
+  const finalizeLinkedTraining = async (item: Item) => {
+    if (!item.training_id) return;
+    if (!confirm("Finalizar a visita vinculada? Esta etapa também será marcada como concluída.")) return;
+    const { error } = await supabase
+      .from("trainings")
+      .update({ status: "concluido" })
+      .eq("id", item.training_id);
+    if (error) return toast.error(error.message);
+    toast.success("Visita finalizada — etapa concluída");
+    await load();
+  };
 
   const progress = useMemo(() => {
     const items = phases.flatMap((p) => p.items).filter((i) => i.status !== "not_applicable");
