@@ -432,6 +432,20 @@ export default function ScheduleEditor() {
                                     {format(new Date(item.planned_date + "T00:00"), "d MMM", { locale: ptBR })}
                                   </span>
                                 )}
+                                {item.training_id && (() => {
+                                  const t = trainings.find((x) => x.id === item.training_id);
+                                  if (!t) return (
+                                    <span className="hidden md:inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded bg-primary/10 text-primary">
+                                      <Link2 className="h-3 w-3" /> Visita
+                                    </span>
+                                  );
+                                  return (
+                                    <span className="hidden md:inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded bg-primary/10 text-primary">
+                                      <CalendarDays className="h-3 w-3" />
+                                      {format(new Date(t.scheduled_at), "d MMM HH:mm", { locale: ptBR })}
+                                    </span>
+                                  );
+                                })()}
                                 <span className={`text-[10px] px-2 py-0.5 rounded ${STATUS_COLORS[item.status]}`}>
                                   {STATUS_LABELS[item.status]}
                                 </span>
@@ -467,6 +481,54 @@ export default function ScheduleEditor() {
                                 </div>
                                 <Textarea placeholder="Observações…" value={item.notes || ""} rows={2}
                                   onChange={(e) => updateItem(phase.id, item.id, { notes: e.target.value || null })} />
+
+                                {/* Visita vinculada */}
+                                <div className="rounded-md border border-dashed border-border p-3 space-y-2">
+                                  <div className="flex items-center gap-2 text-xs font-medium">
+                                    <Link2 className="h-3.5 w-3.5 text-primary" />
+                                    Visita vinculada
+                                  </div>
+                                  <div className="flex flex-wrap gap-2 items-center">
+                                    <select
+                                      value={item.training_id || ""}
+                                      onChange={(e) => updateItem(phase.id, item.id, { training_id: e.target.value || null } as any)}
+                                      className="flex-1 min-w-[200px] h-10 rounded-md border border-input bg-background px-2 text-sm"
+                                    >
+                                      <option value="">— Nenhuma visita vinculada —</option>
+                                      {trainings.map((t) => (
+                                        <option key={t.id} value={t.id}>
+                                          {format(new Date(t.scheduled_at), "d MMM yyyy HH:mm", { locale: ptBR })} · {t.title}
+                                          {t.status === "concluido" ? " (finalizada)" : t.status === "cancelado" ? " (cancelada)" : ""}
+                                        </option>
+                                      ))}
+                                    </select>
+                                    {item.training_id && (
+                                      <>
+                                        <Link to={`/treinamento/${item.training_id}`}>
+                                          <Button variant="outline" size="sm" type="button">
+                                            <CalendarDays className="h-3.5 w-3.5" /> Abrir visita
+                                          </Button>
+                                        </Link>
+                                        <Button variant="outline" size="sm" type="button"
+                                          onClick={() => updateItem(phase.id, item.id, { training_id: null } as any)}>
+                                          <Unlink className="h-3.5 w-3.5" /> Desvincular
+                                        </Button>
+                                        {item.status !== "done" && (
+                                          <Button size="sm" type="button"
+                                            onClick={() => finalizeLinkedTraining(item)}>
+                                            <Flag className="h-3.5 w-3.5" /> Finalizar visita e etapa
+                                          </Button>
+                                        )}
+                                      </>
+                                    )}
+                                  </div>
+                                  {item.training_id && (
+                                    <p className="text-[11px] text-muted-foreground">
+                                      Ao marcar a visita como concluída na agenda, esta etapa é finalizada automaticamente.
+                                    </p>
+                                  )}
+                                </div>
+
                                 <div className="flex items-center justify-between">
                                   <div className="flex gap-1">
                                     <Button variant="ghost" size="sm" onClick={() => moveItem(phase, ii, -1)} disabled={ii === 0}>
