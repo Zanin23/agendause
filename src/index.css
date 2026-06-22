@@ -503,3 +503,26 @@
   position: relative;
   z-index: 1;
 }
+
+/* Light surface variant (for white/cream backgrounds) */
+.bg-pattern-hex-light {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+.bg-pattern-hex-light::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("/assets/pattern-hex.png");
+  background-size: 280px auto;
+  background-repeat: repeat;
+  opacity: 0.12;
+  mix-blend-mode: multiply;
+  pointer-events: none;
+  z-index: 0;
+}
+.bg-pattern-hex-light > * {
+  position: relative;
+  z-index: 1;
+}
