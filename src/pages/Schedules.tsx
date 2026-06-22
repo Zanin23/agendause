@@ -20,6 +20,9 @@ type Row = {
   cadence: string;
   modality: string;
   accepted_at: string | null;
+  progress?: number;
+  total?: number;
+  done?: number;
 };
 
 export default function Schedules() {
@@ -35,7 +38,28 @@ export default function Schedules() {
       .select("id,client_name,start_date,status,cadence,modality,accepted_at")
       .order("start_date", { ascending: false });
     if (error) toast.error(error.message);
-    setRows((data as Row[]) || []);
+    const base = (data as Row[]) || [];
+
+    // fetch item counts per schedule via phases
+    const withProgress = await Promise.all(
+      base.map(async (r) => {
+        const { data: phases } = await supabase
+          .from("schedule_phases")
+          .select("id")
+          .eq("schedule_id", r.id);
+        const phaseIds = (phases || []).map((p: any) => p.id);
+        if (phaseIds.length === 0) return { ...r, progress: 0, total: 0, done: 0 };
+        const { data: items } = await supabase
+          .from("schedule_items")
+          .select("status")
+          .in("phase_id", phaseIds);
+        const total = items?.length || 0;
+        const done = (items || []).filter((i: any) => i.status === "done").length;
+        const progress = total > 0 ? Math.round((done / total) * 100) : 0;
+        return { ...r, progress, total, done };
+      })
+    );
+    setRows(withProgress);
     setLoading(false);
   };
 
@@ -90,24 +114,40 @@ export default function Schedules() {
           <div className="grid gap-3">
             {rows.map((r) => (
               <Card key={r.id} className="hover:border-primary/50 transition-colors">
-                <CardContent className="p-4 sm:p-5 flex items-center justify-between gap-4 flex-wrap">
-                  <Link to={`/cronogramas/${r.id}`} className="min-w-0 flex-1">
-                    <h3 className="font-semibold break-words">{r.client_name}</h3>
-                    <div className="text-xs text-muted-foreground mt-1 flex flex-wrap gap-3">
-                      <span>Início: {format(new Date(r.start_date), "d MMM yyyy", { locale: ptBR })}</span>
-                      <span>Cadência: {r.cadence}</span>
-                      <span>Modalidade: {r.modality}</span>
+                <CardContent className="p-4 sm:p-5 space-y-3">
+                  <div className="flex items-center justify-between gap-4 flex-wrap">
+                    <Link to={`/cronogramas/${r.id}`} className="min-w-0 flex-1">
+                      <h3 className="font-semibold break-words">{r.client_name}</h3>
+                      <div className="text-xs text-muted-foreground mt-1 flex flex-wrap gap-3">
+                        <span>Início: {format(new Date(r.start_date), "d MMM yyyy", { locale: ptBR })}</span>
+                        <span>Cadência: {r.cadence}</span>
+                        <span>Modalidade: {r.modality}</span>
+                      </div>
+                    </Link>
+                    <div className="flex items-center gap-2">
+                      {r.accepted_at && <Badge variant="success">Aceito</Badge>}
+                      <Badge variant="outline">{r.status}</Badge>
+                      <Button variant="ghost" size="sm" onClick={() => navigate(`/cronogramas/${r.id}`)}>
+                        <ExternalLink className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => remove(r.id)} className="text-destructive">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
-                  </Link>
-                  <div className="flex items-center gap-2">
-                    {r.accepted_at && <Badge variant="success">Aceito</Badge>}
-                    <Badge variant="outline">{r.status}</Badge>
-                    <Button variant="ghost" size="sm" onClick={() => navigate(`/cronogramas/${r.id}`)}>
-                      <ExternalLink className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="sm" onClick={() => remove(r.id)} className="text-destructive">
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">
+                        Progresso {r.done ?? 0}/{r.total ?? 0} etapas
+                      </span>
+                      <span className="font-semibold text-primary tabular-nums">{r.progress ?? 0}%</span>
+                    </div>
+                    <div className="h-2 rounded-full bg-muted overflow-hidden">
+                      <div
+                        className="h-full bg-primary transition-all"
+                        style={{ width: `${r.progress ?? 0}%` }}
+                      />
+                    </div>
                   </div>
                 </CardContent>
               </Card>
