@@ -497,7 +497,7 @@ export default function ScheduleEditor() {
                                       <option value="">— Nenhuma visita vinculada —</option>
                                       {trainings.map((t) => (
                                         <option key={t.id} value={t.id}>
-                                          {format(new Date(t.scheduled_at), "d MMM yyyy HH:mm", { locale: ptBR })} · {t.title}
+                                          {format(new Date(t.scheduled_at), "d MMM yyyy HH:mm", { locale: ptBR })} · {t.title}{t.client ? ` — ${t.client}` : ""}
                                           {t.status === "concluido" ? " (finalizada)" : t.status === "cancelado" ? " (cancelada)" : ""}
                                         </option>
                                       ))}
