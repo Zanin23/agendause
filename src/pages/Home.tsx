@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { CalendarDays, CalendarPlus, FileCheck2, ArrowRight } from "lucide-react";
+import { CalendarDays, CalendarPlus, FileCheck2, ArrowRight, ClipboardList } from "lucide-react";
 import logoAsset from "@/assets/logo-use-sistemas.png.asset.json";
 import { useState } from "react";
 import { AppHeader } from "@/components/AppHeader";
@@ -59,6 +59,12 @@ const Home = () => {
             icon={<FileCheck2 className="h-6 w-6" />}
             title="Relatórios de aceite"
             description="Acompanhe e imprima os termos de recebimento dos treinamentos."
+          />
+          <ActionCard
+            to="/cronogramas"
+            icon={<ClipboardList className="h-6 w-6" />}
+            title="Cronogramas"
+            description="Gerencie cronogramas de implantação ERP e PDV."
           />
         </div>
       </main>
