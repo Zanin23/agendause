@@ -64,8 +64,16 @@ export default function ScheduleNew() {
   const create = async () => {
     if (!user) return;
     if (!clientName.trim()) return toast.error("Informe o nome do cliente");
-    const tpl = templates.find((t) => t.id === templateId);
+    // Resolve template by current systemType to avoid stale templateId after toggling ERP/PDV.
+    const tplByType = pickTemplateForType(templates, systemType);
+    const tplById = templates.find((t) => t.id === templateId);
+    const tpl =
+      tplById && (tplById.name || "").toLowerCase().includes(systemType)
+        ? tplById
+        : tplByType;
     if (!tpl) return toast.error("Selecione um template");
+    // Keep the visible select in sync if we had to fall back.
+    if (tpl.id !== templateId) setTemplateId(tpl.id);
     if (scheduleMode === "delivery") {
       if (!deliveryDate) return toast.error("Informe a data de entrega");
       if (new Date(deliveryDate) <= new Date(startDate))
