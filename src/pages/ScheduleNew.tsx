@@ -41,7 +41,7 @@ function pickTemplateForType(list: TemplateRow[], type: "erp" | "pdv") {
   const match = list.find((t) => isTemplateForType(t, type));
   if (match) return match;
   if (type === "pdv") return undefined;
-  return list.find((t: any) => t.is_default) || list[0];
+  return list.find((t) => t.is_default) || list[0];
 }
 
 export default function ScheduleNew() {
@@ -69,7 +69,7 @@ export default function ScheduleNew() {
         .from("implementation_templates")
         .select("id,name,description,content,is_default")
         .order("is_default", { ascending: false });
-      const list = (data as any[]) || [];
+      const list = ((data ?? []) as unknown) as TemplateRow[];
       setTemplates(list);
       const pick = pickTemplateForType(list, systemType);
       if (pick) setTemplateId(pick.id);
@@ -148,8 +148,8 @@ export default function ScheduleNew() {
       }
       toast.success("Cronograma criado");
       navigate(`/cronogramas/${sched!.id}`);
-    } catch (e: any) {
-      toast.error(e.message || "Erro ao criar cronograma");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Erro ao criar cronograma");
     } finally {
       setSaving(false);
     }
@@ -250,7 +250,7 @@ export default function ScheduleNew() {
                   <Label>Cadência</Label>
                   <select
                     value={cadence}
-                    onChange={(e) => setCadence(e.target.value as any)}
+                    onChange={(e) => setCadence(e.target.value as typeof cadence)}
                     className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
                   >
                     <option value="semanal">Semanal</option>
@@ -273,7 +273,7 @@ export default function ScheduleNew() {
                 <Label>Modalidade</Label>
                 <select
                   value={modality}
-                  onChange={(e) => setModality(e.target.value as any)}
+                  onChange={(e) => setModality(e.target.value as typeof modality)}
                   className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
                 >
                   <option value="presencial">Presencial</option>
