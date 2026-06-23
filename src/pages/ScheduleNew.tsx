@@ -14,19 +14,40 @@ import { Textarea } from "@/components/ui/textarea";
 import { plannedDateFor, plannedDateForRange, TemplateContent } from "@/lib/schedule";
 import { addDays, format } from "date-fns";
 
-type TemplateRow = { id: string; name: string; description: string | null; content: TemplateContent };
+type TemplateRow = {
+  id: string;
+  name: string;
+  description: string | null;
+  content: TemplateContent;
+  is_default?: boolean;
+};
+
+function countTemplateItems(template?: TemplateRow) {
+  return template?.content?.phases?.reduce((total, phase) => total + phase.items.length, 0) ?? 0;
+}
+
+function isTemplateForType(template: TemplateRow, type: "erp" | "pdv") {
+  const name = (template.name || "").toLowerCase();
+  const itemCount = countTemplateItems(template);
+
+  if (type === "pdv") {
+    return name.includes("pdv") && itemCount === 43;
+  }
+
+  return name.includes("erp") || (Boolean(template.is_default) && itemCount !== 43);
+}
 
 function pickTemplateForType(list: TemplateRow[], type: "erp" | "pdv") {
-  const keyword = type === "pdv" ? "pdv" : "erp";
-  const match = list.find((t) => (t.name || "").toLowerCase().includes(keyword));
+  const match = list.find((t) => isTemplateForType(t, type));
   if (match) return match;
-  return list.find((t: any) => t.is_default) || list[0];
+  if (type === "pdv") return undefined;
+  return list.find((t) => t.is_default) || list[0];
 }
 
 export default function ScheduleNew() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [templates, setTemplates] = useState<{ id: string; name: string; description: string | null; content: TemplateContent }[]>([]);
+  const [templates, setTemplates] = useState<TemplateRow[]>([]);
   const [templateId, setTemplateId] = useState<string>("");
   const [systemType, setSystemType] = useState<"erp" | "pdv">("erp");
   const [clientName, setClientName] = useState("");
@@ -40,6 +61,7 @@ export default function ScheduleNew() {
   const [modality, setModality] = useState<"presencial" | "remoto" | "hibrido">("presencial");
   const [team, setTeam] = useState("Matheus Zanin, Claudinei da Silva, Pablo Cassiano");
   const [saving, setSaving] = useState(false);
+  const availableTemplates = templates.filter((template) => isTemplateForType(template, systemType));
 
   useEffect(() => {
     (async () => {
@@ -47,7 +69,7 @@ export default function ScheduleNew() {
         .from("implementation_templates")
         .select("id,name,description,content,is_default")
         .order("is_default", { ascending: false });
-      const list = (data as any[]) || [];
+      const list = ((data ?? []) as unknown) as TemplateRow[];
       setTemplates(list);
       const pick = pickTemplateForType(list, systemType);
       if (pick) setTemplateId(pick.id);
@@ -67,11 +89,11 @@ export default function ScheduleNew() {
     // Resolve template by current systemType to avoid stale templateId after toggling ERP/PDV.
     const tplByType = pickTemplateForType(templates, systemType);
     const tplById = templates.find((t) => t.id === templateId);
-    const tpl =
-      tplById && (tplById.name || "").toLowerCase().includes(systemType)
-        ? tplById
-        : tplByType;
+    const tpl = tplById && isTemplateForType(tplById, systemType) ? tplById : tplByType;
     if (!tpl) return toast.error("Selecione um template");
+    if (systemType === "pdv" && countTemplateItems(tpl) !== 43) {
+      return toast.error("Template PDV inválido: deve conter somente as 43 etapas da Agropecuária 2 Irmãos");
+    }
     // Keep the visible select in sync if we had to fall back.
     if (tpl.id !== templateId) setTemplateId(tpl.id);
     if (scheduleMode === "delivery") {
@@ -126,8 +148,8 @@ export default function ScheduleNew() {
       }
       toast.success("Cronograma criado");
       navigate(`/cronogramas/${sched!.id}`);
-    } catch (e: any) {
-      toast.error(e.message || "Erro ao criar cronograma");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Erro ao criar cronograma");
     } finally {
       setSaving(false);
     }
@@ -228,7 +250,7 @@ export default function ScheduleNew() {
                   <Label>Cadência</Label>
                   <select
                     value={cadence}
-                    onChange={(e) => setCadence(e.target.value as any)}
+                    onChange={(e) => setCadence(e.target.value as typeof cadence)}
                     className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
                   >
                     <option value="semanal">Semanal</option>
@@ -251,7 +273,7 @@ export default function ScheduleNew() {
                 <Label>Modalidade</Label>
                 <select
                   value={modality}
-                  onChange={(e) => setModality(e.target.value as any)}
+                  onChange={(e) => setModality(e.target.value as typeof modality)}
                   className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
                 >
                   <option value="presencial">Presencial</option>
@@ -270,7 +292,7 @@ export default function ScheduleNew() {
                   onChange={(e) => setTemplateId(e.target.value)}
                   className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
                 >
-                  {templates.map((t) => (
+                  {availableTemplates.map((t) => (
                     <option key={t.id} value={t.id}>{t.name}</option>
                   ))}
                 </select>
