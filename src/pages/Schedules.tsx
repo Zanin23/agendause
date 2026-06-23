@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Plus, ClipboardList, ExternalLink, Trash2 } from "lucide-react";
+import { Plus, ClipboardList, ExternalLink, Trash2, Send, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -11,6 +11,27 @@ import { SEO } from "@/components/SEO";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+
+const STATUS_LABELS: Record<string, string> = {
+  draft: "Rascunho",
+  active: "Ativo",
+  in_progress: "Em andamento",
+  accepted: "Aceito",
+  completed: "Concluído",
+  archived: "Arquivado",
+};
+
+const STATUS_VARIANTS: Record<string, "default" | "secondary" | "outline" | "success" | "destructive"> = {
+  draft: "outline",
+  active: "default",
+  in_progress: "default",
+  accepted: "success",
+  completed: "success",
+  archived: "secondary",
+};
+
+const statusLabel = (s: string) => STATUS_LABELS[s] ?? s;
+const statusVariant = (s: string) => STATUS_VARIANTS[s] ?? "outline";
 
 type Row = {
   id: string;
@@ -75,6 +96,16 @@ export default function Schedules() {
     load();
   };
 
+  const changeStatus = async (id: string, status: string, msg: string) => {
+    const { error } = await supabase
+      .from("implementation_schedules")
+      .update({ status })
+      .eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.success(msg);
+    load();
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <SEO
@@ -126,7 +157,27 @@ export default function Schedules() {
                     </Link>
                     <div className="flex items-center gap-2">
                       {r.accepted_at && <Badge variant="success">Aceito</Badge>}
-                      <Badge variant="outline">{r.status}</Badge>
+                      <Badge variant={statusVariant(r.status)}>{statusLabel(r.status)}</Badge>
+                      {r.status === "draft" && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          title="Publicar (tornar ativo)"
+                          onClick={() => changeStatus(r.id, "active", "Cronograma publicado")}
+                        >
+                          <Send className="h-4 w-4" />
+                        </Button>
+                      )}
+                      {r.status === "active" && (r.progress ?? 0) === 100 && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          title="Marcar como concluído"
+                          onClick={() => changeStatus(r.id, "completed", "Cronograma concluído")}
+                        >
+                          <CheckCircle2 className="h-4 w-4" />
+                        </Button>
+                      )}
                       <Button variant="ghost" size="sm" onClick={() => navigate(`/cronogramas/${r.id}`)}>
                         <ExternalLink className="h-4 w-4" />
                       </Button>
