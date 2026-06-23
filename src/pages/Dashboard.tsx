@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { format, isSameDay, isAfter, startOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CalendarPlus, MapPin, Clock, CheckCircle2, Printer, XCircle, ClipboardList } from "lucide-react";
+import { CalendarPlus, MapPin, Clock, CheckCircle2, Printer, XCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { AppHeader } from "@/components/AppHeader";
