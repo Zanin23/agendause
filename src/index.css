@@ -238,6 +238,71 @@
   a, button, input, label {
     font-family: var(--font-heading, 'Clash Display'), system-ui, sans-serif;
   }
+
+  /* Global retro palette accents — links, selection, scrollbar, focus */
+  a {
+    color: hsl(var(--color-primary) / 1);
+    color: var(--color-primary);
+    text-decoration-color: color-mix(in oklch, var(--color-primary) 40%, transparent);
+    text-underline-offset: 0.18em;
+    transition: color 0.2s ease, text-decoration-color 0.2s ease;
+  }
+  a:hover {
+    color: var(--accent-red);
+    text-decoration-color: var(--accent-red);
+  }
+  /* Links inside buttons/cards/menus shouldn't override their own color */
+  button a,
+  [role="button"] a,
+  .btn a,
+  nav a,
+  [data-no-link-style] a,
+  a[data-no-link-style] {
+    color: inherit;
+    text-decoration: inherit;
+  }
+
+  ::selection {
+    background: color-mix(in oklch, var(--color-primary) 70%, transparent);
+    color: var(--color-primary-foreground);
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--color-background);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: color-mix(in oklch, var(--color-primary) 55%, var(--color-muted));
+    border-radius: 9999px;
+    border: 2px solid var(--color-background);
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-primary);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+}
+
+@layer components {
+  /* Retro card surface — subtle warm gradient + grain feel */
+  .retro-surface {
+    background:
+      radial-gradient(120% 80% at 0% 0%, color-mix(in oklch, var(--color-primary) 8%, transparent), transparent 60%),
+      radial-gradient(120% 80% at 100% 100%, color-mix(in oklch, var(--color-secondary) 10%, transparent), transparent 60%),
+      var(--color-card);
+  }
+  .retro-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--color-primary), transparent);
+    opacity: 0.5;
+  }
 }
 
 /* Add the keyframes definition */
