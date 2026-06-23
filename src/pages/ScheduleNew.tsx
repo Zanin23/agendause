@@ -14,6 +14,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { plannedDateFor, plannedDateForRange, TemplateContent } from "@/lib/schedule";
 import { addDays, format } from "date-fns";
 
+type TemplateRow = { id: string; name: string; description: string | null; content: TemplateContent };
+
+function pickTemplateForType(list: TemplateRow[], type: "erp" | "pdv") {
+  const keyword = type === "pdv" ? "pdv" : "erp";
+  const match = list.find((t) => (t.name || "").toLowerCase().includes(keyword));
+  if (match) return match;
+  return list.find((t: any) => t.is_default) || list[0];
+}
+
 export default function ScheduleNew() {
   const { user } = useAuth();
   const navigate = useNavigate();
