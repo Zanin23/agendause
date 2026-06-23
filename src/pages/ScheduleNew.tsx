@@ -11,8 +11,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { plannedDateFor, TemplateContent } from "@/lib/schedule";
-import { format } from "date-fns";
+import { plannedDateFor, plannedDateForRange, TemplateContent } from "@/lib/schedule";
+import { addDays, format } from "date-fns";
 
 export default function ScheduleNew() {
   const { user } = useAuth();
@@ -23,6 +23,10 @@ export default function ScheduleNew() {
   const [clientEmail, setClientEmail] = useState("");
   const [startDate, setStartDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const [cadence, setCadence] = useState<"semanal" | "quinzenal" | "mensal">("semanal");
+  const [scheduleMode, setScheduleMode] = useState<"cadence" | "delivery">("cadence");
+  const [deliveryDate, setDeliveryDate] = useState(
+    format(addDays(new Date(), 60), "yyyy-MM-dd"),
+  );
   const [modality, setModality] = useState<"presencial" | "remoto" | "hibrido">("presencial");
   const [team, setTeam] = useState("Matheus Zanin, Claudinei da Silva, Pablo Cassiano");
   const [saving, setSaving] = useState(false);
@@ -45,6 +49,11 @@ export default function ScheduleNew() {
     if (!clientName.trim()) return toast.error("Informe o nome do cliente");
     const tpl = templates.find((t) => t.id === templateId);
     if (!tpl) return toast.error("Selecione um template");
+    if (scheduleMode === "delivery") {
+      if (!deliveryDate) return toast.error("Informe a data de entrega");
+      if (new Date(deliveryDate) <= new Date(startDate))
+        return toast.error("A data de entrega deve ser após a data de início");
+    }
     setSaving(true);
     try {
       const { data: sched, error: e1 } = await supabase
@@ -64,6 +73,8 @@ export default function ScheduleNew() {
       if (e1) throw e1;
 
       const start = new Date(startDate + "T00:00:00");
+      const end = new Date(deliveryDate + "T00:00:00");
+      const totalPhases = tpl.content.phases.length;
       for (let pi = 0; pi < tpl.content.phases.length; pi++) {
         const phase = tpl.content.phases[pi];
         const { data: phaseRow, error: e2 } = await supabase
@@ -76,7 +87,12 @@ export default function ScheduleNew() {
           phase_id: phaseRow!.id,
           position: ii,
           title,
-          planned_date: format(plannedDateFor(start, cadence, pi, ii, phase.items.length), "yyyy-MM-dd"),
+          planned_date: format(
+            scheduleMode === "delivery"
+              ? plannedDateForRange(start, end, pi, totalPhases, ii, phase.items.length)
+              : plannedDateFor(start, cadence, pi, ii, phase.items.length),
+            "yyyy-MM-dd",
+          ),
         }));
         if (items.length) {
           const { error: e3 } = await supabase.from("schedule_items").insert(items);
@@ -128,18 +144,57 @@ export default function ScheduleNew() {
                 <Label>Data de início</Label>
                 <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
               </div>
-              <div className="space-y-1.5">
-                <Label>Cadência</Label>
-                <select
-                  value={cadence}
-                  onChange={(e) => setCadence(e.target.value as any)}
-                  className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
-                >
-                  <option value="semanal">Semanal</option>
-                  <option value="quinzenal">Quinzenal</option>
-                  <option value="mensal">Mensal</option>
-                </select>
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label>Como distribuir as datas</Label>
+                <div className="inline-flex rounded-md border border-input bg-background p-1 text-sm">
+                  <button
+                    type="button"
+                    onClick={() => setScheduleMode("cadence")}
+                    className={`px-3 h-8 rounded-sm transition-colors ${
+                      scheduleMode === "cadence"
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    Por cadência
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setScheduleMode("delivery")}
+                    className={`px-3 h-8 rounded-sm transition-colors ${
+                      scheduleMode === "delivery"
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    Por data de entrega
+                  </button>
+                </div>
               </div>
+              {scheduleMode === "cadence" ? (
+                <div className="space-y-1.5">
+                  <Label>Cadência</Label>
+                  <select
+                    value={cadence}
+                    onChange={(e) => setCadence(e.target.value as any)}
+                    className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+                  >
+                    <option value="semanal">Semanal</option>
+                    <option value="quinzenal">Quinzenal</option>
+                    <option value="mensal">Mensal</option>
+                  </select>
+                </div>
+              ) : (
+                <div className="space-y-1.5">
+                  <Label>Data de entrega</Label>
+                  <Input
+                    type="date"
+                    value={deliveryDate}
+                    min={startDate}
+                    onChange={(e) => setDeliveryDate(e.target.value)}
+                  />
+                </div>
+              )}
               <div className="space-y-1.5">
                 <Label>Modalidade</Label>
                 <select
