@@ -89,11 +89,11 @@ export default function ScheduleNew() {
     // Resolve template by current systemType to avoid stale templateId after toggling ERP/PDV.
     const tplByType = pickTemplateForType(templates, systemType);
     const tplById = templates.find((t) => t.id === templateId);
-    const tpl =
-      tplById && (tplById.name || "").toLowerCase().includes(systemType)
-        ? tplById
-        : tplByType;
+    const tpl = tplById && isTemplateForType(tplById, systemType) ? tplById : tplByType;
     if (!tpl) return toast.error("Selecione um template");
+    if (systemType === "pdv" && countTemplateItems(tpl) !== 43) {
+      return toast.error("Template PDV inválido: deve conter somente as 43 etapas da Agropecuária 2 Irmãos");
+    }
     // Keep the visible select in sync if we had to fall back.
     if (tpl.id !== templateId) setTemplateId(tpl.id);
     if (scheduleMode === "delivery") {
@@ -292,7 +292,7 @@ export default function ScheduleNew() {
                   onChange={(e) => setTemplateId(e.target.value)}
                   className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
                 >
-                  {templates.map((t) => (
+                  {availableTemplates.map((t) => (
                     <option key={t.id} value={t.id}>{t.name}</option>
                   ))}
                 </select>
