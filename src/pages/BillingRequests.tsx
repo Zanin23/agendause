@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Plus, Bell, BellOff, CheckCircle2, Trash2, MessageSquarePlus, Settings, X, Smartphone, Send, ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
+import { ArrowLeft, Plus, Bell, BellOff, CheckCircle2, Trash2, MessageSquarePlus, Settings, X, Smartphone, Send, ChevronLeft, ChevronRight, CalendarDays, FileDown } from "lucide-react";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import { AppHeader } from "@/components/AppHeader";
 import { SEO } from "@/components/SEO";
 import { Button } from "@/components/ui/button";
@@ -202,6 +204,90 @@ export default function BillingRequests() {
     setSelectedWeek(toISODate(startOfWeek(base)));
   };
 
+  const exportPdf = () => {
+    if (grouped.length === 0) {
+      toast.error("Nada para exportar");
+      return;
+    }
+    const doc = new jsPDF({ unit: "pt", format: "a4" });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const now = new Date();
+
+    doc.setFontSize(16);
+    doc.text("Solicitações a cobrar", 40, 50);
+    doc.setFontSize(10);
+    doc.setTextColor(120);
+    const subtitleParts: string[] = [];
+    if (selectedWeek !== "all") subtitleParts.push(formatWeekLabel(selectedWeek));
+    else subtitleParts.push("Todas as semanas");
+    if (filterClient) subtitleParts.push(`Cliente: ${filterClient}`);
+    subtitleParts.push(showDelivered ? "Incluindo entregues" : "Somente pendentes");
+    doc.text(subtitleParts.join("  ·  "), 40, 68);
+    doc.text(
+      `Gerado em ${now.toLocaleString("pt-BR")}`,
+      pageWidth - 40,
+      68,
+      { align: "right" }
+    );
+    doc.setTextColor(0);
+
+    let cursorY = 90;
+
+    grouped.forEach(([weekIso, byClient]) => {
+      const total = Array.from(byClient.values()).reduce((s, a) => s + a.length, 0);
+      doc.setFontSize(12);
+      doc.setFont(undefined as any, "bold");
+      doc.text(`${formatWeekLabel(weekIso)}  (${total})`, 40, cursorY);
+      doc.setFont(undefined as any, "normal");
+      cursorY += 8;
+
+      Array.from(byClient.entries())
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .forEach(([client, list]) => {
+          const sorted = [...list].sort((a, b) =>
+            a.number.localeCompare(b.number, undefined, { numeric: true })
+          );
+          const rows = sorted.map((r) => {
+            const ups = updates[r.id] || [];
+            const upsText = ups
+              .map((u) => `• ${u.content}`)
+              .join("\n");
+            return [
+              r.number,
+              r.title + (r.description ? `\n${r.description}` : ""),
+              r.status === "delivered" ? "Entregue" : "Pendente",
+              upsText,
+            ];
+          });
+          autoTable(doc, {
+            startY: cursorY + 4,
+            head: [[
+              { content: client, colSpan: 4, styles: { halign: "left", fillColor: [240, 240, 240], textColor: 20, fontStyle: "bold" } },
+            ], ["Nº", "Solicitação", "Status", "Atualizações"]],
+            body: rows,
+            styles: { fontSize: 9, cellPadding: 4, valign: "top" },
+            headStyles: { fillColor: [250, 250, 250], textColor: 60, lineWidth: 0.2, lineColor: [220, 220, 220] },
+            columnStyles: {
+              0: { cellWidth: 55, fontStyle: "bold" },
+              1: { cellWidth: 230 },
+              2: { cellWidth: 60 },
+              3: { cellWidth: "auto" },
+            },
+            margin: { left: 40, right: 40 },
+            theme: "grid",
+          });
+          // @ts-ignore - lastAutoTable is added by autoTable
+          cursorY = (doc as any).lastAutoTable.finalY + 14;
+        });
+
+      cursorY += 6;
+    });
+
+    const filename = `solicitacoes-cobrar-${toISODate(now)}.pdf`;
+    doc.save(filename);
+    toast.success("PDF gerado");
+  };
+
   // Group by week -> client -> requests
   const grouped = useMemo(() => {
     const byWeek = new Map<string, Map<string, Request[]>>();
@@ -298,6 +384,10 @@ export default function BillingRequests() {
             onClick={() => setShowDelivered((v) => !v)}
           >
             {showDelivered ? "Ocultar entregues" : "Mostrar entregues"}
+          </Button>
+          <Button variant="outline" size="sm" onClick={exportPdf}>
+            <FileDown className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Exportar PDF</span>
           </Button>
         </div>
 
