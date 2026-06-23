@@ -48,3 +48,22 @@ export function plannedDateFor(
   const within = Math.floor((itemIndex / Math.max(1, itemsInPhase)) * step);
   return addDays(base, within);
 }
+
+/** Distribute item dates evenly between startDate and endDate across all phases. */
+export function plannedDateForRange(
+  startDate: Date,
+  endDate: Date,
+  phaseIndex: number,
+  totalPhases: number,
+  itemIndex: number,
+  itemsInPhase: number,
+) {
+  const totalDays = Math.max(
+    1,
+    Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)),
+  );
+  const phaseWindow = totalDays / Math.max(1, totalPhases);
+  const base = phaseIndex * phaseWindow;
+  const within = (itemIndex / Math.max(1, itemsInPhase)) * phaseWindow;
+  return addDays(startDate, Math.round(base + within));
+}
