@@ -81,12 +81,6 @@ const Dashboard = () => {
             <p className="text-muted-foreground mt-1 text-sm sm:text-base">Acompanhe sessões agendadas e confirme seu recebimento.</p>
           </div>
           <div className="flex gap-2 w-full sm:w-auto">
-            <Link to="/cronogramas">
-              <Button variant="outline" size="sm" className="w-full sm:w-auto sm:h-10">
-                <ClipboardList className="h-4 w-4" />
-                <span className="hidden sm:inline">Cronogramas</span>
-              </Button>
-            </Link>
             <Link to="/agenda/imprimir">
               <Button variant="outline" size="sm" className="w-full sm:w-auto sm:h-10">
                 <Printer className="h-4 w-4" />
