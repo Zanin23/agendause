@@ -9,67 +9,69 @@
     --font-heading-weight: 600;
     --font-body-weight: 400;
 
-    /* Use Sistemas brand: black / red / orange */
-    --color-background: oklch(14% 0.005 40); /* near-black warm */
-    --color-foreground: oklch(98% 0.003 60);
+    /* Retro illustrative palette — burnt orange, deep midnight navy,
+       wine red and cream paper. Inspired by mid-century travel posters
+       and matchbook print. */
+    --color-background: oklch(18% 0.04 255); /* midnight navy */
+    --color-foreground: oklch(96% 0.02 75); /* warm cream */
 
-    --color-card: oklch(18% 0.006 40);
-    --color-card-foreground: oklch(98% 0.003 60);
+    --color-card: oklch(22% 0.05 255);
+    --color-card-foreground: oklch(96% 0.02 75);
 
-    --color-popover: oklch(18% 0.006 40);
-    --color-popover-foreground: oklch(98% 0.003 60);
+    --color-popover: oklch(22% 0.05 255);
+    --color-popover-foreground: oklch(96% 0.02 75);
 
-    /* Primary: brand orange ~#EA5A1A */
-    --color-primary: oklch(66% 0.19 45);
-    --color-primary-foreground: oklch(100% 0 0);
+    /* Primary: burnt orange ~#E85D2F */
+    --color-primary: oklch(64% 0.19 38);
+    --color-primary-foreground: oklch(98% 0.015 75);
 
-    /* Secondary: deep red ~#C0392B */
-    --color-secondary: oklch(55% 0.2 25);
-    --color-secondary-foreground: oklch(100% 0 0);
+    /* Secondary: deep wine red ~#7A1F1A */
+    --color-secondary: oklch(38% 0.13 25);
+    --color-secondary-foreground: oklch(96% 0.02 75);
 
-    /* Accent: bright orange highlight */
-    --color-accent: oklch(70% 0.2 50);
-    --color-accent-foreground: oklch(15% 0.01 40);
+    /* Accent: warm cream paper highlight */
+    --color-accent: oklch(88% 0.06 75);
+    --color-accent-foreground: oklch(22% 0.05 25);
 
-    --color-muted: oklch(24% 0.008 40);
-    --color-muted-foreground: oklch(70% 0.01 50);
+    --color-muted: oklch(26% 0.04 255);
+    --color-muted-foreground: oklch(75% 0.03 70);
 
-    --color-destructive: oklch(58% 0.22 22);
-    --color-destructive-foreground: oklch(100% 0 0);
+    --color-destructive: oklch(55% 0.22 25);
+    --color-destructive-foreground: oklch(98% 0.01 75);
 
-    --color-border: oklch(28% 0.01 40);
-    --color-input: oklch(28% 0.01 40);
-    --color-ring: oklch(66% 0.19 45);
+    --color-border: oklch(32% 0.05 255);
+    --color-input: oklch(32% 0.05 255);
+    --color-ring: oklch(64% 0.19 38);
 
     --radius: 1.2rem;
 
     /* Template-specific tokens (not overridden by theme system) */
-    --primary-light: oklch(74% 0.17 50);
-    --primary-glow: oklch(78% 0.18 55);
-    --accent-red: oklch(58% 0.22 22);
+    --primary-light: oklch(72% 0.17 45);
+    --primary-glow: oklch(78% 0.16 60);
+    --accent-red: oklch(50% 0.2 25);
 
-    --editorial-text: oklch(98% 0.003 60);
-    --editorial-text-light: oklch(65% 0.01 50);
-    --editorial-tag: oklch(66% 0.19 45);
-    --editorial-tag-bg: oklch(24% 0.008 40);
-    --editorial-hover: oklch(20% 0.008 40);
+    --editorial-text: oklch(96% 0.02 75);
+    --editorial-text-light: oklch(72% 0.03 70);
+    --editorial-tag: oklch(64% 0.19 38);
+    --editorial-tag-bg: oklch(26% 0.04 255);
+    --editorial-hover: oklch(24% 0.05 255);
 
     /* Gradient definitions */
     --gradient-primary: linear-gradient(
       135deg,
-      oklch(66% 0.19 45),
-      oklch(55% 0.22 25)
+      oklch(68% 0.2 50),
+      oklch(50% 0.2 25)
     );
     --gradient-hero: linear-gradient(
       135deg,
-      oklch(70% 0.2 55) 0%,
-      oklch(62% 0.21 35) 50%,
-      oklch(50% 0.22 22) 100%
+      oklch(72% 0.18 55) 0%,
+      oklch(60% 0.21 35) 45%,
+      oklch(34% 0.12 260) 100%
     );
     --gradient-accent: linear-gradient(
       90deg,
-      oklch(70% 0.2 50),
-      oklch(58% 0.22 25)
+      oklch(72% 0.18 55),
+      oklch(54% 0.2 28)
     );
 
     /* Sidebar — derives from theme tokens */
