@@ -40,7 +40,7 @@ const Home = () => {
           </div>
         </div>
 
-        <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-5">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
           <ActionCard
             to="/agenda"
             icon={<CalendarDays className="h-6 w-6" />}
