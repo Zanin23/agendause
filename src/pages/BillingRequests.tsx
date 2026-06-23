@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Plus, Bell, BellOff, CheckCircle2, Trash2, MessageSquarePlus, Settings, X, Smartphone, Send } from "lucide-react";
+import { ArrowLeft, Plus, Bell, BellOff, CheckCircle2, Trash2, MessageSquarePlus, Settings, X, Smartphone, Send, ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
 import { SEO } from "@/components/SEO";
 import { Button } from "@/components/ui/button";
@@ -82,6 +82,9 @@ export default function BillingRequests() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [filterClient, setFilterClient] = useState<string>("");
   const [showDelivered, setShowDelivered] = useState(false);
+  const [selectedWeek, setSelectedWeek] = useState<string | "all">(
+    toISODate(startOfWeek(new Date()))
+  );
   const [settings, setSettings] = useState<Settings | null>(null);
 
   const load = async () => {
@@ -166,9 +169,25 @@ export default function BillingRequests() {
     return requests.filter((r) => {
       if (filterClient && r.client !== filterClient) return false;
       if (!showDelivered && r.status === "delivered") return false;
+      if (selectedWeek !== "all" && r.week_start !== selectedWeek) return false;
       return true;
     });
-  }, [requests, filterClient, showDelivered]);
+  }, [requests, filterClient, showDelivered, selectedWeek]);
+
+  const availableWeeks = useMemo(() => {
+    const set = new Set<string>(requests.map((r) => r.week_start));
+    set.add(toISODate(startOfWeek(new Date())));
+    return Array.from(set).sort((a, b) => (a < b ? 1 : -1));
+  }, [requests]);
+
+  const shiftWeek = (delta: number) => {
+    const base =
+      selectedWeek === "all"
+        ? startOfWeek(new Date())
+        : new Date(selectedWeek + "T00:00:00");
+    base.setDate(base.getDate() + delta * 7);
+    setSelectedWeek(toISODate(startOfWeek(base)));
+  };
 
   // Group by week -> client -> requests
   const grouped = useMemo(() => {
@@ -210,6 +229,46 @@ export default function BillingRequests() {
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
+          <div className="inline-flex items-center gap-1 rounded-md border border-border bg-card p-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 w-7 p-0"
+              onClick={() => shiftWeek(-1)}
+              aria-label="Semana anterior"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <select
+              className="h-7 bg-transparent text-sm px-1 outline-none min-w-[180px]"
+              value={selectedWeek}
+              onChange={(e) => setSelectedWeek(e.target.value as any)}
+            >
+              <option value="all">Todas as semanas</option>
+              {availableWeeks.map((w) => (
+                <option key={w} value={w}>{formatWeekLabel(w)}</option>
+              ))}
+            </select>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 w-7 p-0"
+              onClick={() => shiftWeek(1)}
+              aria-label="Próxima semana"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2 text-xs"
+              onClick={() => setSelectedWeek(toISODate(startOfWeek(new Date())))}
+              title="Ir para esta semana"
+            >
+              <CalendarDays className="h-3.5 w-3.5 mr-1" />
+              Hoje
+            </Button>
+          </div>
           <select
             className="h-9 rounded-md border border-border bg-card px-3 text-sm"
             value={filterClient}
