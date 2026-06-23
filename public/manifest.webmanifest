@@ -1,7 +1,7 @@
 {
-  "name": "TreinaCheck — Agenda de Treinamentos",
-  "short_name": "TreinaCheck",
-  "description": "Gerencie a agenda de treinamentos da equipe e registre o aceite de recebimento em um clique.",
+  "name": "Use Sistemas — Agenda & Solicitações",
+  "short_name": "Use Sistemas",
+  "description": "Agenda de treinamentos, cronogramas e cobrança de solicitações da Use Sistemas.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
