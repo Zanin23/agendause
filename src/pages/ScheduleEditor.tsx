@@ -229,28 +229,34 @@ export default function ScheduleEditor() {
         path={`/cronogramas/${schedule.id}`}
       />
       <AppHeader />
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-5">
+      <main className="max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-5">
         {/* Toolbar */}
         <div className="flex items-center justify-between flex-wrap gap-2">
-          <div className="flex items-center gap-2 min-w-0">
-            <Button variant="ghost" size="sm" onClick={() => navigate("/cronogramas")}>
+          <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
+            <Button variant="ghost" size="sm" className="shrink-0 px-2" onClick={() => navigate("/cronogramas")}>
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <div className="min-w-0">
               <h1 className="text-base sm:text-lg font-semibold truncate">{schedule.client_name}</h1>
-              <p className="text-xs text-muted-foreground">
-                Início {format(new Date(schedule.start_date + "T00:00"), "d MMM yyyy", { locale: ptBR })} · {schedule.cadence} · {schedule.modality}
+              <p className="text-[11px] sm:text-xs text-muted-foreground truncate">
+                {format(new Date(schedule.start_date + "T00:00"), "d MMM yyyy", { locale: ptBR })} · {schedule.cadence} · {schedule.modality}
               </p>
             </div>
           </div>
-          <div className="flex flex-wrap gap-1.5">
-            <Button variant="ghost" size="sm" onClick={() => setShowSettings((s) => !s)}>
-              <Settings2 className="h-4 w-4" /> Detalhes
+          <div className="flex flex-wrap gap-1 sm:gap-1.5">
+            <Button variant="ghost" size="sm" className="px-2 sm:px-3" onClick={() => setShowSettings((s) => !s)}>
+              <Settings2 className="h-4 w-4" /> <span className="hidden sm:inline">Detalhes</span>
             </Button>
-            <Button variant="ghost" size="sm" onClick={copyPublicLink}><Link2 className="h-4 w-4" /> Link</Button>
-            <Button variant="ghost" size="sm" onClick={exportCsv}><Download className="h-4 w-4" /> CSV</Button>
+            <Button variant="ghost" size="sm" className="px-2 sm:px-3" onClick={copyPublicLink}>
+              <Link2 className="h-4 w-4" /> <span className="hidden sm:inline">Link</span>
+            </Button>
+            <Button variant="ghost" size="sm" className="px-2 sm:px-3" onClick={exportCsv}>
+              <Download className="h-4 w-4" /> <span className="hidden sm:inline">CSV</span>
+            </Button>
             <Link to={`/cronogramas/${schedule.id}/imprimir`}>
-              <Button variant="ghost" size="sm"><Printer className="h-4 w-4" /> PDF</Button>
+              <Button variant="ghost" size="sm" className="px-2 sm:px-3">
+                <Printer className="h-4 w-4" /> <span className="hidden sm:inline">PDF</span>
+              </Button>
             </Link>
           </div>
         </div>
@@ -320,10 +326,54 @@ export default function ScheduleEditor() {
           </Card>
         )}
 
+        {/* Mobile phase tabs (horizontal scroll) */}
+        <div className="lg:hidden -mx-3 px-3">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Fases</h2>
+            <Button onClick={addPhase} variant="ghost" size="sm" className="h-7 px-2 text-xs">
+              <Plus className="h-3.5 w-3.5" /> Nova
+            </Button>
+          </div>
+          <div className="flex gap-2 overflow-x-auto pb-2 snap-x snap-mandatory -mx-3 px-3 scrollbar-none">
+            {phases.map((phase, pi) => {
+              const total = phase.items.filter((i) => i.status !== "not_applicable").length;
+              const done = phase.items.filter((i) => i.status === "done").length;
+              const pct = total ? Math.round((done / total) * 100) : 0;
+              const isActive = phase.id === activePhaseId;
+              const isComplete = total > 0 && done === total;
+              return (
+                <button
+                  key={phase.id}
+                  onClick={() => setActivePhaseId(phase.id)}
+                  className={`shrink-0 snap-start rounded-lg border px-3 py-2 min-w-[160px] max-w-[200px] text-left transition-colors ${
+                    isActive ? "border-primary bg-primary/5" : "border-border bg-card"
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <div className={`shrink-0 w-6 h-6 rounded-full grid place-items-center text-[10px] font-mono ${
+                      isComplete ? "bg-primary text-primary-foreground" :
+                      isActive ? "border border-primary text-primary" : "border border-border text-muted-foreground"
+                    }`}>
+                      {isComplete ? <CheckCircle2 className="h-3.5 w-3.5" /> : String(pi + 1).padStart(2, "0")}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium truncate">{phase.title}</p>
+                      <p className="text-[10px] text-muted-foreground">{done}/{total}</p>
+                    </div>
+                  </div>
+                  <div className="mt-1.5 h-1 rounded-full bg-muted overflow-hidden">
+                    <div className="h-full bg-primary transition-all" style={{ width: `${pct}%` }} />
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         {/* Two-column: phases sidebar + active phase */}
         <div className="grid lg:grid-cols-[280px_1fr] gap-5">
-          {/* Phase stepper */}
-          <aside className="space-y-2 lg:sticky lg:top-4 lg:self-start">
+          {/* Phase stepper — desktop only */}
+          <aside className="hidden lg:block space-y-2 lg:sticky lg:top-4 lg:self-start">
             <div className="flex items-center justify-between px-1">
               <h2 className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Fases</h2>
               <span className="text-xs text-muted-foreground">{phases.length}</span>
@@ -379,19 +429,19 @@ export default function ScheduleEditor() {
               );
               return (
                 <Card>
-                  <CardContent className="p-5 space-y-4">
+                  <CardContent className="p-3 sm:p-5 space-y-4">
                     {/* Phase header */}
-                    <div className="flex items-center gap-2 pb-3 border-b border-border">
-                      <span className="text-xs font-mono text-muted-foreground">{String(pi + 1).padStart(2, "0")}</span>
+                    <div className="flex items-center gap-1 sm:gap-2 pb-3 border-b border-border">
+                      <span className="text-xs font-mono text-muted-foreground shrink-0">{String(pi + 1).padStart(2, "0")}</span>
                       <Input value={phase.title} onChange={(e) => updatePhase(phase.id, { title: e.target.value })}
-                        className="font-semibold text-base border-0 shadow-none px-2 focus-visible:ring-1 -ml-2" />
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => movePhase(pi, -1)} disabled={pi === 0}>
+                        className="font-semibold text-sm sm:text-base border-0 shadow-none px-2 focus-visible:ring-1 -ml-2 min-w-0 flex-1" />
+                      <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => movePhase(pi, -1)} disabled={pi === 0}>
                         <ArrowUp className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => movePhase(pi, 1)} disabled={pi === phases.length - 1}>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => movePhase(pi, 1)} disabled={pi === phases.length - 1}>
                         <ArrowDown className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => removePhase(phase.id)}>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive shrink-0" onClick={() => removePhase(phase.id)}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
@@ -407,40 +457,40 @@ export default function ScheduleEditor() {
                           item.status === "rescheduled" ? CalendarClock :
                           item.status === "not_applicable" ? Ban : Circle;
                         return (
-                          <li key={item.id} className="px-2 py-2">
+                          <li key={item.id} className="px-2 py-2.5">
                             {/* Compact row */}
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-start sm:items-center gap-2">
                               <button
                                 onClick={() => updateItem(phase.id, item.id, {
                                   status: item.status === "done" ? "pending" : "done",
                                   done_date: item.status === "done" ? null : format(new Date(), "yyyy-MM-dd"),
                                 })}
-                                className="shrink-0 p-1 rounded hover:bg-muted"
+                                className="shrink-0 p-1 rounded hover:bg-muted mt-0.5 sm:mt-0"
                                 title="Marcar concluído"
                               >
                                 <StatusIcon className={`h-5 w-5 ${item.status === "done" ? "text-primary" : "text-muted-foreground"}`} />
                               </button>
                               <button
                                 onClick={() => setExpandedItems((s) => ({ ...s, [item.id]: !s[item.id] }))}
-                                className="flex-1 min-w-0 flex items-center gap-2 text-left group"
+                                className="flex-1 min-w-0 flex flex-wrap items-center gap-x-2 gap-y-1 text-left group"
                               >
-                                <span className={`flex-1 min-w-0 truncate text-sm ${item.status === "done" ? "line-through text-muted-foreground" : ""}`}>
+                                <span className={`flex-1 min-w-0 basis-full sm:basis-0 truncate text-sm ${item.status === "done" ? "line-through text-muted-foreground" : ""}`}>
                                   {item.title || <span className="italic text-muted-foreground">Sem título</span>}
                                 </span>
                                 {item.planned_date && (
-                                  <span className="hidden sm:inline text-xs text-muted-foreground tabular-nums">
+                                  <span className="text-[11px] sm:text-xs text-muted-foreground tabular-nums">
                                     {format(new Date(item.planned_date + "T00:00"), "d MMM", { locale: ptBR })}
                                   </span>
                                 )}
                                 {item.training_id && (() => {
                                   const t = trainings.find((x) => x.id === item.training_id);
                                   if (!t) return (
-                                    <span className="hidden md:inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded bg-primary/10 text-primary">
+                                    <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded bg-primary/10 text-primary">
                                       <Link2 className="h-3 w-3" /> Visita
                                     </span>
                                   );
                                   return (
-                                    <span className="hidden md:inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded bg-primary/10 text-primary">
+                                    <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded bg-primary/10 text-primary">
                                       <CalendarDays className="h-3 w-3" />
                                       {format(new Date(t.scheduled_at), "d MMM HH:mm", { locale: ptBR })}
                                     </span>
@@ -449,13 +499,13 @@ export default function ScheduleEditor() {
                                 <span className={`text-[10px] px-2 py-0.5 rounded ${STATUS_COLORS[item.status]}`}>
                                   {STATUS_LABELS[item.status]}
                                 </span>
-                                {open ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+                                {open ? <ChevronDown className="h-4 w-4 text-muted-foreground ml-auto" /> : <ChevronRight className="h-4 w-4 text-muted-foreground ml-auto" />}
                               </button>
                             </div>
 
                             {/* Expanded details */}
                             {open && (
-                              <div className="mt-3 ml-8 space-y-3 pb-2">
+                              <div className="mt-3 sm:ml-8 space-y-3 pb-2">
                                 <Input value={item.title} onChange={(e) => updateItem(phase.id, item.id, { title: e.target.value })}
                                   placeholder="Título do item" />
                                 <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-2">
