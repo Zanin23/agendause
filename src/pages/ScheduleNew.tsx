@@ -92,7 +92,7 @@ export default function ScheduleNew() {
     const tpl = tplById && isTemplateForType(tplById, systemType) ? tplById : tplByType;
     if (!tpl) return toast.error("Selecione um template");
     if (systemType === "pdv" && countTemplateItems(tpl) !== 43) {
-      return toast.error("Template PDV inválido: deve conter somente as 43 etapas da Agropecuária 2 Irmãos");
+      return toast.error("Template PDV inválido: deve conter somente 43 etapas");
     }
     // Keep the visible select in sync if we had to fall back.
     if (tpl.id !== templateId) setTemplateId(tpl.id);
