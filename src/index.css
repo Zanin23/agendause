@@ -157,43 +157,44 @@
 @layer base {
   /* Light theme — warm paper background with Use Sistemas brand orange/red */
   .light {
-    --color-background: oklch(98% 0.005 70);
-    --color-foreground: oklch(20% 0.01 40);
+    /* Cream paper background, burnt orange, navy ink */
+    --color-background: oklch(95% 0.03 75);
+    --color-foreground: oklch(22% 0.05 255);
 
-    --color-card: oklch(100% 0 0);
-    --color-card-foreground: oklch(20% 0.01 40);
+    --color-card: oklch(98% 0.02 75);
+    --color-card-foreground: oklch(22% 0.05 255);
 
-    --color-popover: oklch(100% 0 0);
-    --color-popover-foreground: oklch(20% 0.01 40);
+    --color-popover: oklch(98% 0.02 75);
+    --color-popover-foreground: oklch(22% 0.05 255);
 
-    --color-primary: oklch(62% 0.2 42);
-    --color-primary-foreground: oklch(100% 0 0);
+    --color-primary: oklch(60% 0.2 38);
+    --color-primary-foreground: oklch(98% 0.02 75);
 
-    --color-secondary: oklch(94% 0.02 60);
-    --color-secondary-foreground: oklch(25% 0.05 30);
+    --color-secondary: oklch(88% 0.05 70);
+    --color-secondary-foreground: oklch(30% 0.12 25);
 
-    --color-accent: oklch(70% 0.2 50);
-    --color-accent-foreground: oklch(20% 0.01 40);
+    --color-accent: oklch(40% 0.13 25);
+    --color-accent-foreground: oklch(96% 0.02 75);
 
-    --color-muted: oklch(95% 0.008 60);
-    --color-muted-foreground: oklch(45% 0.015 50);
+    --color-muted: oklch(91% 0.03 75);
+    --color-muted-foreground: oklch(40% 0.04 255);
 
-    --color-destructive: oklch(55% 0.22 22);
-    --color-destructive-foreground: oklch(100% 0 0);
+    --color-destructive: oklch(52% 0.22 25);
+    --color-destructive-foreground: oklch(98% 0.01 75);
 
-    --color-border: oklch(90% 0.01 60);
-    --color-input: oklch(90% 0.01 60);
-    --color-ring: oklch(62% 0.2 42);
+    --color-border: oklch(85% 0.04 70);
+    --color-input: oklch(85% 0.04 70);
+    --color-ring: oklch(60% 0.2 38);
 
-    --primary-light: oklch(74% 0.17 50);
-    --primary-glow: oklch(80% 0.16 55);
-    --accent-red: oklch(55% 0.22 22);
+    --primary-light: oklch(72% 0.17 45);
+    --primary-glow: oklch(80% 0.15 60);
+    --accent-red: oklch(50% 0.2 25);
 
-    --editorial-text: oklch(20% 0.01 40);
-    --editorial-text-light: oklch(45% 0.015 50);
-    --editorial-tag: oklch(62% 0.2 42);
-    --editorial-tag-bg: oklch(95% 0.02 60);
-    --editorial-hover: oklch(95% 0.008 60);
+    --editorial-text: oklch(22% 0.05 255);
+    --editorial-text-light: oklch(40% 0.04 255);
+    --editorial-tag: oklch(60% 0.2 38);
+    --editorial-tag-bg: oklch(91% 0.04 75);
+    --editorial-hover: oklch(93% 0.03 75);
 
     --sidebar-background: var(--color-muted);
     --sidebar-foreground: var(--color-foreground);
