@@ -157,7 +157,27 @@ export default function Schedules() {
                     </Link>
                     <div className="flex items-center gap-2">
                       {r.accepted_at && <Badge variant="success">Aceito</Badge>}
-                      <Badge variant="outline">{r.status}</Badge>
+                      <Badge variant={statusVariant(r.status)}>{statusLabel(r.status)}</Badge>
+                      {r.status === "draft" && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          title="Publicar (tornar ativo)"
+                          onClick={() => changeStatus(r.id, "active", "Cronograma publicado")}
+                        >
+                          <Send className="h-4 w-4" />
+                        </Button>
+                      )}
+                      {r.status === "active" && (r.progress ?? 0) === 100 && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          title="Marcar como concluído"
+                          onClick={() => changeStatus(r.id, "completed", "Cronograma concluído")}
+                        >
+                          <CheckCircle2 className="h-4 w-4" />
+                        </Button>
+                      )}
                       <Button variant="ghost" size="sm" onClick={() => navigate(`/cronogramas/${r.id}`)}>
                         <ExternalLink className="h-4 w-4" />
                       </Button>
