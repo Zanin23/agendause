@@ -19,6 +19,7 @@ export default function ScheduleNew() {
   const navigate = useNavigate();
   const [templates, setTemplates] = useState<{ id: string; name: string; description: string | null; content: TemplateContent }[]>([]);
   const [templateId, setTemplateId] = useState<string>("");
+  const [systemType, setSystemType] = useState<"erp" | "pdv">("erp");
   const [clientName, setClientName] = useState("");
   const [clientEmail, setClientEmail] = useState("");
   const [startDate, setStartDate] = useState(format(new Date(), "yyyy-MM-dd"));
@@ -39,10 +40,17 @@ export default function ScheduleNew() {
         .order("is_default", { ascending: false });
       const list = (data as any[]) || [];
       setTemplates(list);
-      const def = list.find((t) => t.is_default) || list[0];
-      if (def) setTemplateId(def.id);
+      const pick = pickTemplateForType(list, systemType);
+      if (pick) setTemplateId(pick.id);
     })();
   }, []);
+
+  // When ERP/PDV changes, auto-select the matching template if available.
+  useEffect(() => {
+    if (!templates.length) return;
+    const pick = pickTemplateForType(templates, systemType);
+    if (pick) setTemplateId(pick.id);
+  }, [systemType, templates]);
 
   const create = async () => {
     if (!user) return;
@@ -125,12 +133,39 @@ export default function ScheduleNew() {
             <Sparkles className="h-6 w-6 text-primary" /> Novo cronograma
           </h1>
           <p className="text-muted-foreground text-sm mt-1">
-            O cronograma é criado a partir do template padrão ERP USE e fica totalmente editável.
+            Escolha o tipo de implantação (ERP ou PDV). O cronograma é criado a partir do template correspondente e fica totalmente editável.
           </p>
         </div>
 
         <Card>
           <CardContent className="p-5 sm:p-6 space-y-4">
+            <div className="space-y-1.5">
+              <Label>Tipo de implantação</Label>
+              <div className="inline-flex rounded-md border border-input bg-background p-1 text-sm">
+                <button
+                  type="button"
+                  onClick={() => setSystemType("erp")}
+                  className={`px-3 h-8 rounded-sm transition-colors ${
+                    systemType === "erp"
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  ERP (cronograma completo)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSystemType("pdv")}
+                  className={`px-3 h-8 rounded-sm transition-colors ${
+                    systemType === "pdv"
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  PDV (43 etapas)
+                </button>
+              </div>
+            </div>
             <div className="grid sm:grid-cols-2 gap-4">
               <div className="space-y-1.5 sm:col-span-2">
                 <Label>Cliente</Label>
