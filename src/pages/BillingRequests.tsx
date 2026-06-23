@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Plus, Bell, BellOff, CheckCircle2, Trash2, MessageSquarePlus, Settings, X } from "lucide-react";
+import { ArrowLeft, Plus, Bell, BellOff, CheckCircle2, Trash2, MessageSquarePlus, Settings, X, Smartphone, Send } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
 import { SEO } from "@/components/SEO";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { isPushSupported, subscribeToPush, unsubscribeFromPush, getPushStatus, registerServiceWorker } from "@/lib/push";
 
 // ---------- helpers ----------
 function startOfWeek(d: Date) {
@@ -124,6 +125,8 @@ export default function BillingRequests() {
   useEffect(() => {
     load();
     loadSettings();
+    // Register messaging service worker on page load (idempotent)
+    registerServiceWorker();
   }, [user?.id]);
 
   // ---------- notifications loop ----------
@@ -543,26 +546,66 @@ function SettingsDialog({
   const [local, setLocal] = useState<Settings | null>(settings);
   const [newTime, setNewTime] = useState("12:00");
   const [busy, setBusy] = useState(false);
+  const [pushStatus, setPushStatus] = useState<"subscribed" | "denied" | "default" | "unsupported">("default");
+  const [pushBusy, setPushBusy] = useState(false);
 
   useEffect(() => {
     if (open) setLocal(settings);
   }, [open, settings]);
 
+  useEffect(() => {
+    if (open) getPushStatus().then(setPushStatus);
+  }, [open]);
+
   if (!local) return null;
 
-  const requestPerm = async () => {
-    if (typeof Notification === "undefined") return toast.error("Navegador sem suporte a notificações");
-    const p = await Notification.requestPermission();
-    if (p !== "granted") toast.warning("Permissão negada — usaremos alertas na tela");
-    else toast.success("Notificações habilitadas");
+  const enablePush = async () => {
+    if (!userId) return;
+    setPushBusy(true);
+    try {
+      await subscribeToPush(userId);
+      toast.success("Este dispositivo vai receber notificações.");
+      setPushStatus("subscribed");
+    } catch (e: any) {
+      toast.error(e.message || "Erro ao ativar notificações");
+    } finally {
+      setPushBusy(false);
+    }
+  };
+
+  const disablePush = async () => {
+    setPushBusy(true);
+    try {
+      await unsubscribeFromPush();
+      toast.success("Dispositivo desinscrito.");
+      setPushStatus("default");
+    } catch (e: any) {
+      toast.error(e.message || "Erro ao desativar");
+    } finally {
+      setPushBusy(false);
+    }
+  };
+
+  const sendTest = async () => {
+    if (!userId) return;
+    setPushBusy(true);
+    try {
+      const { data, error } = await (supabase as any).functions.invoke("send-billing-notifications", {
+        body: { force: true, user_id: userId },
+      });
+      if (error) throw error;
+      if (!data?.sent) toast.warning("Nenhum push enviado — verifique se há solicitações pendentes e se este dispositivo está inscrito.");
+      else toast.success(`Notificação de teste enviada (${data.sent}).`);
+    } catch (e: any) {
+      toast.error(e.message || "Erro no teste");
+    } finally {
+      setPushBusy(false);
+    }
   };
 
   const save = async () => {
     if (!userId) return;
     setBusy(true);
-    if (local.enabled && typeof Notification !== "undefined" && Notification.permission === "default") {
-      await Notification.requestPermission();
-    }
     const payload = {
       user_id: userId,
       enabled: local.enabled,
@@ -601,7 +644,45 @@ function SettingsDialog({
             <Settings className="h-4 w-4" /> Notificações de cobrança
           </DialogTitle>
         </DialogHeader>
-        <div className="space-y-4">
+        <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
+          {/* Push registration block */}
+          <div className="rounded-xl border border-border bg-muted/30 p-4 space-y-3">
+            <div className="flex items-start gap-2">
+              <Smartphone className="h-4 w-4 mt-0.5 text-primary shrink-0" />
+              <div className="text-sm">
+                <p className="font-medium">Notificações no celular (mesmo com o app fechado)</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  No iPhone: abra este site no Safari, toque em <strong>Compartilhar → Adicionar à Tela de Início</strong>, abra pelo ícone e então ative.
+                </p>
+              </div>
+            </div>
+            {pushStatus === "unsupported" && (
+              <p className="text-xs text-destructive">Este navegador não suporta push. Abra pelo Chrome (Android) ou Safari (iOS 16.4+) após instalar na tela inicial.</p>
+            )}
+            {pushStatus === "denied" && (
+              <p className="text-xs text-destructive">Permissão de notificação bloqueada — habilite nas configurações do navegador.</p>
+            )}
+            <div className="flex flex-wrap gap-2">
+              {pushStatus !== "subscribed" ? (
+                <Button size="sm" onClick={enablePush} disabled={pushBusy || pushStatus === "unsupported" || pushStatus === "denied"}>
+                  <Bell className="h-4 w-4 mr-2" /> Ativar neste dispositivo
+                </Button>
+              ) : (
+                <>
+                  <Badge variant="default" className="self-center">
+                    <Bell className="h-3 w-3 mr-1" /> Inscrito
+                  </Badge>
+                  <Button size="sm" variant="outline" onClick={disablePush} disabled={pushBusy}>
+                    <BellOff className="h-4 w-4 mr-2" /> Desativar aqui
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={sendTest} disabled={pushBusy}>
+                    <Send className="h-4 w-4 mr-2" /> Enviar teste
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
+
           <label className="flex items-center gap-3 cursor-pointer">
             <input
               type="checkbox"
@@ -652,14 +733,8 @@ function SettingsDialog({
             </div>
           </div>
 
-          {local.enabled && typeof Notification !== "undefined" && Notification.permission !== "granted" && (
-            <Button variant="outline" size="sm" onClick={requestPerm}>
-              <Bell className="h-4 w-4 mr-2" /> Permitir notificações do navegador
-            </Button>
-          )}
-
           <p className="text-xs text-muted-foreground">
-            Os lembretes disparam enquanto este aplicativo estiver aberto, nos dias e horários escolhidos, sempre que houver solicitações pendentes.
+            Os lembretes são enviados pelo servidor nos dias e horários escolhidos (hora de São Paulo) para todos os dispositivos inscritos, mesmo com o app fechado, sempre que houver solicitações pendentes.
           </p>
         </div>
         <DialogFooter>
