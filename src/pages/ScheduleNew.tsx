@@ -14,19 +14,40 @@ import { Textarea } from "@/components/ui/textarea";
 import { plannedDateFor, plannedDateForRange, TemplateContent } from "@/lib/schedule";
 import { addDays, format } from "date-fns";
 
-type TemplateRow = { id: string; name: string; description: string | null; content: TemplateContent };
+type TemplateRow = {
+  id: string;
+  name: string;
+  description: string | null;
+  content: TemplateContent;
+  is_default?: boolean;
+};
+
+function countTemplateItems(template?: TemplateRow) {
+  return template?.content?.phases?.reduce((total, phase) => total + phase.items.length, 0) ?? 0;
+}
+
+function isTemplateForType(template: TemplateRow, type: "erp" | "pdv") {
+  const name = (template.name || "").toLowerCase();
+  const itemCount = countTemplateItems(template);
+
+  if (type === "pdv") {
+    return name.includes("pdv") && itemCount === 43;
+  }
+
+  return name.includes("erp") || (Boolean(template.is_default) && itemCount !== 43);
+}
 
 function pickTemplateForType(list: TemplateRow[], type: "erp" | "pdv") {
-  const keyword = type === "pdv" ? "pdv" : "erp";
-  const match = list.find((t) => (t.name || "").toLowerCase().includes(keyword));
+  const match = list.find((t) => isTemplateForType(t, type));
   if (match) return match;
+  if (type === "pdv") return undefined;
   return list.find((t: any) => t.is_default) || list[0];
 }
 
 export default function ScheduleNew() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [templates, setTemplates] = useState<{ id: string; name: string; description: string | null; content: TemplateContent }[]>([]);
+  const [templates, setTemplates] = useState<TemplateRow[]>([]);
   const [templateId, setTemplateId] = useState<string>("");
   const [systemType, setSystemType] = useState<"erp" | "pdv">("erp");
   const [clientName, setClientName] = useState("");
@@ -40,6 +61,7 @@ export default function ScheduleNew() {
   const [modality, setModality] = useState<"presencial" | "remoto" | "hibrido">("presencial");
   const [team, setTeam] = useState("Matheus Zanin, Claudinei da Silva, Pablo Cassiano");
   const [saving, setSaving] = useState(false);
+  const availableTemplates = templates.filter((template) => isTemplateForType(template, systemType));
 
   useEffect(() => {
     (async () => {
