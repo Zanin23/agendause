@@ -14,6 +14,107 @@ export type Database = {
   }
   public: {
     Tables: {
+      billing_notification_settings: {
+        Row: {
+          created_at: string
+          enabled: boolean
+          times: string[]
+          updated_at: string
+          user_id: string
+          weekdays: number[]
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean
+          times?: string[]
+          updated_at?: string
+          user_id: string
+          weekdays?: number[]
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean
+          times?: string[]
+          updated_at?: string
+          user_id?: string
+          weekdays?: number[]
+        }
+        Relationships: []
+      }
+      billing_request_updates: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          request_id: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          request_id: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          request_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_request_updates_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "billing_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      billing_requests: {
+        Row: {
+          client: string
+          created_at: string
+          delivered_at: string | null
+          description: string | null
+          id: string
+          number: string
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+          week_start: string
+        }
+        Insert: {
+          client: string
+          created_at?: string
+          delivered_at?: string | null
+          description?: string | null
+          id?: string
+          number: string
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+          week_start?: string
+        }
+        Update: {
+          client?: string
+          created_at?: string
+          delivered_at?: string | null
+          description?: string | null
+          id?: string
+          number?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+          week_start?: string
+        }
+        Relationships: []
+      }
       guest_acceptances: {
         Row: {
           accepted_at: string
