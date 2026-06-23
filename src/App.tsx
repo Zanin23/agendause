@@ -18,6 +18,7 @@ import ScheduleNew from "./pages/ScheduleNew";
 import ScheduleEditor from "./pages/ScheduleEditor";
 import SchedulePrint from "./pages/SchedulePrint";
 import SchedulePublic from "./pages/SchedulePublic";
+import BillingRequests from "./pages/BillingRequests";
 
 const queryClient = new QueryClient();
 
@@ -41,6 +42,7 @@ const App = () => (
             <Route path="/cronogramas/novo" element={<ProtectedRoute><ScheduleNew /></ProtectedRoute>} />
             <Route path="/cronogramas/:id" element={<ProtectedRoute><ScheduleEditor /></ProtectedRoute>} />
             <Route path="/cronogramas/:id/imprimir" element={<ProtectedRoute><SchedulePrint /></ProtectedRoute>} />
+            <Route path="/cobrar" element={<ProtectedRoute><BillingRequests /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
