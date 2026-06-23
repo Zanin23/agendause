@@ -31,8 +31,15 @@ function formatWeekLabel(iso: string) {
   const end = new Date(start);
   end.setDate(end.getDate() + 6);
   const fmt = (x: Date) => x.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
-  const thisWeekIso = toISODate(startOfWeek(new Date()));
-  const prefix = iso === thisWeekIso ? "Esta semana · " : "";
+  const thisWeek = startOfWeek(new Date());
+  const diffDays = Math.round((start.getTime() - thisWeek.getTime()) / (1000 * 60 * 60 * 24));
+  const diffWeeks = Math.round(diffDays / 7);
+  let prefix = "";
+  if (diffWeeks === 0) prefix = "Esta semana · ";
+  else if (diffWeeks === -1) prefix = "Semana passada · ";
+  else if (diffWeeks === 1) prefix = "Próxima semana · ";
+  else if (diffWeeks < 0) prefix = `${Math.abs(diffWeeks)} semanas atrás · `;
+  else if (diffWeeks > 0) prefix = `Em ${diffWeeks} semanas · `;
   return `${prefix}${fmt(start)} – ${fmt(end)}`;
 }
 
@@ -176,7 +183,13 @@ export default function BillingRequests() {
 
   const availableWeeks = useMemo(() => {
     const set = new Set<string>(requests.map((r) => r.week_start));
-    set.add(toISODate(startOfWeek(new Date())));
+    const today = startOfWeek(new Date());
+    // Always show a window around today: 4 weeks back through 4 weeks ahead
+    for (let i = -4; i <= 4; i++) {
+      const d = new Date(today);
+      d.setDate(d.getDate() + i * 7);
+      set.add(toISODate(d));
+    }
     return Array.from(set).sort((a, b) => (a < b ? 1 : -1));
   }, [requests]);
 
