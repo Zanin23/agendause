@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Plus, Bell, BellOff, CheckCircle2, Trash2, MessageSquarePlus, Settings, X, Smartphone, Send, ChevronLeft, ChevronRight, CalendarDays, FileDown } from "lucide-react";
+import { ArrowLeft, Plus, Bell, BellOff, CheckCircle2, Trash2, MessageSquarePlus, Settings, X, Smartphone, Send, ChevronLeft, ChevronRight, CalendarDays, FileDown, ArrowRightCircle } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { AppHeader } from "@/components/AppHeader";
@@ -89,6 +89,7 @@ export default function BillingRequests() {
   const [loading, setLoading] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [moveOpen, setMoveOpen] = useState(false);
   const [filterClient, setFilterClient] = useState<string>("");
   const [showDelivered, setShowDelivered] = useState(false);
   const [selectedWeek, setSelectedWeek] = useState<string | "all">(
@@ -389,6 +390,10 @@ export default function BillingRequests() {
             <FileDown className="h-4 w-4 sm:mr-2" />
             <span className="hidden sm:inline">Exportar PDF</span>
           </Button>
+          <Button variant="outline" size="sm" onClick={() => setMoveOpen(true)}>
+            <ArrowRightCircle className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Mover pendentes</span>
+          </Button>
         </div>
 
         {loading ? (
@@ -430,6 +435,13 @@ export default function BillingRequests() {
       </main>
 
       <CreateDialog open={createOpen} onOpenChange={setCreateOpen} clients={clients} onCreated={load} userId={user?.id} />
+      <MovePendingDialog
+        open={moveOpen}
+        onOpenChange={setMoveOpen}
+        requests={requests}
+        initialWeek={selectedWeek === "all" ? toISODate(startOfWeek(new Date())) : selectedWeek}
+        onMoved={load}
+      />
       <SettingsDialog
         open={settingsOpen}
         onOpenChange={setSettingsOpen}
