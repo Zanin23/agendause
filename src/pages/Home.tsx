@@ -1,6 +1,11 @@
 import { Link } from "react-router-dom";
-import { CalendarDays, CalendarPlus, FileCheck2, ArrowRight, ClipboardList, Receipt } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import logoAsset from "@/assets/logo-use-sistemas.png.asset.json";
+import iconAgenda from "@/assets/icon-agenda.png";
+import iconNovo from "@/assets/icon-novo-treinamento.png";
+import iconRelatorios from "@/assets/icon-relatorios.png";
+import iconCronogramas from "@/assets/icon-cronogramas.png";
+import iconCobrar from "@/assets/icon-cobrar.png";
 import { useState } from "react";
 import { AppHeader } from "@/components/AppHeader";
 import { SEO } from "@/components/SEO";
@@ -15,14 +20,14 @@ const Home = () => {
   const cards = [
     {
       to: "/agenda",
-      icon: CalendarDays,
+      icon: iconAgenda,
       title: "Visualizar agenda",
       description: "Veja os treinamentos agendados no calendário e na lista.",
       cta: "Acessar agenda",
     },
     {
       onClick: () => setOpen(true),
-      icon: CalendarPlus,
+      icon: iconNovo,
       title: "Agendar novo treinamento",
       description: "Crie um novo treinamento com cliente, data, hora e local.",
       cta: "Novo treinamento",
@@ -30,21 +35,21 @@ const Home = () => {
     },
     {
       to: "/relatorios",
-      icon: FileCheck2,
+      icon: iconRelatorios,
       title: "Relatórios de aceite",
       description: "Acompanhe e imprima os termos de recebimento dos treinamentos.",
       cta: "Ver relatórios",
     },
     {
       to: "/cronogramas",
-      icon: ClipboardList,
+      icon: iconCronogramas,
       title: "Cronogramas",
       description: "Gerencie cronogramas de implantação ERP e PDV.",
       cta: "Gerenciar cronogramas",
     },
     {
       to: "/cobrar",
-      icon: Receipt,
+      icon: iconCobrar,
       title: "Solicitações a cobrar",
       description: "Acompanhe solicitações por cliente, semana e cobre as pendências.",
       cta: "Abrir solicitações",
@@ -91,7 +96,7 @@ const Home = () => {
 };
 
 type ActionCardProps = {
-  icon: React.ComponentType<{ className?: string }>;
+  icon: string;
   title: string;
   description: string;
   cta: string;
@@ -100,7 +105,7 @@ type ActionCardProps = {
   primary?: boolean;
 };
 
-const ActionCard = ({ icon: Icon, title, description, cta, to, onClick, primary }: ActionCardProps) => {
+const ActionCard = ({ icon, title, description, cta, to, onClick, primary }: ActionCardProps) => {
   const inner = (
     <div
       className={`group relative flex flex-col h-full p-6 rounded-2xl cursor-pointer overflow-hidden transition-all duration-300 hover:-translate-y-1 ${
@@ -116,13 +121,13 @@ const ActionCard = ({ icon: Icon, title, description, cta, to, onClick, primary 
       />
       <div className="relative flex flex-col h-full">
         <div
-          className={`w-12 h-12 rounded-xl flex items-center justify-center mb-5 transition-colors duration-300 ${
+          className={`w-20 h-20 rounded-2xl flex items-center justify-center mb-5 transition-transform duration-300 group-hover:-rotate-3 group-hover:scale-105 ${
             primary
-              ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25 group-hover:shadow-primary/40"
-              : "bg-primary/10 text-primary group-hover:bg-primary/20"
+              ? "bg-primary/15 ring-1 ring-primary/30 shadow-lg shadow-primary/20"
+              : "bg-primary/5 ring-1 ring-border/60"
           }`}
         >
-          <Icon className="h-6 w-6" />
+          <img src={icon} alt="" loading="lazy" width={512} height={512} className="h-16 w-16 object-contain drop-shadow-sm" />
         </div>
         <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-foreground mb-2">{title}</h2>
         <p className="text-sm sm:text-base text-muted-foreground leading-relaxed flex-1">{description}</p>
