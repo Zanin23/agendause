@@ -213,7 +213,7 @@ const PrintAgenda = () => {
           .agenda-sub-print { font-size: 13pt !important; margin-top: 0 !important; }
           .agenda-note-print { font-size: 7pt !important; margin-top: 1mm !important; }
           .agenda-legend-print { font-size: 9pt !important; gap: 2px !important; }
-          .agenda-layers-print { width: 28px !important; height: 28px !important; }
+          .agenda-layers-print { width: 140px !important; height: 140px !important; }
           .agenda-grid {
             flex: 1 1 auto !important;
             min-height: 0 !important;
