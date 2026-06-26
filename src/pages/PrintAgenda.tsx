@@ -325,7 +325,7 @@ const PrintAgenda = () => {
             <img
               src={useLogo.url}
               alt="Use Sistemas"
-              className="agenda-layers-print h-12 w-12 shrink-0 object-contain"
+              className="agenda-layers-print h-20 w-20 shrink-0 object-contain"
             />
           </div>
         </header>
