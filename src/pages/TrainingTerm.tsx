@@ -78,7 +78,7 @@ const TrainingTerm = () => {
 
       <div className="no-print border-b border-neutral-200">
         <div className="max-w-3xl mx-auto px-6 py-4 flex items-center justify-between">
-          <BackButton to={`/treinamento/${id}`} label="Voltar" />
+          <BackButton to={`/treinamento/${id}`} />
           <Button onClick={() => window.print()}><Printer className="h-4 w-4" />Imprimir termo</Button>
         </div>
       </div>

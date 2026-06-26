@@ -242,7 +242,7 @@ const PrintAgenda = () => {
 
       <div className="no-print border-b border-neutral-200">
         <div className="max-w-[1200px] mx-auto px-6 py-4 flex items-center justify-between gap-4">
-          <BackButton to="/" label="Voltar" />
+          <BackButton to="/" />
 
           <div className="flex items-center gap-2">
             <Button
