@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
 import { Plus, Bell, BellOff, CheckCircle2, Trash2, MessageSquarePlus, Settings, X, Smartphone, Send, ChevronLeft, ChevronRight, CalendarDays, FileDown, ArrowRightCircle } from "lucide-react";
 import { BackButton } from "@/components/BackButton";
 import jsPDF from "jspdf";
