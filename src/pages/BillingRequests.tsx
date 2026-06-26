@@ -455,8 +455,8 @@ function ClientGroup({
 }) {
   const pending = items.filter((i) => i.status === "pending").length;
   return (
-    <div className="rounded-md border-[3px] border-primary bg-card/80 overflow-hidden">
-      <div className="bg-pattern-hex-light flex items-center justify-between px-4 sm:px-5 py-3 border-b-[3px] border-primary">
+    <div className="rounded-md border border-primary/60 bg-card/80 overflow-hidden">
+      <div className="bg-pattern-hex-light flex items-center justify-between px-4 sm:px-5 py-3 border-b border-primary/60">
         <div className="font-black uppercase tracking-tight text-lg sm:text-xl truncate">
           {client}
         </div>
