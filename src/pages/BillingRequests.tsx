@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Plus, Bell, BellOff, CheckCircle2, Trash2, MessageSquarePlus, Settings, X, Smartphone, Send, ChevronLeft, ChevronRight, CalendarDays, FileDown } from "lucide-react";
+import { ArrowLeft, Plus, Bell, BellOff, CheckCircle2, Trash2, MessageSquarePlus, Settings, X, Smartphone, Send, ChevronLeft, ChevronRight, CalendarDays, FileDown, ArrowRightCircle } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { AppHeader } from "@/components/AppHeader";
@@ -89,6 +89,7 @@ export default function BillingRequests() {
   const [loading, setLoading] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [moveOpen, setMoveOpen] = useState(false);
   const [filterClient, setFilterClient] = useState<string>("");
   const [showDelivered, setShowDelivered] = useState(false);
   const [selectedWeek, setSelectedWeek] = useState<string | "all">(
@@ -389,6 +390,10 @@ export default function BillingRequests() {
             <FileDown className="h-4 w-4 sm:mr-2" />
             <span className="hidden sm:inline">Exportar PDF</span>
           </Button>
+          <Button variant="outline" size="sm" onClick={() => setMoveOpen(true)}>
+            <ArrowRightCircle className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Mover pendentes</span>
+          </Button>
         </div>
 
         {loading ? (
@@ -430,6 +435,13 @@ export default function BillingRequests() {
       </main>
 
       <CreateDialog open={createOpen} onOpenChange={setCreateOpen} clients={clients} onCreated={load} userId={user?.id} />
+      <MovePendingDialog
+        open={moveOpen}
+        onOpenChange={setMoveOpen}
+        requests={requests}
+        initialWeek={selectedWeek === "all" ? toISODate(startOfWeek(new Date())) : selectedWeek}
+        onMoved={load}
+      />
       <SettingsDialog
         open={settingsOpen}
         onOpenChange={setSettingsOpen}
@@ -591,6 +603,188 @@ function RequestRow({
         </div>
       )}
     </li>
+  );
+}
+
+// ---------- Move pending dialog ----------
+function MovePendingDialog({
+  open,
+  onOpenChange,
+  requests,
+  initialWeek,
+  onMoved,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  requests: Request[];
+  initialWeek: string;
+  onMoved: () => void;
+}) {
+  const [fromWeek, setFromWeek] = useState(initialWeek);
+  const [toWeek, setToWeek] = useState("");
+  const [selected, setSelected] = useState<Record<string, boolean>>({});
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      const base = initialWeek || toISODate(startOfWeek(new Date()));
+      setFromWeek(base);
+      const next = new Date(base + "T00:00:00");
+      next.setDate(next.getDate() + 7);
+      setToWeek(toISODate(next));
+      setSelected({});
+    }
+  }, [open, initialWeek]);
+
+  const weeks = useMemo(() => {
+    const set = new Set<string>(requests.map((r) => r.week_start));
+    const today = startOfWeek(new Date());
+    for (let i = -4; i <= 8; i++) {
+      const d = new Date(today);
+      d.setDate(d.getDate() + i * 7);
+      set.add(toISODate(d));
+    }
+    return Array.from(set).sort((a, b) => (a < b ? 1 : -1));
+  }, [requests]);
+
+  const pending = useMemo(
+    () =>
+      requests
+        .filter((r) => r.status === "pending" && r.week_start === fromWeek)
+        .sort(
+          (a, b) =>
+            a.client.localeCompare(b.client) ||
+            a.number.localeCompare(b.number, undefined, { numeric: true })
+        ),
+    [requests, fromWeek]
+  );
+
+  const allSelected = pending.length > 0 && pending.every((r) => selected[r.id]);
+  const toggleAll = () => {
+    if (allSelected) setSelected({});
+    else {
+      const next: Record<string, boolean> = {};
+      pending.forEach((r) => (next[r.id] = true));
+      setSelected(next);
+    }
+  };
+
+  const move = async () => {
+    const ids = pending.filter((r) => selected[r.id]).map((r) => r.id);
+    if (ids.length === 0) return toast.error("Selecione ao menos uma solicitação");
+    if (!toWeek) return toast.error("Escolha a semana de destino");
+    if (toWeek === fromWeek) return toast.error("A semana de destino deve ser diferente");
+    setBusy(true);
+    const { error } = await sb
+      .from("billing_requests")
+      .update({ week_start: toWeek })
+      .in("id", ids);
+    setBusy(false);
+    if (error) return toast.error("Erro ao mover");
+    toast.success(`${ids.length} solicitação(ões) movida(s)`);
+    onOpenChange(false);
+    onMoved();
+  };
+
+  const selectedCount = pending.filter((r) => selected[r.id]).length;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Mover pendentes para outra semana</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <Label>De (origem)</Label>
+              <select
+                className="mt-1 w-full h-10 rounded-md border border-border bg-card px-3 text-sm"
+                value={fromWeek}
+                onChange={(e) => {
+                  setFromWeek(e.target.value);
+                  setSelected({});
+                }}
+              >
+                {weeks.map((w) => (
+                  <option key={w} value={w}>{formatWeekLabel(w)}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <Label>Para (destino)</Label>
+              <select
+                className="mt-1 w-full h-10 rounded-md border border-border bg-card px-3 text-sm"
+                value={toWeek}
+                onChange={(e) => setToWeek(e.target.value)}
+              >
+                {weeks.map((w) => (
+                  <option key={w} value={w}>{formatWeekLabel(w)}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="rounded-md border border-border overflow-hidden">
+            <div className="flex items-center justify-between px-3 py-2 bg-muted/40 border-b border-border">
+              <label className="flex items-center gap-2 text-sm font-medium cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={allSelected}
+                  onChange={toggleAll}
+                  disabled={pending.length === 0}
+                />
+                Selecionar tudo
+              </label>
+              <span className="text-xs text-muted-foreground">
+                {selectedCount} de {pending.length} selecionada(s)
+              </span>
+            </div>
+            <div className="max-h-[320px] overflow-y-auto divide-y divide-border">
+              {pending.length === 0 ? (
+                <p className="px-3 py-6 text-sm text-muted-foreground text-center">
+                  Não há solicitações pendentes nesta semana.
+                </p>
+              ) : (
+                pending.map((r) => (
+                  <label
+                    key={r.id}
+                    className="flex items-start gap-3 px-3 py-2 hover:bg-muted/30 cursor-pointer"
+                  >
+                    <input
+                      type="checkbox"
+                      className="mt-1"
+                      checked={!!selected[r.id]}
+                      onChange={(e) =>
+                        setSelected((p) => ({ ...p, [r.id]: e.target.checked }))
+                      }
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Badge variant="outline" className="font-mono text-xs">#{r.number}</Badge>
+                        <span className="text-xs font-semibold uppercase tracking-tight text-muted-foreground truncate">
+                          {r.client}
+                        </span>
+                      </div>
+                      <p className="text-sm mt-0.5 break-words">{r.title}</p>
+                    </div>
+                  </label>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={busy}>
+            Cancelar
+          </Button>
+          <Button onClick={move} disabled={busy || selectedCount === 0}>
+            <ArrowRightCircle className="h-4 w-4 mr-2" />
+            Mover {selectedCount > 0 ? `(${selectedCount})` : ""}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
