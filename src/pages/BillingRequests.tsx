@@ -526,7 +526,7 @@ function RequestRow({
   };
 
   return (
-    <li className="px-4 sm:px-5 py-3">
+    <li className="px-4 sm:px-5 py-3 transition-all duration-200 hover:bg-primary/5 hover:pl-6 hover:shadow-[inset_3px_0_0_hsl(var(--primary))] cursor-default">
       <div className="flex items-start gap-3">
         <button
           onClick={toggleStatus}
