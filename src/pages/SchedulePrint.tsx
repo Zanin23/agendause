@@ -37,7 +37,7 @@ export default function SchedulePrint() {
       <SEO title={`Cronograma — ${schedule.client_name}`} description="Cronograma de implantação ERP USE." path={`/cronogramas/${id}/imprimir`} />
       <style>{`@media print { @page { size: A4; margin: 14mm; } body { background: white; } .no-print { display: none } }`}</style>
       <div className="no-print max-w-[210mm] mx-auto mb-4 flex items-center justify-between">
-        <BackButton to={`/cronogramas/${id}`} label="Voltar ao cronograma" />
+        <BackButton to={`/cronogramas/${id}`} />
         <Button size="sm" onClick={() => window.print()}>
           <Printer className="h-4 w-4 mr-2" /> Imprimir / Salvar PDF
         </Button>
