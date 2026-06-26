@@ -10,6 +10,7 @@ import {
 } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Printer, ArrowLeft, ChevronLeft, ChevronRight, X, Layers, FileDown } from "lucide-react";
+import useLogo from "@/assets/logo-use-sistemas-v2.png.asset.json";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import { supabase } from "@/integrations/supabase/client";
@@ -321,7 +322,11 @@ const PrintAgenda = () => {
 
           <div className="agenda-legend-print flex items-center gap-6 pt-2 shrink-0">
             <Legend />
-            <Layers className="agenda-layers-print h-12 w-12 shrink-0 text-black" strokeWidth={2.5} />
+            <img
+              src={useLogo.url}
+              alt="Use Sistemas"
+              className="agenda-layers-print h-12 w-12 shrink-0 object-contain"
+            />
           </div>
         </header>
 
