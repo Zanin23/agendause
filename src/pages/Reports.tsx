@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import { addWeeks, endOfWeek, format, startOfWeek } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
-  ArrowLeft,
   FileText,
   Users,
   Search,
@@ -25,6 +24,7 @@ import {
   ArrowDown,
   Minus,
 } from "lucide-react";
+import { BackButton } from "@/components/BackButton";
 import { supabase } from "@/integrations/supabase/client";
 import { AppHeader } from "@/components/AppHeader";
 import { SEO } from "@/components/SEO";
@@ -174,9 +174,7 @@ const Reports = () => {
       <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-6">
         <div className="flex items-end justify-between flex-wrap gap-4">
           <div className="min-w-0">
-            <Link to="/" className="text-sm text-muted-foreground inline-flex items-center gap-1 hover:text-foreground">
-              <ArrowLeft className="h-3 w-3" /> Início
-            </Link>
+            <BackButton to="/" label="Início" />
             <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight mt-2">Relatórios de aceite</h1>
             <p className="text-muted-foreground mt-1 text-sm sm:text-base">Veja quantos participantes confirmaram cada treinamento e imprima os termos.</p>
           </div>
