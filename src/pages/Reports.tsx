@@ -23,6 +23,7 @@ import {
   ArrowUp,
   ArrowDown,
   Minus,
+  FileCheck2,
 } from "lucide-react";
 import { BackButton } from "@/components/BackButton";
 import { supabase } from "@/integrations/supabase/client";
@@ -175,7 +176,9 @@ const Reports = () => {
         <div className="flex items-end justify-between flex-wrap gap-4">
           <div className="min-w-0">
             <BackButton to="/" />
-            <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight mt-2">Relatórios de aceite</h1>
+            <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight mt-2 flex items-center gap-2">
+              <FileCheck2 className="h-7 w-7 text-primary" /> Relatórios de aceite
+            </h1>
             <p className="text-muted-foreground mt-1 text-sm sm:text-base">Veja quantos participantes confirmaram cada treinamento e imprima os termos.</p>
           </div>
         </div>

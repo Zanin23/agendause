@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Bell, BellOff, CheckCircle2, Trash2, MessageSquarePlus, Settings, X, Smartphone, Send, ChevronLeft, ChevronRight, CalendarDays, FileDown, ArrowRightCircle } from "lucide-react";
+import { Plus, Bell, BellOff, CheckCircle2, Trash2, MessageSquarePlus, Settings, X, Smartphone, Send, ChevronLeft, ChevronRight, CalendarDays, FileDown, ArrowRightCircle, Receipt } from "lucide-react";
 import { BackButton } from "@/components/BackButton";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -309,7 +309,9 @@ export default function BillingRequests() {
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div className="min-w-0">
             <BackButton to="/" className="-ml-2 mb-1" />
-            <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Solicitações a cobrar</h1>
+            <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight flex items-center gap-2">
+              <Receipt className="h-7 w-7 text-primary" /> Solicitações a cobrar
+            </h1>
             <p className="text-sm text-muted-foreground">Por cliente, agrupadas pela semana.</p>
           </div>
           <div className="flex items-center gap-2">
