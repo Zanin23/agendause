@@ -26,7 +26,6 @@ const Home = () => {
       title: "Agendar novo treinamento",
       description: "Crie um novo treinamento com cliente, data, hora e local.",
       cta: "Novo treinamento",
-      primary: true,
     },
     {
       to: "/relatorios",
