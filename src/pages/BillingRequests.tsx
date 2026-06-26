@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
-import { ArrowLeft, Plus, Bell, BellOff, CheckCircle2, Trash2, MessageSquarePlus, Settings, X, Smartphone, Send, ChevronLeft, ChevronRight, CalendarDays, FileDown, ArrowRightCircle } from "lucide-react";
+import { Plus, Bell, BellOff, CheckCircle2, Trash2, MessageSquarePlus, Settings, X, Smartphone, Send, ChevronLeft, ChevronRight, CalendarDays, FileDown, ArrowRightCircle } from "lucide-react";
+import { BackButton } from "@/components/BackButton";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { AppHeader } from "@/components/AppHeader";
@@ -308,9 +308,7 @@ export default function BillingRequests() {
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-6">
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div className="flex items-center gap-2 min-w-0">
-            <Button asChild variant="ghost" size="sm" className="px-2">
-              <Link to="/"><ArrowLeft className="h-4 w-4" /></Link>
-            </Button>
+            <BackButton to="/" />
             <div className="min-w-0">
               <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Solicitações a cobrar</h1>
               <p className="text-sm text-muted-foreground">Por cliente, agrupadas pela semana.</p>

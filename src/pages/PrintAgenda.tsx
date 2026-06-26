@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import {
   addDays,
   addWeeks,
@@ -9,7 +9,8 @@ import {
   startOfWeek,
 } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Printer, ArrowLeft, ChevronLeft, ChevronRight, X, Layers, FileDown } from "lucide-react";
+import { Printer, ChevronLeft, ChevronRight, X, Layers, FileDown } from "lucide-react";
+import { BackButton } from "@/components/BackButton";
 import useLogo from "@/assets/logo-use-sistemas-v2.png.asset.json";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
@@ -241,12 +242,7 @@ const PrintAgenda = () => {
 
       <div className="no-print border-b border-neutral-200">
         <div className="max-w-[1200px] mx-auto px-6 py-4 flex items-center justify-between gap-4">
-          <Link to="/">
-            <Button variant="ghost" size="sm">
-              <ArrowLeft className="h-4 w-4" />
-              Voltar
-            </Button>
-          </Link>
+          <BackButton to="/" label="Voltar" />
 
           <div className="flex items-center gap-2">
             <Button

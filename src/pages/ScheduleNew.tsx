@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { ArrowLeft, Sparkles } from "lucide-react";
+import { Sparkles } from "lucide-react";
+import { BackButton } from "@/components/BackButton";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { AppHeader } from "@/components/AppHeader";
@@ -164,9 +165,7 @@ export default function ScheduleNew() {
       />
       <AppHeader />
       <main className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-6">
-        <Button variant="ghost" size="sm" onClick={() => navigate("/cronogramas")}>
-          <ArrowLeft className="h-4 w-4" /> Voltar
-        </Button>
+        <BackButton to="/cronogramas" label="Voltar" />
         <div>
           <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight flex items-center gap-2">
             <Sparkles className="h-6 w-6 text-primary" /> Novo cronograma
