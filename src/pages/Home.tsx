@@ -124,8 +124,8 @@ const ActionCard = ({ icon: Icon, title, description, cta, to, onClick, primary 
         >
           <Icon className="h-6 w-6" />
         </div>
-        <h2 className="text-lg font-semibold tracking-tight text-foreground mb-2">{title}</h2>
-        <p className="text-sm text-muted-foreground leading-relaxed flex-1">{description}</p>
+        <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-foreground mb-2">{title}</h2>
+        <p className="text-sm sm:text-base text-muted-foreground leading-relaxed flex-1">{description}</p>
         <div className="mt-auto pt-6 flex items-center text-xs font-medium text-primary uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-opacity duration-300">
           {cta}
           <ArrowRight className="h-3 w-3 ml-1.5" />
