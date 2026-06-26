@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { format, isSameDay, isAfter, startOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CalendarPlus, MapPin, Clock, CheckCircle2, Printer, XCircle } from "lucide-react";
+import { CalendarPlus, MapPin, Clock, CheckCircle2, Printer, XCircle, CalendarDays } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { AppHeader } from "@/components/AppHeader";
@@ -79,7 +79,9 @@ const Dashboard = () => {
         <div className="flex items-start sm:items-end justify-between flex-wrap gap-3 sm:gap-4">
           <div className="min-w-0">
             <BackButton to="/" />
-            <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight mt-2">Agenda de treinamentos</h1>
+            <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight mt-2 flex items-center gap-2">
+              <CalendarDays className="h-7 w-7 text-primary" /> Agenda de treinamentos
+            </h1>
             <p className="text-muted-foreground mt-1 text-sm sm:text-base">Acompanhe sessões agendadas e confirme seu recebimento.</p>
           </div>
           <div className="flex gap-2 w-full sm:w-auto">
