@@ -637,7 +637,7 @@ const EventCard = ({
 };
 
 const Legend = () => (
-  <div className="flex flex-col gap-1.5 text-[13px]">
+  <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[13px]">
     <div className="flex items-center gap-2">
       <span
         className="w-4 h-4 rounded-full inline-block"
@@ -665,7 +665,7 @@ const Legend = () => (
       />
       <span>Cancelado</span>
     </div>
-    <div className="flex items-center gap-2 pt-1 border-t border-neutral-200 mt-1">
+    <div className="flex items-center gap-2">
       <span
         className="w-2 h-2 rounded-full inline-block"
         style={{ background: GREEN }}
