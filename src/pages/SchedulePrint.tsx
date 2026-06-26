@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Printer } from "lucide-react";
+import { Printer } from "lucide-react";
+import { BackButton } from "@/components/BackButton";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -36,9 +37,7 @@ export default function SchedulePrint() {
       <SEO title={`Cronograma — ${schedule.client_name}`} description="Cronograma de implantação ERP USE." path={`/cronogramas/${id}/imprimir`} />
       <style>{`@media print { @page { size: A4; margin: 14mm; } body { background: white; } .no-print { display: none } }`}</style>
       <div className="no-print max-w-[210mm] mx-auto mb-4 flex items-center justify-between">
-        <Button variant="ghost" size="sm" onClick={() => navigate(`/cronogramas/${id}`)}>
-          <ArrowLeft className="h-4 w-4 mr-2" /> Voltar ao cronograma
-        </Button>
+        <BackButton to={`/cronogramas/${id}`} label="Voltar ao cronograma" />
         <Button size="sm" onClick={() => window.print()}>
           <Printer className="h-4 w-4 mr-2" /> Imprimir / Salvar PDF
         </Button>

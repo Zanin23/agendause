@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
-  ArrowLeft, ArrowUp, ArrowDown, Plus, Trash2, Copy, Printer, Link2, Download, Save,
+  ArrowUp, ArrowDown, Plus, Trash2, Copy, Printer, Link2, Download, Save,
   ChevronDown, ChevronRight, CheckCircle2, Circle, Clock, Ban, CalendarClock, Settings2,
   CalendarDays, Flag, Unlink,
 } from "lucide-react";
@@ -233,9 +233,7 @@ export default function ScheduleEditor() {
         {/* Toolbar */}
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
-            <Button variant="ghost" size="sm" className="shrink-0 px-2" onClick={() => navigate("/cronogramas")}>
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
+            <BackButton to="/cronogramas" />
             <div className="min-w-0">
               <h1 className="text-base sm:text-lg font-semibold truncate">{schedule.client_name}</h1>
               <p className="text-[11px] sm:text-xs text-muted-foreground truncate">
