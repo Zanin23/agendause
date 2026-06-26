@@ -318,10 +318,12 @@ const PrintAgenda = () => {
               *Algumas visitas podem ainda não terem sido confirmadas, agenda
               pode mudar
             </p>
+            <div className="agenda-legend-print mt-3">
+              <Legend />
+            </div>
           </div>
 
           <div className="agenda-legend-print flex items-center gap-6 pt-2 shrink-0">
-            <Legend />
             <img
               src={useLogo.url}
               alt="Use Sistemas"
