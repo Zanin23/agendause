@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Printer, ArrowLeft } from "lucide-react";
+import { Printer } from "lucide-react";
+import { BackButton } from "@/components/BackButton";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { SEO } from "@/components/SEO";
@@ -77,9 +78,7 @@ const TrainingTerm = () => {
 
       <div className="no-print border-b border-neutral-200">
         <div className="max-w-3xl mx-auto px-6 py-4 flex items-center justify-between">
-          <Link to={`/treinamento/${id}`}>
-            <Button variant="ghost" size="sm"><ArrowLeft className="h-4 w-4" />Voltar</Button>
-          </Link>
+          <BackButton to={`/treinamento/${id}`} label="Voltar" />
           <Button onClick={() => window.print()}><Printer className="h-4 w-4" />Imprimir termo</Button>
         </div>
       </div>
