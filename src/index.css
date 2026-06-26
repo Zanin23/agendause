@@ -594,3 +594,7 @@
   position: relative;
   z-index: 1;
 }
+
+#lovable-badge {
+  display: none !important;
+}
