@@ -21,13 +21,6 @@ const Home = () => {
       cta: "Acessar agenda",
     },
     {
-      onClick: () => setOpen(true),
-      icon: CalendarPlus,
-      title: "Agendar novo treinamento",
-      description: "Crie um novo treinamento com cliente, data, hora e local.",
-      cta: "Novo treinamento",
-    },
-    {
       to: "/relatorios",
       icon: FileCheck2,
       title: "Relatórios de aceite",
@@ -72,6 +65,14 @@ const Home = () => {
                 Olá{firstName ? `,\u00a0 ${firstName}` : ""}.
               </h1>
               <p className="text-muted-foreground mt-2 text-sm sm:text-base">O que você quer fazer hoje?</p>
+              <button
+                onClick={() => setOpen(true)}
+                className="group mt-5 inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/25 transition-all duration-300 hover:shadow-primary/40 hover:-translate-y-0.5"
+              >
+                <CalendarPlus className="h-4 w-4" />
+                Agendar novo treinamento
+                <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+              </button>
             </div>
             <img src={logoAsset.url} alt="Use Sistemas" className="hero-float hidden sm:block h-16 md:h-20 w-auto opacity-90 self-start md:self-auto" />
           </div>
