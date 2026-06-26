@@ -11,6 +11,7 @@ import { SEO } from "@/components/SEO";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { BackButton } from "@/components/BackButton";
 
 const STATUS_LABELS: Record<string, string> = {
   draft: "Rascunho",
@@ -117,7 +118,8 @@ export default function Schedules() {
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-6">
         <div className="flex items-end justify-between flex-wrap gap-3">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight flex items-center gap-2">
+            <BackButton to="/" />
+            <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight mt-2 flex items-center gap-2">
               <ClipboardList className="h-7 w-7 text-primary" /> Cronogramas
             </h1>
             <p className="text-muted-foreground mt-1 text-sm">

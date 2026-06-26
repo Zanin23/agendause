@@ -165,7 +165,7 @@ export default function ScheduleNew() {
       />
       <AppHeader />
       <main className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-6">
-        <BackButton to="/cronogramas" label="Voltar" />
+        <BackButton to="/cronogramas" />
         <div>
           <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight flex items-center gap-2">
             <Sparkles className="h-6 w-6 text-primary" /> Novo cronograma

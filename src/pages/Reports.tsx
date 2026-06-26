@@ -174,7 +174,7 @@ const Reports = () => {
       <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-6">
         <div className="flex items-end justify-between flex-wrap gap-4">
           <div className="min-w-0">
-            <BackButton to="/" label="Início" />
+            <BackButton to="/" />
             <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight mt-2">Relatórios de aceite</h1>
             <p className="text-muted-foreground mt-1 text-sm sm:text-base">Veja quantos participantes confirmaram cada treinamento e imprima os termos.</p>
           </div>
