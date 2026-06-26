@@ -455,9 +455,11 @@ function ClientGroup({
 }) {
   const pending = items.filter((i) => i.status === "pending").length;
   return (
-    <div className="rounded-2xl border border-border bg-card/80 overflow-hidden">
-      <div className="flex items-center justify-between px-4 sm:px-5 py-3 border-b border-border bg-muted/30">
-        <div className="font-medium truncate">{client}</div>
+    <div className="rounded-md border-[3px] border-primary bg-card/80 overflow-hidden">
+      <div className="bg-pattern-hex-light flex items-center justify-between px-4 sm:px-5 py-3 border-b-[3px] border-primary">
+        <div className="font-black uppercase tracking-tight text-lg sm:text-xl truncate">
+          {client}
+        </div>
         <Badge variant={pending ? "default" : "secondary"}>
           {pending} pendente(s) · {items.length} total
         </Badge>
