@@ -306,11 +306,9 @@ export default function BillingRequests() {
       <SEO title="Solicitações a cobrar" description="Acompanhe e cobre solicitações por cliente e semana." path="/cobrar" />
       <AppHeader />
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-6">
-        <div>
-          <BackButton to="/" />
-        </div>
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div className="min-w-0">
+            <BackButton to="/" className="-ml-2 mb-1" />
             <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Solicitações a cobrar</h1>
             <p className="text-sm text-muted-foreground">Por cliente, agrupadas pela semana.</p>
           </div>
