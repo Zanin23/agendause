@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CreateTrainingDialog } from "@/components/CreateTrainingDialog";
+import { BackButton } from "@/components/BackButton";
 
 type Training = {
   id: string;
@@ -77,7 +78,8 @@ const Dashboard = () => {
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-6 sm:space-y-8">
         <div className="flex items-start sm:items-end justify-between flex-wrap gap-3 sm:gap-4">
           <div className="min-w-0">
-            <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Agenda de treinamentos</h1>
+            <BackButton to="/" />
+            <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight mt-2">Agenda de treinamentos</h1>
             <p className="text-muted-foreground mt-1 text-sm sm:text-base">Acompanhe sessões agendadas e confirme seu recebimento.</p>
           </div>
           <div className="flex gap-2 w-full sm:w-auto">
