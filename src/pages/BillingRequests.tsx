@@ -575,15 +575,6 @@ function RequestRow({
             }`}>
               {request.title}
             </span>
-            {request.carried_over_to && (
-              <Badge
-                variant="outline"
-                className="text-[10px] gap-1 border-amber-500/60 bg-amber-500/10 text-amber-700 dark:text-amber-300 font-medium"
-              >
-                <ArrowRightCircle className="h-3 w-3" />
-                Reprogramada · {formatWeekLabel(request.carried_over_to).replace(/^.*·\s*/, "")}
-              </Badge>
-            )}
             {updates.length > 0 && (
               <Badge variant="outline" className="text-[10px]">{updates.length} atualização(ões)</Badge>
             )}
@@ -592,6 +583,15 @@ function RequestRow({
             <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{request.description}</p>
           )}
         </button>
+        {request.carried_over_to && (
+          <Badge
+            variant="outline"
+            className="ml-auto shrink-0 text-[10px] gap-1 border-amber-500/60 bg-amber-500/10 text-amber-700 dark:text-amber-300 font-medium"
+          >
+            <ArrowRightCircle className="h-3 w-3" />
+            Reprogramada · {formatWeekLabel(request.carried_over_to).replace(/^.*·\s*/, "")}
+          </Badge>
+        )}
         <Button variant="ghost" size="sm" className="px-2 shrink-0" onClick={remove} aria-label="Excluir">
           <Trash2 className="h-4 w-4 text-muted-foreground" />
         </Button>
