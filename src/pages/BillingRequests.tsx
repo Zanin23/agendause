@@ -56,6 +56,8 @@ type Request = {
   status: "pending" | "delivered";
   delivered_at: string | null;
   created_at: string;
+  carried_over_to: string | null;
+  carried_over_from_id: string | null;
 };
 
 type Update = {
