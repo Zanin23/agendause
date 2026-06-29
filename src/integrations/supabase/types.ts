@@ -75,6 +75,8 @@ export type Database = {
       }
       billing_requests: {
         Row: {
+          carried_over_from_id: string | null
+          carried_over_to: string | null
           client: string
           created_at: string
           delivered_at: string | null
@@ -88,6 +90,8 @@ export type Database = {
           week_start: string
         }
         Insert: {
+          carried_over_from_id?: string | null
+          carried_over_to?: string | null
           client: string
           created_at?: string
           delivered_at?: string | null
@@ -101,6 +105,8 @@ export type Database = {
           week_start?: string
         }
         Update: {
+          carried_over_from_id?: string | null
+          carried_over_to?: string | null
           client?: string
           created_at?: string
           delivered_at?: string | null
@@ -113,7 +119,15 @@ export type Database = {
           user_id?: string
           week_start?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "billing_requests_carried_over_from_id_fkey"
+            columns: ["carried_over_from_id"]
+            isOneToOne: false
+            referencedRelation: "billing_requests"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       guest_acceptances: {
         Row: {
