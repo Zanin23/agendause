@@ -650,7 +650,7 @@ function MovePendingDialog({
   const pending = useMemo(
     () =>
       requests
-        .filter((r) => r.status === "pending" && r.week_start === fromWeek)
+        .filter((r) => r.status === "pending" && r.week_start === fromWeek && !r.carried_over_to)
         .sort(
           (a, b) =>
             a.client.localeCompare(b.client) ||
