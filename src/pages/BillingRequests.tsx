@@ -539,8 +539,10 @@ function RequestRow({
 
   return (
     <li
-      className={`px-4 sm:px-5 py-3 transition-all duration-200 hover:bg-primary/5 hover:pl-6 hover:shadow-[inset_3px_0_0_hsl(var(--primary))] cursor-default ${
-        request.carried_over_to ? "bg-muted/30 opacity-80" : ""
+      className={`relative px-4 sm:px-5 py-3 transition-all duration-200 cursor-default ${
+        request.carried_over_to
+          ? "bg-amber-500/[0.04] dark:bg-amber-500/[0.07] border-l-[3px] border-amber-500/70 hover:bg-amber-500/[0.08]"
+          : "hover:bg-primary/5 hover:pl-6 hover:shadow-[inset_3px_0_0_hsl(var(--primary))]"
       }`}
     >
       <div className="flex items-start gap-3">
@@ -552,21 +554,34 @@ function RequestRow({
             request.status === "delivered"
               ? "bg-primary border-primary text-primary-foreground"
               : request.carried_over_to
-              ? "border-dashed border-muted-foreground/50"
+              ? "border-dashed border-amber-500/60 text-amber-600 dark:text-amber-400"
               : "border-muted-foreground/40 hover:border-primary"
           }`}
         >
           {request.status === "delivered" && <CheckCircle2 className="h-4 w-4" />}
+          {request.carried_over_to && request.status !== "delivered" && (
+            <ArrowRightCircle className="h-3.5 w-3.5" />
+          )}
         </button>
         <button onClick={() => setExpanded((v) => !v)} className="flex-1 min-w-0 text-left">
           <div className="flex items-baseline gap-2 flex-wrap">
-            <span className="font-mono text-sm font-semibold text-primary">{request.number}</span>
-            <span className={`font-medium ${request.status === "delivered" ? "line-through text-muted-foreground" : ""}`}>
+            <span className={`font-mono text-sm font-semibold ${request.carried_over_to ? "text-amber-700 dark:text-amber-400" : "text-primary"}`}>{request.number}</span>
+            <span className={`font-medium ${
+              request.status === "delivered"
+                ? "line-through text-muted-foreground"
+                : request.carried_over_to
+                ? "text-muted-foreground"
+                : ""
+            }`}>
               {request.title}
             </span>
             {request.carried_over_to && (
-              <Badge variant="outline" className="text-[10px] border-amber-500/50 text-amber-700 dark:text-amber-400">
-                Não concluída · reprogramada para {formatWeekLabel(request.carried_over_to).replace(/^.*·\s*/, "")}
+              <Badge
+                variant="outline"
+                className="text-[10px] gap-1 border-amber-500/60 bg-amber-500/10 text-amber-700 dark:text-amber-300 font-medium"
+              >
+                <ArrowRightCircle className="h-3 w-3" />
+                Reprogramada · {formatWeekLabel(request.carried_over_to).replace(/^.*·\s*/, "")}
               </Badge>
             )}
             {updates.length > 0 && (
