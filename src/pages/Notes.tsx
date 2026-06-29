@@ -199,7 +199,7 @@ const Notes = () => {
             Anotações <em className="italic text-primary">por empresa</em>
           </h1>
           <p className="mt-3 text-sm text-muted-foreground max-w-xl">
-            Um diário discreto para registrar o que importa de cada cliente — escolha a empresa,
+            Um diário para registrar o que importa de cada cliente — escolha a empresa,
             anote o dia e deixe a memória do atendimento por escrito.
           </p>
           <hr className="vintage-rule mt-6" />
