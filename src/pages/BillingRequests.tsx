@@ -675,13 +675,29 @@ function MovePendingDialog({
     if (!toWeek) return toast.error("Escolha a semana de destino");
     if (toWeek === fromWeek) return toast.error("A semana de destino deve ser diferente");
     setBusy(true);
-    const { error } = await sb
+    const originals = pending.filter((r) => selected[r.id]);
+    const clones = originals.map((r) => ({
+      user_id: r.user_id,
+      number: r.number,
+      client: r.client,
+      title: r.title,
+      description: r.description,
+      week_start: toWeek,
+      status: "pending",
+      carried_over_from_id: r.id,
+    }));
+    const { error: insErr } = await sb.from("billing_requests").insert(clones);
+    if (insErr) {
+      setBusy(false);
+      return toast.error("Erro ao mover");
+    }
+    const { error: updErr } = await sb
       .from("billing_requests")
-      .update({ week_start: toWeek })
+      .update({ carried_over_to: toWeek })
       .in("id", ids);
     setBusy(false);
-    if (error) return toast.error("Erro ao mover");
-    toast.success(`${ids.length} solicitação(ões) movida(s)`);
+    if (updErr) return toast.error("Movidas, mas falha ao marcar originais");
+    toast.success(`${ids.length} solicitação(ões) reprogramada(s)`);
     onOpenChange(false);
     onMoved();
   };
