@@ -165,20 +165,18 @@ export const CreateTrainingDialog = ({ open, onOpenChange, onCreated }: Props) =
                   {prettyDate} {date && `· ${time}`}
                 </span>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+              <div className="grid grid-cols-3 gap-4 items-end">
                 <div className="space-y-1.5">
                   <Label htmlFor="date" className="text-[10px] tracking-[0.22em] uppercase text-muted-foreground">Data</Label>
-                  <Input id="date" type="date" value={date} onChange={(e) => setDate(e.target.value)} required className={`${underline} font-display text-base`} />
+                  <Input id="date" type="date" value={date} onChange={(e) => setDate(e.target.value)} required className={`${underline} font-display text-base h-10`} />
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="time" className="text-[10px] tracking-[0.22em] uppercase text-muted-foreground">Hora</Label>
-                  <Input id="time" type="time" value={time} onChange={(e) => setTime(e.target.value)} required className={`${underline} font-display text-base`} />
+                  <Input id="time" type="time" value={time} onChange={(e) => setTime(e.target.value)} required className={`${underline} font-display text-base h-10`} />
                 </div>
-                <div className="space-y-1.5 col-span-2 sm:col-span-1">
-                  <Label htmlFor="dur" className="text-[10px] tracking-[0.22em] uppercase text-muted-foreground flex items-center gap-1.5">
-                    <Timer className="h-3 w-3" /> Duração (min)
-                  </Label>
-                  <Input id="dur" type="number" min={5} value={duration} onChange={(e) => setDuration(Number(e.target.value))} className={`${underline} font-display text-base`} />
+                <div className="space-y-1.5">
+                  <Label htmlFor="dur" className="text-[10px] tracking-[0.22em] uppercase text-muted-foreground">Duração (min)</Label>
+                  <Input id="dur" type="number" min={5} value={duration} onChange={(e) => setDuration(Number(e.target.value))} className={`${underline} font-display text-base h-10`} />
                 </div>
               </div>
             </section>
