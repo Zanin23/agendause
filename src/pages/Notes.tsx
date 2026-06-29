@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { StickyNote, Plus, Trash2, Pencil, Save, X, Building2, CalendarDays } from "lucide-react";
+import { StickyNote, Plus, Trash2, Pencil, Save, X, Building2, CalendarDays, PlusCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { AppHeader } from "@/components/AppHeader";
@@ -10,6 +10,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 
 type Note = {
@@ -45,6 +53,9 @@ const Notes = () => {
   const [editDate, setEditDate] = useState("");
 
   const [filter, setFilter] = useState("");
+
+  const [addCompanyOpen, setAddCompanyOpen] = useState(false);
+  const [newCompanyName, setNewCompanyName] = useState("");
 
   const load = async () => {
     setLoading(true);
@@ -117,6 +128,25 @@ const Notes = () => {
     return companies.filter((c) => c.toLowerCase().includes(f));
   }, [companies, filter]);
 
+  const addCompany = (e: React.FormEvent) => {
+    e.preventDefault();
+    const name = newCompanyName.trim();
+    if (!name) return toast.error("Informe o nome da empresa");
+    if (companies.some((c) => c.toLowerCase() === name.toLowerCase())) {
+      const existing = companies.find((c) => c.toLowerCase() === name.toLowerCase())!;
+      setSelectedCompany(existing);
+      setAddCompanyOpen(false);
+      setNewCompanyName("");
+      toast.info("Empresa já existente, selecionada na lista");
+      return;
+    }
+    setCompanies((prev) => [...prev, name].sort((a, b) => a.localeCompare(b, "pt-BR")));
+    setSelectedCompany(name);
+    setAddCompanyOpen(false);
+    setNewCompanyName("");
+    toast.success("Empresa adicionada. Registre a primeira anotação ao lado.");
+  };
+
   const visibleNotes = useMemo(() => {
     if (!selectedCompany) return [];
     return notes.filter((n) => n.company === selectedCompany);
@@ -153,11 +183,44 @@ const Notes = () => {
         <div className="grid lg:grid-cols-[280px_1fr] gap-6">
           {/* Sidebar empresas */}
           <aside className="space-y-3">
-            <Input
-              placeholder="Buscar empresa..."
-              value={filter}
-              onChange={(e) => setFilter(e.target.value)}
-            />
+            <div className="flex gap-2">
+              <Input
+                placeholder="Buscar empresa..."
+                value={filter}
+                onChange={(e) => setFilter(e.target.value)}
+              />
+              <Dialog open={addCompanyOpen} onOpenChange={setAddCompanyOpen}>
+                <DialogTrigger asChild>
+                  <Button type="button" variant="outline" size="icon" title="Adicionar empresa">
+                    <PlusCircle className="h-4 w-4" />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Adicionar empresa</DialogTitle>
+                  </DialogHeader>
+                  <form onSubmit={addCompany} className="space-y-4">
+                    <div className="space-y-1.5">
+                      <Label>Nome da empresa</Label>
+                      <Input
+                        autoFocus
+                        value={newCompanyName}
+                        onChange={(e) => setNewCompanyName(e.target.value)}
+                        placeholder="Ex.: Agropecuária 2 Irmãos"
+                      />
+                    </div>
+                    <DialogFooter>
+                      <Button type="button" variant="ghost" onClick={() => setAddCompanyOpen(false)}>
+                        Cancelar
+                      </Button>
+                      <Button type="submit">
+                        <Plus className="h-4 w-4" /> Adicionar
+                      </Button>
+                    </DialogFooter>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            </div>
             <div className="rounded-xl border border-border bg-card divide-y divide-border max-h-[60vh] overflow-y-auto">
               {filteredCompanies.length === 0 && (
                 <div className="p-4 text-sm text-muted-foreground">Nenhuma empresa ainda. Adicione uma anotação ao lado.</div>
