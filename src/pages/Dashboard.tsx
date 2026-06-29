@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { format, isSameDay, isAfter, startOfDay } from "date-fns";
+import { format, isSameDay, isAfter, startOfDay, differenceInCalendarDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CalendarPlus, MapPin, Clock, CheckCircle2, Printer, XCircle, CalendarDays } from "lucide-react";
+import { CalendarPlus, MapPin, Clock, CheckCircle2, Printer, XCircle, CalendarDays, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { AppHeader } from "@/components/AppHeader";
@@ -64,8 +64,18 @@ const Dashboard = () => {
 
   const upcoming = useMemo(() => {
     const today = startOfDay(new Date());
-    return trainings.filter((t) => isAfter(new Date(t.scheduled_at), today) || isSameDay(new Date(t.scheduled_at), today)).slice(0, 10);
+    return trainings.filter((t) => isAfter(new Date(t.scheduled_at), today) || isSameDay(new Date(t.scheduled_at), today)).slice(0, 15);
   }, [trainings]);
+
+  const upcomingGroups = useMemo(() => {
+    const map = new Map<string, Training[]>();
+    for (const t of upcoming) {
+      const key = format(new Date(t.scheduled_at), "yyyy-MM-dd");
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(t);
+    }
+    return Array.from(map.entries()).map(([key, items]) => ({ key, date: new Date(items[0].scheduled_at), items }));
+  }, [upcoming]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -137,7 +147,12 @@ const Dashboard = () => {
             )}
 
             <section>
-              <h2 className="text-sm uppercase tracking-wider text-muted-foreground mb-3">Próximos treinamentos</h2>
+              <div className="flex items-baseline justify-between mb-4">
+                <h2 className="text-sm uppercase tracking-wider text-muted-foreground">Próximos treinamentos</h2>
+                {upcoming.length > 0 && (
+                  <span className="text-xs text-muted-foreground">{upcoming.length} agendados</span>
+                )}
+              </div>
               {upcoming.length === 0 ? (
                 <Card>
                   <CardContent className="py-8 text-center text-muted-foreground text-sm">
@@ -145,9 +160,15 @@ const Dashboard = () => {
                   </CardContent>
                 </Card>
               ) : (
-                <div className="space-y-3">
-                  {upcoming.map((t) => (
-                    <TrainingCard key={t.id} training={t} accepted={acceptedIds.has(t.id)} />
+                <div className="relative space-y-6">
+                  <div className="absolute left-[26px] sm:left-[34px] top-2 bottom-2 w-px bg-border/60 hidden sm:block" aria-hidden />
+                  {upcomingGroups.map((g) => (
+                    <UpcomingGroup
+                      key={g.key}
+                      date={g.date}
+                      items={g.items}
+                      acceptedIds={acceptedIds}
+                    />
                   ))}
                 </div>
               )}
@@ -224,6 +245,121 @@ const TrainingCard = ({ training, accepted }: { training: Training; accepted: bo
           )}
         </CardContent>
       </Card>
+    </Link>
+  );
+};
+
+const UpcomingGroup = ({
+  date,
+  items,
+  acceptedIds,
+}: {
+  date: Date;
+  items: Training[];
+  acceptedIds: Set<string>;
+}) => {
+  const today = startOfDay(new Date());
+  const diff = differenceInCalendarDays(startOfDay(date), today);
+  const relative =
+    diff === 0 ? "Hoje" : diff === 1 ? "Amanhã" : diff < 7 ? format(date, "EEEE", { locale: ptBR }) : null;
+  return (
+    <div className="flex gap-3 sm:gap-4">
+      <div className="flex flex-col items-center w-[52px] sm:w-[68px] shrink-0">
+        <div
+          className={
+            "rounded-xl border bg-card text-center w-full py-2 shadow-sm " +
+            (diff === 0 ? "border-primary/60 ring-1 ring-primary/30" : "border-border")
+          }
+        >
+          <div className="text-[10px] uppercase tracking-wider text-muted-foreground leading-none">
+            {format(date, "MMM", { locale: ptBR })}
+          </div>
+          <div className="text-xl sm:text-2xl font-semibold leading-tight mt-1">
+            {format(date, "dd")}
+          </div>
+          <div className="text-[10px] uppercase tracking-wider text-muted-foreground leading-none mt-1">
+            {format(date, "EEE", { locale: ptBR }).replace(".", "")}
+          </div>
+        </div>
+      </div>
+      <div className="flex-1 min-w-0 space-y-2">
+        {relative && (
+          <div className="text-xs font-medium text-primary/80 uppercase tracking-wider">
+            {relative}
+          </div>
+        )}
+        <div className="space-y-2">
+          {items.map((t) => (
+            <UpcomingRow key={t.id} training={t} accepted={acceptedIds.has(t.id)} />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const UpcomingRow = ({ training, accepted }: { training: Training; accepted: boolean }) => {
+  const date = new Date(training.scheduled_at);
+  const isCancelled = training.status === "cancelado";
+  return (
+    <Link to={`/treinamento/${training.id}`} className="block group">
+      <div
+        className={
+          "relative rounded-lg border bg-card px-4 py-3 transition-all hover:shadow-md hover:-translate-y-px " +
+          (isCancelled
+            ? "border-destructive/50 bg-destructive/5 hover:border-destructive"
+            : "border-border hover:border-primary/50")
+        }
+      >
+        <div
+          className={
+            "absolute left-0 top-3 bottom-3 w-1 rounded-r " +
+            (isCancelled ? "bg-destructive/60" : accepted ? "bg-emerald-500/70" : "bg-primary/50")
+          }
+          aria-hidden
+        />
+        <div className="flex items-center justify-between gap-3 pl-2">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3
+                className={
+                  "font-medium text-sm sm:text-base truncate " +
+                  (isCancelled ? "line-through text-destructive" : "")
+                }
+              >
+                {training.title}
+              </h3>
+              {isCancelled ? (
+                <Badge variant="destructive" className="gap-1 h-5 text-[10px]">
+                  <XCircle className="h-3 w-3" /> Cancelada
+                </Badge>
+              ) : accepted ? (
+                <Badge variant="success" className="gap-1 h-5 text-[10px]">
+                  <CheckCircle2 className="h-3 w-3" /> Aceito
+                </Badge>
+              ) : null}
+            </div>
+            <div
+              className={
+                "flex items-center gap-3 text-xs mt-1 flex-wrap " +
+                (isCancelled ? "text-destructive/80" : "text-muted-foreground")
+              }
+            >
+              <span className="flex items-center gap-1">
+                <Clock className="h-3 w-3" />
+                {format(date, "HH:mm")} · {training.duration_minutes} min
+              </span>
+              {training.location && (
+                <span className="flex items-center gap-1 truncate max-w-[180px] sm:max-w-none">
+                  <MapPin className="h-3 w-3" />
+                  <span className="truncate">{training.location}</span>
+                </span>
+              )}
+            </div>
+          </div>
+          <ChevronRight className="h-4 w-4 text-muted-foreground/60 group-hover:text-primary group-hover:translate-x-0.5 transition-all shrink-0" />
+        </div>
+      </div>
     </Link>
   );
 };
