@@ -538,7 +538,11 @@ function RequestRow({
   };
 
   return (
-    <li className="px-4 sm:px-5 py-3 transition-all duration-200 hover:bg-primary/5 hover:pl-6 hover:shadow-[inset_3px_0_0_hsl(var(--primary))] cursor-default">
+    <li
+      className={`px-4 sm:px-5 py-3 transition-all duration-200 hover:bg-primary/5 hover:pl-6 hover:shadow-[inset_3px_0_0_hsl(var(--primary))] cursor-default ${
+        request.carried_over_to ? "bg-muted/30 opacity-80" : ""
+      }`}
+    >
       <div className="flex items-start gap-3">
         <button
           onClick={toggleStatus}
@@ -547,6 +551,8 @@ function RequestRow({
           className={`mt-0.5 h-6 w-6 rounded-full border-2 flex items-center justify-center transition-colors shrink-0 ${
             request.status === "delivered"
               ? "bg-primary border-primary text-primary-foreground"
+              : request.carried_over_to
+              ? "border-dashed border-muted-foreground/50"
               : "border-muted-foreground/40 hover:border-primary"
           }`}
         >
@@ -558,6 +564,11 @@ function RequestRow({
             <span className={`font-medium ${request.status === "delivered" ? "line-through text-muted-foreground" : ""}`}>
               {request.title}
             </span>
+            {request.carried_over_to && (
+              <Badge variant="outline" className="text-[10px] border-amber-500/50 text-amber-700 dark:text-amber-400">
+                Não concluída · reprogramada para {formatWeekLabel(request.carried_over_to).replace(/^.*·\s*/, "")}
+              </Badge>
+            )}
             {updates.length > 0 && (
               <Badge variant="outline" className="text-[10px]">{updates.length} atualização(ões)</Badge>
             )}
