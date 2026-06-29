@@ -465,7 +465,7 @@ function ClientGroup({
   updates: Record<string, Update[]>;
   onChanged: () => void;
 }) {
-  const pending = items.filter((i) => i.status === "pending").length;
+  const pending = items.filter((i) => i.status === "pending" && !i.carried_over_to).length;
   return (
     <div className="rounded-md border border-primary/60 bg-card/80 overflow-hidden">
       <div className="bg-pattern-hex-light flex items-center justify-between px-4 sm:px-5 py-3 border-b border-primary/60">
