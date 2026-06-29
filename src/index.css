@@ -303,6 +303,65 @@
     background: linear-gradient(90deg, transparent, var(--color-primary), transparent);
     opacity: 0.5;
   }
+
+  /* Vintage display serif — used sparingly for titles and dates */
+  .font-display {
+    font-family: "Instrument Serif", "Cormorant Garamond", Georgia, serif;
+    font-weight: 400;
+    letter-spacing: -0.01em;
+  }
+
+  /* Paper-like vintage surface with subtle grain */
+  .paper-surface {
+    background:
+      radial-gradient(140% 90% at 0% 0%, color-mix(in oklch, var(--color-primary) 6%, transparent), transparent 55%),
+      radial-gradient(120% 80% at 100% 100%, color-mix(in oklch, var(--color-secondary) 7%, transparent), transparent 60%),
+      var(--color-card);
+    position: relative;
+  }
+  .paper-surface::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image: radial-gradient(rgba(255,255,255,0.025) 1px, transparent 1px);
+    background-size: 3px 3px;
+    border-radius: inherit;
+    mix-blend-mode: overlay;
+  }
+
+  /* Date stamp used on note cards */
+  .date-stamp {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 56px;
+    padding: 6px 10px;
+    border: 1px solid color-mix(in oklch, var(--color-primary) 55%, transparent);
+    border-radius: 6px;
+    background: color-mix(in oklch, var(--color-primary) 8%, transparent);
+    color: var(--color-foreground);
+    line-height: 1;
+  }
+  .date-stamp .day {
+    font-family: "Instrument Serif", Georgia, serif;
+    font-size: 22px;
+    line-height: 1;
+  }
+  .date-stamp .mon {
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    opacity: 0.8;
+    margin-top: 2px;
+  }
+
+  /* Dashed vintage rule */
+  .vintage-rule {
+    border: 0;
+    border-top: 1px dashed color-mix(in oklch, var(--color-primary) 45%, transparent);
+  }
 }
 
 /* Add the keyframes definition */
