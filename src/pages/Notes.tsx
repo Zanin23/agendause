@@ -30,6 +30,17 @@ type Note = {
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
 
+// Alterna a animação do card principal a cada 12 horas
+const useComposerVariant = () => {
+  const compute = () => Math.floor(Date.now() / (1000 * 60 * 60 * 12)) % 2;
+  const [variant, setVariant] = useState<number>(compute);
+  useEffect(() => {
+    const id = setInterval(() => setVariant(compute()), 60 * 1000);
+    return () => clearInterval(id);
+  }, []);
+  return variant;
+};
+
 const MONTHS_PT = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
 const WEEKDAYS_PT = ["domingo","segunda","terça","quarta","quinta","sexta","sábado"];
 
@@ -55,6 +66,7 @@ const initials = (name: string) =>
 
 const Notes = () => {
   const { user } = useAuth();
+  const composerVariant = useComposerVariant();
   const [notes, setNotes] = useState<Note[]>([]);
   const [companies, setCompanies] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -304,7 +316,9 @@ const Notes = () => {
           {/* Painel principal */}
           <section className="space-y-10 min-w-0">
             {/* Compositor */}
-            <div className="composer-card paper-surface rounded-2xl border border-border/70 p-6 sm:p-7 relative overflow-hidden">
+            <div
+              className={`composer-card ${composerVariant === 1 ? "composer-card--alt" : ""} paper-surface rounded-2xl border border-border/70 p-6 sm:p-7 relative overflow-hidden`}
+            >
               <span className="composer-sheen" aria-hidden="true" />
               <div className="relative flex items-center justify-between mb-5">
                 <div className="flex items-center gap-2 text-[11px] tracking-[0.28em] uppercase text-primary/80">
