@@ -56,6 +56,8 @@ type Request = {
   status: "pending" | "delivered";
   delivered_at: string | null;
   created_at: string;
+  carried_over_to: string | null;
+  carried_over_from_id: string | null;
 };
 
 type Update = {
@@ -463,7 +465,7 @@ function ClientGroup({
   updates: Record<string, Update[]>;
   onChanged: () => void;
 }) {
-  const pending = items.filter((i) => i.status === "pending").length;
+  const pending = items.filter((i) => i.status === "pending" && !i.carried_over_to).length;
   return (
     <div className="rounded-md border border-primary/60 bg-card/80 overflow-hidden">
       <div className="bg-pattern-hex-light flex items-center justify-between px-4 sm:px-5 py-3 border-b border-primary/60">
@@ -536,7 +538,11 @@ function RequestRow({
   };
 
   return (
-    <li className="px-4 sm:px-5 py-3 transition-all duration-200 hover:bg-primary/5 hover:pl-6 hover:shadow-[inset_3px_0_0_hsl(var(--primary))] cursor-default">
+    <li
+      className={`px-4 sm:px-5 py-3 transition-all duration-200 hover:bg-primary/5 hover:pl-6 hover:shadow-[inset_3px_0_0_hsl(var(--primary))] cursor-default ${
+        request.carried_over_to ? "bg-muted/30 opacity-80" : ""
+      }`}
+    >
       <div className="flex items-start gap-3">
         <button
           onClick={toggleStatus}
@@ -545,6 +551,8 @@ function RequestRow({
           className={`mt-0.5 h-6 w-6 rounded-full border-2 flex items-center justify-center transition-colors shrink-0 ${
             request.status === "delivered"
               ? "bg-primary border-primary text-primary-foreground"
+              : request.carried_over_to
+              ? "border-dashed border-muted-foreground/50"
               : "border-muted-foreground/40 hover:border-primary"
           }`}
         >
@@ -556,6 +564,11 @@ function RequestRow({
             <span className={`font-medium ${request.status === "delivered" ? "line-through text-muted-foreground" : ""}`}>
               {request.title}
             </span>
+            {request.carried_over_to && (
+              <Badge variant="outline" className="text-[10px] border-amber-500/50 text-amber-700 dark:text-amber-400">
+                Não concluída · reprogramada para {formatWeekLabel(request.carried_over_to).replace(/^.*·\s*/, "")}
+              </Badge>
+            )}
             {updates.length > 0 && (
               <Badge variant="outline" className="text-[10px]">{updates.length} atualização(ões)</Badge>
             )}
@@ -648,7 +661,7 @@ function MovePendingDialog({
   const pending = useMemo(
     () =>
       requests
-        .filter((r) => r.status === "pending" && r.week_start === fromWeek)
+        .filter((r) => r.status === "pending" && r.week_start === fromWeek && !r.carried_over_to)
         .sort(
           (a, b) =>
             a.client.localeCompare(b.client) ||
@@ -673,13 +686,29 @@ function MovePendingDialog({
     if (!toWeek) return toast.error("Escolha a semana de destino");
     if (toWeek === fromWeek) return toast.error("A semana de destino deve ser diferente");
     setBusy(true);
-    const { error } = await sb
+    const originals = pending.filter((r) => selected[r.id]);
+    const clones = originals.map((r) => ({
+      user_id: r.user_id,
+      number: r.number,
+      client: r.client,
+      title: r.title,
+      description: r.description,
+      week_start: toWeek,
+      status: "pending",
+      carried_over_from_id: r.id,
+    }));
+    const { error: insErr } = await sb.from("billing_requests").insert(clones);
+    if (insErr) {
+      setBusy(false);
+      return toast.error("Erro ao mover");
+    }
+    const { error: updErr } = await sb
       .from("billing_requests")
-      .update({ week_start: toWeek })
+      .update({ carried_over_to: toWeek })
       .in("id", ids);
     setBusy(false);
-    if (error) return toast.error("Erro ao mover");
-    toast.success(`${ids.length} solicitação(ões) movida(s)`);
+    if (updErr) return toast.error("Movidas, mas falha ao marcar originais");
+    toast.success(`${ids.length} solicitação(ões) reprogramada(s)`);
     onOpenChange(false);
     onMoved();
   };
