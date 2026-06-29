@@ -129,6 +129,36 @@ export type Database = {
           },
         ]
       }
+      company_notes: {
+        Row: {
+          company: string
+          content: string
+          created_at: string
+          id: string
+          note_date: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          company: string
+          content: string
+          created_at?: string
+          id?: string
+          note_date: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          company?: string
+          content?: string
+          created_at?: string
+          id?: string
+          note_date?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       guest_acceptances: {
         Row: {
           accepted_at: string

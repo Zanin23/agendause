@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { CalendarDays, CalendarPlus, FileCheck2, ArrowRight, ClipboardList, Receipt } from "lucide-react";
+import { CalendarDays, CalendarPlus, FileCheck2, ArrowRight, ClipboardList, Receipt, StickyNote } from "lucide-react";
 import logoAsset from "@/assets/logo-use-sistemas.png.asset.json";
 import { useState } from "react";
 import { AppHeader } from "@/components/AppHeader";
@@ -40,6 +40,13 @@ const Home = () => {
       title: "Solicitações a cobrar",
       description: "Acompanhe solicitações por cliente, semana e cobre as pendências.",
       cta: "Abrir solicitações",
+    },
+    {
+      to: "/anotacoes",
+      icon: StickyNote,
+      title: "Anotações por empresa",
+      description: "Registre observações por empresa e por dia em um só lugar.",
+      cta: "Abrir anotações",
     },
   ];
 
