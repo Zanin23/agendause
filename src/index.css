@@ -448,10 +448,18 @@
   }
   /* Alternate variant: pulsing orbs with subtle orbit */
   .composer-card--alt::before {
-    animation: composer-pulse-a 9s ease-in-out infinite, composer-orbit 22s linear infinite;
+    width: 340px; height: 340px;
+    top: -120px; left: auto; right: -100px;
+    background: radial-gradient(circle, color-mix(in oklch, var(--color-secondary) 75%, transparent) 0%, transparent 70%);
+    opacity: 0.7;
+    animation: composer-pulse-a 7s ease-in-out infinite, composer-orbit 22s linear infinite;
   }
   .composer-card--alt::after {
-    animation: composer-pulse-b 11s ease-in-out infinite, composer-orbit 28s linear infinite reverse;
+    width: 360px; height: 360px;
+    bottom: -140px; right: auto; left: -100px;
+    background: radial-gradient(circle, color-mix(in oklch, var(--color-primary) 65%, transparent) 0%, transparent 70%);
+    opacity: 0.7;
+    animation: composer-pulse-b 9s ease-in-out infinite, composer-orbit 28s linear infinite reverse;
   }
   .composer-sheen {
     position: absolute;
