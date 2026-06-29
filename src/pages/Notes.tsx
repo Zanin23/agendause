@@ -32,7 +32,7 @@ const todayStr = () => new Date().toISOString().slice(0, 10);
 
 // Alterna a animação do card principal a cada 12 horas
 const useComposerVariant = () => {
-  const compute = () => (Math.floor(Date.now() / (1000 * 60 * 60 * 12)) + 1) % 2;
+  const compute = () => Math.floor(Date.now() / (1000 * 60 * 60 * 12)) % 2;
   const [variant, setVariant] = useState<number>(compute);
   useEffect(() => {
     const id = setInterval(() => setVariant(compute()), 60 * 1000);
