@@ -304,11 +304,15 @@ const Notes = () => {
           {/* Painel principal */}
           <section className="space-y-10 min-w-0">
             {/* Compositor */}
-            <div className="paper-surface rounded-2xl border border-border/70 p-6 sm:p-7 relative overflow-hidden">
+            <div className="composer-card paper-surface rounded-2xl border border-border/70 p-6 sm:p-7 relative overflow-hidden">
+              <span className="composer-sheen" aria-hidden="true" />
               <div className="relative flex items-center justify-between mb-5">
                 <div className="flex items-center gap-2 text-[11px] tracking-[0.28em] uppercase text-primary/80">
-                  <Feather className="h-3.5 w-3.5" />
-                  Nova entrada
+                  <Feather className="h-3.5 w-3.5 feather-float" />
+                  <span className="relative">
+                    Nova entrada
+                    <span className="ink-underline absolute -bottom-1 left-0 right-0" aria-hidden="true" />
+                  </span>
                 </div>
                 <div className="hidden sm:block text-[11px] tracking-[0.22em] uppercase text-muted-foreground">
                   {selectedCompany || "Empresa não selecionada"}
