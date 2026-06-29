@@ -545,7 +545,7 @@ function RequestRow({
           : "hover:bg-primary/5 hover:pl-6 hover:shadow-[inset_3px_0_0_hsl(var(--primary))]"
       }`}
     >
-      <div className="flex items-start gap-3">
+      <div className="flex items-start gap-3 w-full">
         <button
           onClick={toggleStatus}
           disabled={busy}
@@ -563,7 +563,11 @@ function RequestRow({
             <ArrowRightCircle className="h-3.5 w-3.5" />
           )}
         </button>
-        <button onClick={() => setExpanded((v) => !v)} className="flex-1 min-w-0 text-left">
+        <button
+          onClick={() => setExpanded((v) => !v)}
+          className="min-w-0 text-left grow shrink basis-0"
+          style={{ flexGrow: 1 }}
+        >
           <div className="flex items-baseline gap-2 flex-wrap">
             <span className={`font-mono text-sm font-semibold ${request.carried_over_to ? "text-amber-700 dark:text-amber-400" : "text-primary"}`}>{request.number}</span>
             <span className={`font-medium ${
