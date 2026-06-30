@@ -569,7 +569,7 @@ function RequestRow({
           style={{ flexGrow: 1 }}
         >
           <div className="flex items-baseline gap-2 flex-wrap">
-            <span className={`font-mono text-sm font-semibold ${request.carried_over_to ? "text-amber-700 dark:text-amber-400" : "text-primary"}`}>{request.number}</span>
+            <span className={`font-mono text-sm font-semibold ${request.carried_over_to ? "text-muted-foreground" : "text-primary"}`}>{request.number}</span>
             <span className={`font-medium ${
               request.status === "delivered"
                 ? "line-through text-muted-foreground"
@@ -590,7 +590,7 @@ function RequestRow({
         {request.carried_over_to && (
           <Badge
             variant="outline"
-            className="ml-auto shrink-0 text-[10px] gap-1 border-amber-500/60 bg-amber-500/10 text-amber-700 dark:text-amber-300 font-medium"
+            className="ml-auto shrink-0 text-[10px] gap-1 border-border bg-muted/60 text-muted-foreground font-medium"
           >
             <ArrowRightCircle className="h-3 w-3" />
             Reprogramada · {formatWeekLabel(request.carried_over_to).replace(/^.*·\s*/, "")}
