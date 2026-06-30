@@ -132,6 +132,36 @@ const Reports = () => {
     return true;
   });
 
+  const summary = useMemo(() => {
+    const total = filtered.length;
+    let withAcc = 0;
+    let participants = 0;
+    let upcoming = 0;
+    const now = Date.now();
+    filtered.forEach((t) => {
+      const a = t.user_count + t.guest_count;
+      participants += a;
+      if (a > 0) withAcc += 1;
+      if (new Date(t.scheduled_at).getTime() >= now && t.status !== "cancelado") upcoming += 1;
+    });
+    return { total, withAcc, without: total - withAcc, participants, upcoming };
+  }, [filtered]);
+
+  // Group by year-month for visual hierarchy
+  const grouped = useMemo(() => {
+    const map = new Map<string, TrainingRow[]>();
+    filtered.forEach((t) => {
+      const d = new Date(t.scheduled_at);
+      const key = `${d.getFullYear()}-${String(d.getMonth()).padStart(2, "0")}`;
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(t);
+    });
+    return Array.from(map.entries()).map(([key, items]) => {
+      const [y, m] = key.split("-").map(Number);
+      return { key, date: new Date(y, m, 1), items };
+    });
+  }, [filtered]);
+
   const clearFilters = () => {
     setQuery("");
     setFilterClient("__all__");
