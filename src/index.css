@@ -770,3 +770,71 @@
 #lovable-badge {
   display: none !important;
 }
+
+/* Calendar card animations */
+@keyframes calendar-orb-drift {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); opacity: 0.7; }
+  50%      { transform: translate3d(8%, -6%, 0) scale(1.1); opacity: 1; }
+}
+@keyframes calendar-orb-drift-2 {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); opacity: 0.6; }
+  50%      { transform: translate3d(-10%, 8%, 0) scale(1.15); opacity: 0.9; }
+}
+@keyframes calendar-sheen {
+  0%   { transform: translateX(-120%) skewX(-18deg); }
+  60%  { transform: translateX(220%)  skewX(-18deg); }
+  100% { transform: translateX(220%)  skewX(-18deg); }
+}
+@keyframes calendar-dot-pulse {
+  0%, 100% { transform: translateX(-50%) scale(1);   opacity: 0.85; }
+  50%      { transform: translateX(-50%) scale(1.6); opacity: 1; }
+}
+@keyframes calendar-card-in {
+  0%   { opacity: 0; transform: translateY(8px) scale(0.985); }
+  100% { opacity: 1; transform: translateY(0)  scale(1); }
+}
+
+.calendar-card {
+  animation: calendar-card-in 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.5s ease;
+}
+.calendar-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 30px 60px -25px hsl(var(--primary) / 0.25);
+}
+.calendar-card .calendar-orb-a {
+  position: absolute; inset: auto;
+  top: -90px; left: -70px;
+  width: 260px; height: 260px; border-radius: 9999px;
+  background: radial-gradient(circle, hsl(var(--primary) / 0.35), transparent 70%);
+  filter: blur(40px);
+  animation: calendar-orb-drift 12s ease-in-out infinite;
+  pointer-events: none;
+}
+.calendar-card .calendar-orb-b {
+  position: absolute;
+  bottom: -100px; right: -80px;
+  width: 280px; height: 280px; border-radius: 9999px;
+  background: radial-gradient(circle, hsl(var(--primary) / 0.22), transparent 70%);
+  filter: blur(50px);
+  animation: calendar-orb-drift-2 16s ease-in-out infinite;
+  pointer-events: none;
+}
+.calendar-card .calendar-sheen {
+  position: absolute; top: 0; left: 0; height: 100%; width: 40%;
+  background: linear-gradient(90deg, transparent, hsl(var(--primary-foreground) / 0.08), transparent);
+  animation: calendar-sheen 9s ease-in-out infinite;
+  pointer-events: none;
+  mix-blend-mode: overlay;
+}
+.calendar-card [aria-selected="true"] {
+  animation: calendar-card-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.calendar-card .rdp-day_today,
+.calendar-card [data-today="true"] {
+  position: relative;
+}
+/* Animated dot under days with trainings */
+.calendar-card .font-bold.text-primary::after {
+  animation: calendar-dot-pulse 2.4s ease-in-out infinite;
+}

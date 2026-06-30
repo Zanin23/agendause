@@ -109,7 +109,10 @@ const Dashboard = () => {
         </div>
 
         <div className="grid lg:grid-cols-[auto_1fr] gap-6 lg:gap-8 items-start">
-          <Card className="lg:sticky lg:top-20 w-full lg:w-auto relative overflow-hidden rounded-3xl border border-border/60 bg-card/60 backdrop-blur-xl shadow-2xl shadow-primary/5">
+          <Card className="calendar-card lg:sticky lg:top-20 w-full lg:w-auto relative overflow-hidden rounded-3xl border border-border/60 bg-card/60 backdrop-blur-xl shadow-2xl shadow-primary/5">
+            <div className="calendar-orb-a" aria-hidden />
+            <div className="calendar-orb-b" aria-hidden />
+            <div className="calendar-sheen" aria-hidden />
             <div
               className="pointer-events-none absolute inset-0 opacity-70"
               aria-hidden
@@ -146,9 +149,9 @@ const Dashboard = () => {
                     "text-muted-foreground/70 rounded-md w-10 font-bold text-[10px] uppercase tracking-[0.2em]",
                   row: "flex w-full mt-1.5",
                   cell: "relative h-10 w-10 text-center text-sm",
-                  day: "h-10 w-10 p-0 font-normal rounded-2xl hover:bg-foreground/5 transition-all inline-flex items-center justify-center",
+                  day: "h-10 w-10 p-0 font-normal rounded-2xl hover:bg-foreground/5 hover:scale-110 transition-all duration-200 ease-out inline-flex items-center justify-center",
                   day_selected:
-                    "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground font-bold shadow-lg shadow-primary/30 ring-1 ring-primary-foreground/20 scale-105",
+                    "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground font-bold shadow-lg shadow-primary/30 ring-1 ring-primary-foreground/20 scale-110 hover:scale-110",
                   day_today:
                     "border border-primary/50 bg-primary/5 text-foreground font-semibold",
                   day_outside: "text-muted-foreground/30 opacity-60",
