@@ -451,10 +451,6 @@ const Reports = () => {
   );
 };
 
-type WeeklyStats = {
-  total_visits: number;
-};
-
 const SummaryStat = ({
   label,
   value,
@@ -493,7 +489,7 @@ const SummaryStat = ({
   </Card>
 );
 
-type _WeeklyStatsOriginal = {
+type WeeklyStats = {
   total_visits: number;
   cancelled_count: number;
   concluded_count: number;
