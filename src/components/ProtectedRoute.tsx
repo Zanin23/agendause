@@ -1,11 +1,17 @@
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useWorkspace } from "@/hooks/useWorkspace";
 
-export const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
+export const ProtectedRoute = ({ children, requireWorkspace = true }: { children: JSX.Element; requireWorkspace?: boolean }) => {
   const { user, loading } = useAuth();
-  if (loading) {
+  const { activeId, loading: wsLoading } = useWorkspace();
+  const location = useLocation();
+  if (loading || (user && wsLoading)) {
     return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Carregando...</div>;
   }
   if (!user) return <Navigate to="/auth" replace />;
+  if (requireWorkspace && !activeId && location.pathname !== "/selecionar-base") {
+    return <Navigate to="/selecionar-base" replace />;
+  }
   return children;
 };

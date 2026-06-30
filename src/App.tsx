@@ -3,6 +3,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
+import { WorkspaceProvider } from "@/hooks/useWorkspace";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Auth from "./pages/Auth";
 import Home from "./pages/Home";
@@ -20,6 +21,8 @@ import SchedulePrint from "./pages/SchedulePrint";
 import SchedulePublic from "./pages/SchedulePublic";
 import BillingRequests from "./pages/BillingRequests";
 import Notes from "./pages/Notes";
+import SelectWorkspace from "./pages/SelectWorkspace";
+import Settings from "./pages/Settings";
 
 const queryClient = new QueryClient();
 
@@ -29,10 +32,13 @@ const App = () => (
       <Sonner position="top-right" />
       <BrowserRouter>
         <AuthProvider>
+          <WorkspaceProvider>
           <Routes>
             <Route path="/auth" element={<Auth />} />
             <Route path="/aceite/:id" element={<GuestAccept />} />
             <Route path="/c/:token" element={<SchedulePublic />} />
+            <Route path="/selecionar-base" element={<ProtectedRoute requireWorkspace={false}><SelectWorkspace /></ProtectedRoute>} />
+            <Route path="/configuracoes" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
             <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
             <Route path="/agenda" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/relatorios" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
@@ -47,6 +53,7 @@ const App = () => (
             <Route path="/anotacoes" element={<ProtectedRoute><Notes /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
+          </WorkspaceProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

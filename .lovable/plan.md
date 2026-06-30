@@ -1,63 +1,49 @@
+## Múltiplos workspaces ("bases de dados")
 
-# Módulo de Cronograma de Implantação
+Cria duas bases lógicas — **Implantação** e **Waldemar** — isoladas em todos os módulos, com seleção obrigatória no primeiro acesso, persistência por usuário e uma aba de **Configurações** para trocar a base ativa.
 
-Novo módulo para criar, editar e acompanhar cronogramas de implantação do ERP USE. Cada cronograma é criado a partir de um **template padrão** (baseado no documento enviado) e fica **100% editável**: fases, itens, datas, responsáveis, status e observações.
+### Conceito
 
-## Funções planejadas
+Um único banco real continua sendo usado. A separação é feita por uma coluna `workspace_id` em cada tabela do app, combinada com RLS que filtra por workspace. Cada usuário tem uma associação `(user_id, workspace_id)` indicando a quais bases ele tem acesso, e uma preferência de "base ativa".
 
-**Criação**
-- Botão "Novo Cronograma" no Dashboard → wizard com: cliente, data de início, responsável Use Sistemas, equipe de implantação, modalidade (presencial/remoto/híbrido), cadência (semanal/quinzenal).
-- Geração automática das **17 fases padrão** com seus itens (Reunião de Alinhamento → Relatórios Gerenciais Financeiro). Datas sugeridas calculadas a partir da data de início e da cadência.
+### Backend (migração)
 
-**Edição**
-- Reordenar fases (drag & drop) e itens dentro de cada fase.
-- Adicionar, renomear, duplicar e remover fases/itens livremente.
-- Editar datas previstas e realizadas, responsável por item, status (pendente / em andamento / concluído / bloqueado / reagendado), observação por item.
-- Marcar itens como "não aplicável" (mantém histórico sem contar no progresso).
+1. Nova tabela `workspaces` (`id`, `slug`, `name`). Insere `implantacao` e `waldemar`.
+2. Nova tabela `workspace_members` (`workspace_id`, `user_id`, `role`) — controla acesso por base.
+3. Nova coluna `active_workspace_id` em `profiles` — preferência atual.
+4. Adiciona coluna `workspace_id uuid` (NOT NULL após backfill) em:
+   - `trainings`, `training_attachments`, `training_acceptances`, `training_reschedules`
+   - `implementation_schedules`, `implementation_templates`, `schedule_phases`, `schedule_items`, `schedule_comments`
+   - `billing_requests`, `billing_request_updates`, `billing_notification_settings`
+   - `company_notes`
+   - `guest_acceptances`
+5. **Backfill**: todos os registros existentes recebem o `workspace_id` de **Implantação**. Todos os usuários atuais ganham acesso a **Implantação** e a **Waldemar** (já que pediu para poder alternar nas configurações), com Implantação como ativa.
+6. Função `current_workspace()` `SECURITY DEFINER` que lê `profiles.active_workspace_id` do `auth.uid()`.
+7. Atualiza **todas** as policies RLS dessas tabelas para exigir `workspace_id = current_workspace()` além das regras atuais de propriedade. INSERTs passam a exigir o workspace ativo.
+8. Triggers `BEFORE INSERT` que preenchem `workspace_id` automaticamente com `current_workspace()` quando não enviado pelo cliente — evita ter de alterar cada `insert` no frontend.
+9. Ajusta as RPCs existentes (`get_schedule_by_token`, `accept_schedule_by_token`, `get_public_training*`) para continuarem públicas (links de aceite não dependem de workspace ativo).
 
-**Acompanhamento**
-- Barra de progresso geral e por fase (% de itens concluídos).
-- Vista Kanban (status) e vista Timeline/Gantt simplificada por fase.
-- Próximas visitas técnicas em destaque, alertas de itens atrasados.
-- Histórico de alterações (quem mudou o quê e quando).
+### Frontend
 
-**Colaboração**
-- Comentários por item (equipe Use ↔ cliente).
-- Link público (token) para o cliente acompanhar somente leitura, similar ao GuestAccept atual.
-- Aceite digital do cronograma pelo cliente (assinatura/checkbox + IP/data), reaproveitando o padrão de `training_acceptances`.
+- **Hook `useWorkspace`**: lê `profiles.active_workspace_id` + lista de workspaces do usuário, expõe `switchWorkspace(id)`.
+- **Tela "Selecionar base"** (`/selecionar-base`): aparece logo após login se nenhuma base ativa estiver definida. Mostra cards "Implantação" e "Waldemar" (apenas as que o usuário tem acesso).
+- **`ProtectedRoute`**: se usuário logado e sem `active_workspace_id`, redireciona para `/selecionar-base`.
+- **AppHeader**: badge discreto com o nome da base ativa, clicável para abrir Configurações.
+- **Página `/configuracoes`**: card "Base de dados ativa" com seletor + ação de trocar; ao trocar, invalida o cache do React Query e recarrega.
+- Adiciona card "Configurações" na Home.
+- Atualiza queries existentes para invalidar quando `workspace_id` muda (chave de query inclui workspace ativo, garantindo dados frescos ao alternar).
 
-**Saídas**
-- Exportar para PDF (layout próximo do .docx enviado, com logo, fases numeradas e observações padrão).
-- Exportar para .ics (cada item vira evento de agenda) e CSV.
-- Imprimir versão A4 amigável (rota `/cronograma/:id/print`).
+### Detalhes técnicos
 
-**Templates**
-- Template "Padrão ERP USE" pré-carregado (conteúdo do documento enviado).
-- Possibilidade de salvar variações como novos templates (ex.: "ERP USE - Indústria", "ERP USE - Comércio") para reuso.
+- Workspaces ficam visíveis para `authenticated` somente via `workspace_members` (membership-based RLS).
+- Coluna `workspace_id` começa como `NULL`, backfill, depois `ALTER COLUMN SET NOT NULL` no mesmo migration.
+- Policies serão **dropadas e recriadas** para incluir o filtro de workspace — não há `ALTER POLICY` ampla disponível.
+- `guest_acceptances` e tabelas com acesso anônimo continuam abertas pelas RPCs existentes; o `workspace_id` é gravado via trigger no insert anônimo, usando o workspace do schedule/training relacionado.
+- A query do dashboard de "próximos treinamentos", relatórios, etc., não muda em código — o filtro vem da RLS.
 
-**Observações padrão** já incluídas em cada novo cronograma (visitas podem se estender, feedbacks via WhatsApp, melhorias entram em fila de desenvolvimento, feriados podem alterar datas, adiantamentos passam por análise) — editáveis.
+### Riscos
 
-## Detalhes técnicos
+- Backfill grande de policies: revisão cuidadosa no migration. Caso uma policy nova quebre algum fluxo, ajustamos pontualmente.
+- Após a migração, qualquer novo módulo precisará incluir `workspace_id` + trigger.
 
-**Banco (Lovable Cloud)** — novas tabelas em `public`:
-- `implementation_templates` (id, name, description, is_default, content jsonb, owner_id)
-- `implementation_schedules` (id, client_name, start_date, cadence, modality, use_team text[], owner_id, status, public_token, accepted_at, accepted_by, accepted_ip)
-- `schedule_phases` (id, schedule_id, position, title)
-- `schedule_items` (id, phase_id, position, title, description, planned_date, done_date, status, assignee, notes)
-- `schedule_comments` (id, item_id, author_id, body)
-- `schedule_history` (id, schedule_id, actor_id, action, payload jsonb)
-
-Todas com RLS escopada por `owner_id = auth.uid()`, GRANTs explícitos para `authenticated` e `service_role`, leitura `anon` apenas via `public_token` (RPC `get_schedule_by_token`). Triggers `updated_at` reaproveitando `public.update_updated_at_column`.
-
-**Frontend (React + Vite + Tailwind + shadcn)**:
-- Rotas: `/cronogramas` (lista), `/cronogramas/novo`, `/cronogramas/:id` (editor), `/cronogramas/:id/print`, `/c/:token` (visão pública do cliente).
-- Componentes: `ScheduleEditor`, `PhaseCard`, `ItemRow`, `ProgressBar`, `KanbanView`, `TimelineView`, `TemplatePicker`, `PublicScheduleView`.
-- Drag & drop com `@dnd-kit/core` (adicionar dependência).
-- Export PDF via `jspdf` + `jspdf-autotable` (já leve), ICS gerado client-side.
-- Seed do template padrão executado no primeiro carregamento se `implementation_templates` estiver vazio para o usuário.
-
-**SEO/Header**: entrada "Cronogramas" no `AppHeader`, SEO por rota via componente `SEO` existente.
-
-## Fora do escopo desta entrega
-- Integração real com WhatsApp/Email automático (fica como gancho futuro).
-- App mobile dedicado (a versão web já é responsiva).
+Aprovar para eu rodar o migration e implementar o frontend.

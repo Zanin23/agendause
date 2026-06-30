@@ -526,11 +526,11 @@ function RequestRow({
   const addUpdate = async () => {
     if (!newUpdate.trim() || !user) return;
     setBusy(true);
-    const { error } = await sb.from("billing_request_updates").insert({
+    const { error } = await sb.from("billing_request_updates").insert(({
       request_id: request.id,
       user_id: user.id,
       content: newUpdate.trim(),
-    });
+    }) as any);
     setBusy(false);
     if (error) return toast.error("Erro ao adicionar atualização");
     setNewUpdate("");
@@ -716,7 +716,7 @@ function MovePendingDialog({
       status: "pending",
       carried_over_from_id: r.id,
     }));
-    const { error: insErr } = await sb.from("billing_requests").insert(clones);
+    const { error: insErr } = await sb.from("billing_requests").insert((clones) as any);
     if (insErr) {
       setBusy(false);
       return toast.error("Erro ao mover");
@@ -871,14 +871,14 @@ function CreateDialog({
       return toast.error("Preencha número, cliente e título");
     }
     setBusy(true);
-    const { error } = await sb.from("billing_requests").insert({
+    const { error } = await sb.from("billing_requests").insert(({
       user_id: userId,
       number: number.trim(),
       client: client.trim(),
       title: title.trim(),
       description: description.trim() || null,
       week_start: week,
-    });
+    }) as any);
     setBusy(false);
     if (error) return toast.error("Erro ao criar");
     toast.success("Solicitação criada");

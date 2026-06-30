@@ -68,7 +68,7 @@ export const CreateTrainingDialog = ({ open, onOpenChange, onCreated }: Props) =
       location: location || null,
       internal_notes: internalNotes.trim() || null,
       created_by: user.id,
-    });
+    } as any);
     setLoading(false);
     if (error) {
       toast.error(error.message);

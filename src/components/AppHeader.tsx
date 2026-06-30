@@ -1,15 +1,17 @@
 import { Link, useNavigate } from "react-router-dom";
-import { LogOut, Moon, Sun } from "lucide-react";
+import { LogOut, Moon, Sun, Database, Settings as SettingsIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/hooks/useTheme";
+import { useWorkspace } from "@/hooks/useWorkspace";
 import logoAsset from "@/assets/logo-use-sistemas.png.asset.json";
 
 export const AppHeader = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
+  const { active } = useWorkspace();
 
   const initials = (user?.user_metadata?.full_name || user?.email || "?")
     .split(" ")
@@ -43,6 +45,26 @@ export const AppHeader = () => {
         </Link>
         {user && (
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+            {active && (
+              <Link
+                to="/configuracoes"
+                className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-border bg-card/60 text-xs text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors"
+                title="Trocar base em Configurações"
+              >
+                <Database className="h-3 w-3 text-primary" />
+                {active.name}
+              </Link>
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate("/configuracoes")}
+              className="text-muted-foreground px-2"
+              aria-label="Configurações"
+              title="Configurações"
+            >
+              <SettingsIcon className="h-4 w-4" />
+            </Button>
             <Button
               variant="ghost"
               size="sm"

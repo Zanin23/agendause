@@ -77,7 +77,7 @@ const GuestAccept = () => {
     setSubmitting(true);
     const { error } = await supabase
       .from("guest_acceptances")
-      .insert({ training_id: id, full_name: fullName.trim(), email: email.trim() || null, accepted_at: acceptedAt });
+      .insert(({ training_id: id, full_name: fullName.trim(), email: email.trim() || null, accepted_at: acceptedAt }) as any);
     setSubmitting(false);
     if (error) {
       toast.error(error.message);
