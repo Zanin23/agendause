@@ -541,7 +541,7 @@ function RequestRow({
     <li
       className={`relative px-4 sm:px-5 py-3 transition-all duration-200 cursor-default ${
         request.carried_over_to
-          ? "bg-amber-500/[0.04] dark:bg-amber-500/[0.07] border-l-[3px] border-amber-500/70 hover:bg-amber-500/[0.08]"
+          ? "bg-muted/40 border-l-[3px] border-muted-foreground/30 hover:bg-muted/60"
           : "hover:bg-primary/5 hover:pl-6 hover:shadow-[inset_3px_0_0_hsl(var(--primary))]"
       }`}
     >
@@ -554,7 +554,7 @@ function RequestRow({
             request.status === "delivered"
               ? "bg-primary border-primary text-primary-foreground"
               : request.carried_over_to
-              ? "border-dashed border-amber-500/60 text-amber-600 dark:text-amber-400"
+              ? "border-dashed border-muted-foreground/40 text-muted-foreground"
               : "border-muted-foreground/40 hover:border-primary"
           }`}
         >
@@ -569,7 +569,7 @@ function RequestRow({
           style={{ flexGrow: 1 }}
         >
           <div className="flex items-baseline gap-2 flex-wrap">
-            <span className={`font-mono text-sm font-semibold ${request.carried_over_to ? "text-amber-700 dark:text-amber-400" : "text-primary"}`}>{request.number}</span>
+            <span className={`font-mono text-sm font-semibold ${request.carried_over_to ? "text-muted-foreground" : "text-primary"}`}>{request.number}</span>
             <span className={`font-medium ${
               request.status === "delivered"
                 ? "line-through text-muted-foreground"
@@ -590,7 +590,7 @@ function RequestRow({
         {request.carried_over_to && (
           <Badge
             variant="outline"
-            className="ml-auto shrink-0 text-[10px] gap-1 border-amber-500/60 bg-amber-500/10 text-amber-700 dark:text-amber-300 font-medium"
+            className="ml-auto shrink-0 text-[10px] gap-1 border-border bg-muted/60 text-muted-foreground font-medium"
           >
             <ArrowRightCircle className="h-3 w-3" />
             Reprogramada · {formatWeekLabel(request.carried_over_to).replace(/^.*·\s*/, "")}
