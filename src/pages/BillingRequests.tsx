@@ -308,7 +308,7 @@ export default function BillingRequests() {
       <SEO title="Solicitações a cobrar" description="Acompanhe e cobre solicitações por cliente e semana." path="/cobrar" />
       <AppHeader />
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-6">
-        <div className="flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-2">
           <div className="min-w-0">
             <BackButton to="/" className="-ml-2 mb-1" />
             <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight flex items-center gap-2">
@@ -316,12 +316,12 @@ export default function BillingRequests() {
             </h1>
             <p className="text-sm text-muted-foreground">Por cliente, agrupadas pela semana.</p>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => setSettingsOpen(true)}>
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            <Button variant="outline" size="sm" onClick={() => setSettingsOpen(true)} aria-label="Notificações">
               {settings?.enabled ? <Bell className="h-4 w-4 sm:mr-2" /> : <BellOff className="h-4 w-4 sm:mr-2" />}
               <span className="hidden sm:inline">Notificações</span>
             </Button>
-            <Button size="sm" onClick={() => setCreateOpen(true)}>
+            <Button size="sm" onClick={() => setCreateOpen(true)} aria-label="Nova solicitação">
               <Plus className="h-4 w-4 sm:mr-2" />
               <span className="hidden sm:inline">Nova solicitação</span>
             </Button>
@@ -386,11 +386,11 @@ export default function BillingRequests() {
           >
             {showDelivered ? "Ocultar entregues" : "Mostrar entregues"}
           </Button>
-          <Button variant="outline" size="sm" onClick={exportPdf}>
+          <Button variant="outline" size="sm" onClick={exportPdf} aria-label="Exportar PDF">
             <FileDown className="h-4 w-4 sm:mr-2" />
             <span className="hidden sm:inline">Exportar PDF</span>
           </Button>
-          <Button variant="outline" size="sm" onClick={() => setMoveOpen(true)}>
+          <Button variant="outline" size="sm" onClick={() => setMoveOpen(true)} aria-label="Mover pendentes para outra semana">
             <ArrowRightCircle className="h-4 w-4 sm:mr-2" />
             <span className="hidden sm:inline">Mover pendentes</span>
           </Button>

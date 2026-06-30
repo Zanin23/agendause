@@ -10,7 +10,9 @@ import { useAuth } from "@/hooks/useAuth";
 const Home = () => {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
-  const firstName = (user?.user_metadata?.full_name || user?.email || "").split(" ")[0];
+  const rawName: string | undefined = user?.user_metadata?.full_name;
+  // Only use a proper name; ignore the email local-part so we don't greet "Olá, foo123".
+  const firstName = rawName ? rawName.split(" ")[0] : "";
 
   const cards = [
     {
@@ -84,11 +86,19 @@ const Home = () => {
                 </Link>
               </div>
             </div>
-            <img src={logoAsset.url} alt="Use Sistemas" className="hero-float hidden sm:block h-16 md:h-20 w-auto opacity-90 self-start md:self-auto" />
+            <img
+              src={logoAsset.url}
+              alt=""
+              aria-hidden="true"
+              className="hero-float hidden sm:block h-16 md:h-20 w-auto opacity-90 self-start md:self-auto"
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).style.display = "none";
+              }}
+            />
           </div>
         </div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
           {cards.map((card) => (
             <ActionCard key={card.title} {...card} />
           ))}
@@ -113,7 +123,7 @@ type ActionCardProps = {
 const ActionCard = ({ icon: Icon, title, description, cta, to, onClick, primary }: ActionCardProps) => {
   const inner = (
     <div
-      className={`group relative flex flex-col h-full p-6 rounded-2xl cursor-pointer overflow-hidden transition-all duration-300 hover:-translate-y-1 ${
+      className={`group relative flex flex-col h-full p-4 sm:p-6 rounded-2xl cursor-pointer overflow-hidden transition-all duration-300 hover:-translate-y-1 ${
         primary
           ? "bg-primary/[0.06] border border-primary/30 hover:border-primary/60"
           : "bg-card/80 border border-border/60 hover:border-primary/40"
@@ -124,22 +134,25 @@ const ActionCard = ({ icon: Icon, title, description, cta, to, onClick, primary 
           primary ? "from-primary/10" : "from-primary/5"
         } to-transparent`}
       />
-      <div className="relative flex flex-col h-full">
+      <div className="relative flex flex-row sm:flex-col items-center sm:items-stretch gap-4 sm:gap-0 h-full">
         <div
-          className={`w-12 h-12 rounded-xl flex items-center justify-center mb-5 transition-colors duration-300 ${
+          className={`w-11 h-11 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center shrink-0 sm:mb-5 transition-colors duration-300 ${
             primary
               ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25 group-hover:shadow-primary/40"
               : "bg-primary/10 text-primary group-hover:bg-primary/20"
           }`}
         >
-          <Icon className="h-6 w-6" />
+          <Icon className="h-5 w-5 sm:h-6 sm:w-6" />
         </div>
-        <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-foreground mb-2">{title}</h2>
-        <p className="text-sm sm:text-base text-muted-foreground leading-relaxed flex-1">{description}</p>
-        <div className="mt-auto pt-6 flex items-center text-xs font-medium text-primary uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-          {cta}
-          <ArrowRight className="h-3 w-3 ml-1.5" />
+        <div className="flex flex-col min-w-0 flex-1">
+          <h2 className="text-base sm:text-2xl font-semibold tracking-tight text-foreground mb-1 sm:mb-2">{title}</h2>
+          <p className="text-xs sm:text-base text-muted-foreground leading-relaxed sm:flex-1 line-clamp-2 sm:line-clamp-none">{description}</p>
+          <div className="hidden sm:flex mt-auto pt-6 items-center text-xs font-medium text-primary uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            {cta}
+            <ArrowRight className="h-3 w-3 ml-1.5" />
+          </div>
         </div>
+        <ArrowRight className="sm:hidden h-4 w-4 text-primary shrink-0" />
       </div>
     </div>
   );
