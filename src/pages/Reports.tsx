@@ -453,6 +453,48 @@ const Reports = () => {
 
 type WeeklyStats = {
   total_visits: number;
+};
+
+const SummaryStat = ({
+  label,
+  value,
+  icon,
+  accent,
+  muted,
+}: {
+  label: string;
+  value: number;
+  icon: React.ReactNode;
+  accent?: boolean;
+  muted?: boolean;
+}) => (
+  <Card
+    className={`overflow-hidden ${
+      accent ? "border-primary/30 bg-primary/5" : muted ? "bg-muted/30" : ""
+    }`}
+  >
+    <CardContent className="p-3 sm:p-4 flex items-center gap-3">
+      <div
+        className={`h-9 w-9 rounded-lg flex items-center justify-center shrink-0 ${
+          accent
+            ? "bg-primary/15 text-primary"
+            : muted
+            ? "bg-muted text-muted-foreground"
+            : "bg-primary/10 text-primary"
+        }`}
+      >
+        {icon}
+      </div>
+      <div className="min-w-0">
+        <div className="text-xl sm:text-2xl font-semibold leading-none tracking-tight">{value}</div>
+        <div className="text-[11px] uppercase tracking-wider text-muted-foreground mt-1">{label}</div>
+      </div>
+    </CardContent>
+  </Card>
+);
+
+type _WeeklyStatsOriginal = {
+  total_visits: number;
   cancelled_count: number;
   concluded_count: number;
   scheduled_count: number;
