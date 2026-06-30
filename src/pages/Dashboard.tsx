@@ -94,17 +94,16 @@ const Dashboard = () => {
             </h1>
             <p className="text-muted-foreground mt-1 text-sm sm:text-base">Acompanhe sessões agendadas e confirme seu recebimento.</p>
           </div>
-          <div className="flex gap-2 w-full sm:w-auto">
-            <Link to="/agenda/imprimir">
-              <Button variant="outline" size="sm" className="w-full sm:w-auto sm:h-10">
+          <div className="grid grid-cols-2 gap-2 w-full sm:flex sm:w-auto">
+            <Link to="/agenda/imprimir" className="w-full sm:w-auto">
+              <Button variant="outline" size="sm" className="w-full sm:h-10">
                 <Printer className="h-4 w-4" />
-                <span className="hidden xs:inline sm:inline">Visualizar</span>
-                <span className="hidden sm:inline">&nbsp;Agenda</span>
+                <span>Visualizar agenda</span>
               </Button>
             </Link>
-            <Button onClick={() => setOpen(true)} size="sm" className="flex-1 sm:flex-none sm:h-10">
+            <Button onClick={() => setOpen(true)} size="sm" className="w-full sm:w-auto sm:h-10">
               <CalendarPlus className="h-4 w-4" />
-              <span className="sm:inline">Novo treinamento</span>
+              <span>Novo treinamento</span>
             </Button>
           </div>
         </div>
