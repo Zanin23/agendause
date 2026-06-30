@@ -121,7 +121,7 @@ export default function ScheduleEditor() {
   const addPhase = async () => {
     if (!schedule) return;
     const { data, error } = await supabase.from("schedule_phases")
-      .insert({ schedule_id: schedule.id, title: "Nova fase", position: phases.length })
+      .insert(({ schedule_id: schedule.id, title: "Nova fase", position: phases.length }) as any)
       .select("*").single();
     if (error) return toast.error(error.message);
     setPhases([...phases, { ...(data as any), items: [] }]);
@@ -152,7 +152,7 @@ export default function ScheduleEditor() {
   // --- Items ---
   const addItem = async (phase: Phase) => {
     const { data, error } = await supabase.from("schedule_items")
-      .insert({ phase_id: phase.id, title: "Novo item", position: phase.items.length })
+      .insert(({ phase_id: phase.id, title: "Novo item", position: phase.items.length }) as any)
       .select("*").single();
     if (error) return toast.error(error.message);
     setPhases((prev) => prev.map((p) => p.id === phase.id ? { ...p, items: [...p.items, data as Item] } : p));
@@ -172,11 +172,11 @@ export default function ScheduleEditor() {
   };
   const duplicateItem = async (phase: Phase, item: Item) => {
     const { data, error } = await supabase.from("schedule_items")
-      .insert({
+      .insert(({
         phase_id: phase.id, title: item.title + " (cópia)", description: item.description,
         planned_date: item.planned_date, assignee: item.assignee, notes: item.notes,
         position: phase.items.length,
-      })
+      }) as any)
       .select("*").single();
     if (error) return toast.error(error.message);
     setPhases((prev) => prev.map((p) => p.id === phase.id ? { ...p, items: [...p.items, data as Item] } : p));

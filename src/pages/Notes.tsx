@@ -113,12 +113,12 @@ const Notes = () => {
     if (!company) return toast.error("Selecione ou informe uma empresa");
     if (!content.trim()) return toast.error("Escreva uma anotação");
     setSaving(true);
-    const { error } = await supabase.from("company_notes").insert({
+    const { error } = await supabase.from("company_notes").insert(({
       user_id: user.id,
       company,
       note_date: noteDate,
       content: content.trim(),
-    });
+    }) as any);
     setSaving(false);
     if (error) return toast.error(error.message);
     toast.success("Anotação adicionada");

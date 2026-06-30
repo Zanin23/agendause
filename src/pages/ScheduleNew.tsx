@@ -106,7 +106,7 @@ export default function ScheduleNew() {
     try {
       const { data: sched, error: e1 } = await supabase
         .from("implementation_schedules")
-        .insert({
+        .insert(({
           owner_id: user.id,
           client_name: clientName.trim(),
           client_email: clientEmail.trim() || null,
@@ -115,7 +115,7 @@ export default function ScheduleNew() {
           modality,
           use_team: team.split(",").map((s) => s.trim()).filter(Boolean),
           observations: tpl.content.observations,
-        })
+        }) as any)
         .select("id")
         .single();
       if (e1) throw e1;
@@ -127,7 +127,7 @@ export default function ScheduleNew() {
         const phase = tpl.content.phases[pi];
         const { data: phaseRow, error: e2 } = await supabase
           .from("schedule_phases")
-          .insert({ schedule_id: sched!.id, position: pi, title: phase.title })
+          .insert(({ schedule_id: sched!.id, position: pi, title: phase.title }) as any)
           .select("id")
           .single();
         if (e2) throw e2;
@@ -143,7 +143,7 @@ export default function ScheduleNew() {
           ),
         }));
         if (items.length) {
-          const { error: e3 } = await supabase.from("schedule_items").insert(items);
+          const { error: e3 } = await supabase.from("schedule_items").insert((items) as any);
           if (e3) throw e3;
         }
       }

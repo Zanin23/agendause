@@ -151,7 +151,7 @@ const TrainingDetail = () => {
     setActing(true);
     const { error } = await supabase
       .from("training_acceptances")
-      .insert({ training_id: id, user_id: user.id });
+      .insert(({ training_id: id, user_id: user.id }) as any);
     setActing(false);
     if (error) return toast.error(error.message);
     toast.success("Recebimento confirmado!");
@@ -282,7 +282,7 @@ const TrainingDetail = () => {
       setSavingSched(false);
       return toast.error(error.message);
     }
-    const { error: hErr } = await supabase.from("training_reschedules").insert({
+    const { error: hErr } = await supabase.from("training_reschedules").insert(({
       training_id: id,
       previous_scheduled_at: prevIso,
       new_scheduled_at: iso,
@@ -291,7 +291,7 @@ const TrainingDetail = () => {
       reason: schedReason.trim(),
       changed_by: user?.id ?? null,
       changed_by_name: user?.user_metadata?.full_name || user?.email || null,
-    });
+    }) as any);
     setSavingSched(false);
     if (hErr) toast.error(`Reagendado, mas falhou ao salvar histórico: ${hErr.message}`);
     toast.success("Data atualizada");
@@ -317,14 +317,14 @@ const TrainingDetail = () => {
           toast.error(`${file.name}: ${upErr.message}`);
           continue;
         }
-        const { error: insErr } = await supabase.from("training_attachments").insert({
+        const { error: insErr } = await supabase.from("training_attachments").insert(({
           training_id: id,
           file_name: file.name,
           storage_path: path,
           mime_type: file.type || null,
           size_bytes: file.size,
           uploaded_by: user.id,
-        });
+        }) as any);
         if (insErr) {
           await supabase.storage.from("training-attachments").remove([path]);
           toast.error(`${file.name}: ${insErr.message}`);
