@@ -27,7 +27,15 @@ export const AppHeader = () => {
     <header className="border-b border-border bg-card/40 backdrop-blur sticky top-0 z-30">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-2">
         <Link to="/" className="flex items-center gap-2 sm:gap-3 text-foreground min-w-0">
-          <img src={logoAsset.url} alt="Use Sistemas" className="h-7 sm:h-8 w-auto shrink-0" />
+          <img
+            src={logoAsset.url}
+            alt=""
+            aria-hidden="true"
+            className="h-7 sm:h-8 w-auto shrink-0"
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).style.display = "none";
+            }}
+          />
           <span className="flex flex-col leading-tight min-w-0">
             <span className="font-semibold tracking-tight">TreinaCheck</span>
             <span className="hidden sm:inline text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Use Sistemas</span>
