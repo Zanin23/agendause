@@ -27,8 +27,19 @@ export const WorkspaceProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();
   const qc = useQueryClient();
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
-  const [activeId, setActiveId] = useState<string | null>(null);
+  const [activeId, setActiveIdState] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    return localStorage.getItem("active_workspace_id");
+  });
   const [loading, setLoading] = useState(true);
+
+  const setActiveId = useCallback((id: string | null) => {
+    setActiveIdState(id);
+    if (typeof window !== "undefined") {
+      if (id) localStorage.setItem("active_workspace_id", id);
+      else localStorage.removeItem("active_workspace_id");
+    }
+  }, []);
 
   const load = useCallback(async () => {
     if (!user) {
@@ -42,10 +53,23 @@ export const WorkspaceProvider = ({ children }: { children: ReactNode }) => {
       supabase.from("workspaces").select("id,slug,name").order("name"),
       supabase.from("profiles").select("active_workspace_id").eq("id", user.id).maybeSingle(),
     ]);
-    setWorkspaces((ws as Workspace[]) || []);
-    setActiveId((prof as any)?.active_workspace_id ?? null);
+    const list = (ws as Workspace[]) || [];
+    setWorkspaces(list);
+    const profileActive = (prof as any)?.active_workspace_id ?? null;
+    const cached = typeof window !== "undefined" ? localStorage.getItem("active_workspace_id") : null;
+    let resolved: string | null = profileActive;
+    if (!resolved && cached && list.some((w) => w.id === cached)) {
+      // restore from cache and persist back to profile
+      resolved = cached;
+      await supabase.from("profiles").update({ active_workspace_id: cached } as any).eq("id", user.id);
+    }
+    if (!resolved && list.length === 1) {
+      resolved = list[0].id;
+      await supabase.from("profiles").update({ active_workspace_id: resolved } as any).eq("id", user.id);
+    }
+    setActiveId(resolved);
     setLoading(false);
-  }, [user]);
+  }, [user, setActiveId]);
 
   useEffect(() => {
     load();
@@ -59,7 +83,7 @@ export const WorkspaceProvider = ({ children }: { children: ReactNode }) => {
       setActiveId(id);
       await qc.invalidateQueries();
     },
-    [user, qc]
+    [user, qc, setActiveId]
   );
 
   const active = workspaces.find((w) => w.id === activeId) || null;
