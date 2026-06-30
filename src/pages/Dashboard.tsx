@@ -124,7 +124,7 @@ const Dashboard = () => {
             </CardContent>
           </Card>
 
-          <div className="space-y-6">
+          <div className="space-y-6 min-w-0">
             {selectedDate && (
               <section>
                 <h2 className="text-sm uppercase tracking-wider text-muted-foreground mb-3">
