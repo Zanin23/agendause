@@ -474,14 +474,56 @@ const Notes = () => {
                   />
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] italic text-muted-foreground">
-                    {content.length} caracteres
-                  </span>
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <label className="inline-flex items-center gap-1.5 text-[11px] tracking-[0.22em] uppercase text-primary hover:text-primary/80 cursor-pointer transition-colors">
+                      <Paperclip className="h-3.5 w-3.5" />
+                      Anexar
+                      <input
+                        type="file"
+                        multiple
+                        className="hidden"
+                        onChange={(e) => {
+                          const files = e.target.files ? Array.from(e.target.files) : [];
+                          setPendingFiles((p) => [...p, ...files]);
+                          e.currentTarget.value = "";
+                        }}
+                      />
+                    </label>
+                    <span className="text-[11px] italic text-muted-foreground">
+                      {content.length} caracteres
+                    </span>
+                  </div>
                   <Button type="submit" disabled={saving} className="rounded-full px-5">
                     <Feather className="h-4 w-4" />
                     {saving ? "Salvando…" : "Registrar"}
                   </Button>
                 </div>
+                {pendingFiles.length > 0 && (
+                  <ul className="flex flex-wrap gap-2 pt-1">
+                    {pendingFiles.map((f, i) => (
+                      <li
+                        key={`${f.name}-${i}`}
+                        className="inline-flex items-center gap-2 text-xs bg-muted/60 border border-border/60 rounded-full pl-3 pr-1 py-1"
+                      >
+                        {f.type.startsWith("image/") ? (
+                          <ImageIcon className="h-3.5 w-3.5 text-primary" />
+                        ) : (
+                          <FileText className="h-3.5 w-3.5 text-primary" />
+                        )}
+                        <span className="max-w-[180px] truncate">{f.name}</span>
+                        <span className="text-muted-foreground">{formatBytes(f.size)}</span>
+                        <button
+                          type="button"
+                          onClick={() => setPendingFiles((p) => p.filter((_, idx) => idx !== i))}
+                          className="h-5 w-5 inline-flex items-center justify-center rounded-full hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
+                          title="Remover"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </form>
             </div>
 
