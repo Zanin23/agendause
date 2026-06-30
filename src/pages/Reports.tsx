@@ -132,6 +132,36 @@ const Reports = () => {
     return true;
   });
 
+  const summary = useMemo(() => {
+    const total = filtered.length;
+    let withAcc = 0;
+    let participants = 0;
+    let upcoming = 0;
+    const now = Date.now();
+    filtered.forEach((t) => {
+      const a = t.user_count + t.guest_count;
+      participants += a;
+      if (a > 0) withAcc += 1;
+      if (new Date(t.scheduled_at).getTime() >= now && t.status !== "cancelado") upcoming += 1;
+    });
+    return { total, withAcc, without: total - withAcc, participants, upcoming };
+  }, [filtered]);
+
+  // Group by year-month for visual hierarchy
+  const grouped = useMemo(() => {
+    const map = new Map<string, TrainingRow[]>();
+    filtered.forEach((t) => {
+      const d = new Date(t.scheduled_at);
+      const key = `${d.getFullYear()}-${String(d.getMonth()).padStart(2, "0")}`;
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(t);
+    });
+    return Array.from(map.entries()).map(([key, items]) => {
+      const [y, m] = key.split("-").map(Number);
+      return { key, date: new Date(y, m, 1), items };
+    });
+  }, [filtered]);
+
   const clearFilters = () => {
     setQuery("");
     setFilterClient("__all__");
@@ -295,45 +325,169 @@ const Reports = () => {
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-3">
-            {filtered.map((t) => {
-              const total = t.user_count + t.guest_count;
-              return (
-                <Card key={t.id} className="hover:border-primary/50 transition-colors">
-                  <CardContent className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
-                    <div className="min-w-0 space-y-1 flex-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="font-semibold break-words">{t.title}</h3>
-                        {t.client && <Badge variant="secondary">{t.client}</Badge>}
-                      </div>
-                      <div className="text-xs text-muted-foreground flex items-center gap-3 flex-wrap">
-                        <span>{format(new Date(t.scheduled_at), "d MMM yyyy 'às' HH:mm", { locale: ptBR })}</span>
-                        {t.location && <span>• {t.location}</span>}
-                        <span className="inline-flex items-center gap-1">
-                          <Users className="h-3 w-3" /> {total} aceite{total === 1 ? "" : "s"}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex gap-2 w-full sm:w-auto">
-                      <Link to={`/treinamento/${t.id}`} className="flex-1 sm:flex-none">
-                        <Button variant="outline" size="sm" className="w-full sm:w-auto">Detalhes</Button>
-                      </Link>
-                      <Link to={`/treinamento/${t.id}/termo`} className="flex-1 sm:flex-none">
-                        <Button size="sm" className="w-full sm:w-auto">
-                          <FileText className="h-4 w-4" /> Termo
-                        </Button>
-                      </Link>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
+          <>
+            {/* Summary strip */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+              <SummaryStat label="Treinamentos" value={summary.total} icon={<CalendarClock className="h-4 w-4" />} />
+              <SummaryStat label="Com aceite" value={summary.withAcc} icon={<CheckCircle2 className="h-4 w-4" />} accent />
+              <SummaryStat label="Sem aceite" value={summary.without} icon={<AlertTriangle className="h-4 w-4" />} muted />
+              <SummaryStat label="Participantes" value={summary.participants} icon={<Users className="h-4 w-4" />} />
+            </div>
+
+            <div className="space-y-8">
+              {grouped.map((g) => (
+                <section key={g.key} className="space-y-2">
+                  <div className="flex items-baseline gap-3 px-1">
+                    <h2 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground capitalize">
+                      {format(g.date, "MMMM 'de' yyyy", { locale: ptBR })}
+                    </h2>
+                    <div className="h-px flex-1 bg-border/60" aria-hidden />
+                    <span className="text-[11px] text-muted-foreground">{g.items.length}</span>
+                  </div>
+                  <Card className="overflow-hidden">
+                    <ul className="divide-y divide-border/60">
+                      {g.items.map((t) => {
+                        const total = t.user_count + t.guest_count;
+                        const hasAcc = total > 0;
+                        const date = new Date(t.scheduled_at);
+                        return (
+                          <li
+                            key={t.id}
+                            className={`group relative flex items-center gap-3 sm:gap-4 px-3 sm:px-4 py-3 transition-colors ${
+                              hasAcc ? "hover:bg-primary/5" : "hover:bg-muted/40"
+                            }`}
+                          >
+                            {/* Date chip */}
+                            <div
+                              className={`shrink-0 w-12 sm:w-14 rounded-xl border text-center py-1.5 ${
+                                hasAcc
+                                  ? "border-primary/40 bg-primary/10 text-primary"
+                                  : "border-border bg-muted/40 text-muted-foreground"
+                              }`}
+                            >
+                              <div className="text-[9px] uppercase tracking-widest font-semibold leading-none">
+                                {format(date, "MMM", { locale: ptBR })}
+                              </div>
+                              <div className="text-lg sm:text-xl font-bold leading-tight mt-0.5">
+                                {format(date, "d")}
+                              </div>
+                              <div className="text-[9px] uppercase tracking-widest text-muted-foreground leading-none">
+                                {format(date, "EEE", { locale: ptBR })}
+                              </div>
+                            </div>
+
+                            {/* Title + meta */}
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <h3 className="font-medium truncate">{t.title}</h3>
+                                {t.client && (
+                                  <Badge variant="secondary" className="text-[10px] font-normal">
+                                    {t.client}
+                                  </Badge>
+                                )}
+                                {t.status === "cancelado" && (
+                                  <Badge variant="outline" className="text-[10px] border-destructive/40 text-destructive">
+                                    Cancelado
+                                  </Badge>
+                                )}
+                              </div>
+                              <div className="text-xs text-muted-foreground flex items-center gap-2.5 flex-wrap mt-1">
+                                <span className="inline-flex items-center gap-1">
+                                  <CalendarClock className="h-3 w-3" />
+                                  {format(date, "HH:mm")}
+                                </span>
+                                {t.location && (
+                                  <span className="inline-flex items-center gap-1 truncate max-w-[160px] sm:max-w-none">
+                                    <Building2 className="h-3 w-3" /> {t.location}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Aceite badge */}
+                            <div
+                              className={`hidden sm:flex shrink-0 flex-col items-center justify-center min-w-[56px] rounded-lg px-2 py-1.5 border ${
+                                hasAcc
+                                  ? "border-primary/30 bg-primary/5 text-primary"
+                                  : "border-dashed border-border text-muted-foreground/70"
+                              }`}
+                              title={`${total} aceite${total === 1 ? "" : "s"}`}
+                            >
+                              <Users className="h-3 w-3" />
+                              <span className="text-sm font-semibold leading-none mt-1">{total}</span>
+                            </div>
+
+                            {/* Actions */}
+                            <div className="flex items-center gap-1 shrink-0">
+                              <Link to={`/treinamento/${t.id}`} aria-label="Detalhes">
+                                <Button variant="ghost" size="sm" className="h-9 px-2 sm:px-3">
+                                  <span className="hidden sm:inline">Detalhes</span>
+                                  <ChevronRight className="h-4 w-4 sm:hidden" />
+                                </Button>
+                              </Link>
+                              <Link to={`/treinamento/${t.id}/termo`} aria-label="Termo">
+                                <Button
+                                  variant={hasAcc ? "default" : "outline"}
+                                  size="sm"
+                                  className="h-9 px-2 sm:px-3"
+                                >
+                                  <FileText className="h-4 w-4" />
+                                  <span className="hidden sm:inline">Termo</span>
+                                </Button>
+                              </Link>
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </Card>
+                </section>
+              ))}
+            </div>
+          </>
         )}
       </main>
     </div>
   );
 };
+
+const SummaryStat = ({
+  label,
+  value,
+  icon,
+  accent,
+  muted,
+}: {
+  label: string;
+  value: number;
+  icon: React.ReactNode;
+  accent?: boolean;
+  muted?: boolean;
+}) => (
+  <Card
+    className={`overflow-hidden ${
+      accent ? "border-primary/30 bg-primary/5" : muted ? "bg-muted/30" : ""
+    }`}
+  >
+    <CardContent className="p-3 sm:p-4 flex items-center gap-3">
+      <div
+        className={`h-9 w-9 rounded-lg flex items-center justify-center shrink-0 ${
+          accent
+            ? "bg-primary/15 text-primary"
+            : muted
+            ? "bg-muted text-muted-foreground"
+            : "bg-primary/10 text-primary"
+        }`}
+      >
+        {icon}
+      </div>
+      <div className="min-w-0">
+        <div className="text-xl sm:text-2xl font-semibold leading-none tracking-tight">{value}</div>
+        <div className="text-[11px] uppercase tracking-wider text-muted-foreground mt-1">{label}</div>
+      </div>
+    </CardContent>
+  </Card>
+);
 
 type WeeklyStats = {
   total_visits: number;
