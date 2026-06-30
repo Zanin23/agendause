@@ -109,16 +109,51 @@ const Dashboard = () => {
         </div>
 
         <div className="grid lg:grid-cols-[auto_1fr] gap-6 lg:gap-8 items-start">
-          <Card className="lg:sticky lg:top-20 w-full lg:w-auto">
-            <CardContent className="p-2 flex justify-center">
+          <Card className="lg:sticky lg:top-20 w-full lg:w-auto relative overflow-hidden rounded-3xl border border-border/60 bg-card/60 backdrop-blur-xl shadow-2xl shadow-primary/5">
+            <div
+              className="pointer-events-none absolute inset-0 opacity-70"
+              aria-hidden
+              style={{
+                background:
+                  "radial-gradient(60% 50% at 30% 0%, hsl(var(--primary) / 0.12), transparent 70%), radial-gradient(50% 40% at 100% 100%, hsl(var(--primary) / 0.08), transparent 70%)",
+              }}
+            />
+            <CardContent className="relative p-4 sm:p-5 flex justify-center">
               <Calendar
                 mode="single"
                 selected={selectedDate}
                 onSelect={setSelectedDate}
                 locale={ptBR}
                 modifiers={{ hasTraining: trainingDays }}
-                modifiersClassNames={{ hasTraining: "font-bold text-primary underline" }}
+                modifiersClassNames={{
+                  hasTraining:
+                    "font-bold text-primary relative after:absolute after:bottom-1 after:left-1/2 after:-translate-x-1/2 after:w-1 after:h-1 after:rounded-full after:bg-primary",
+                }}
                 className="pointer-events-auto"
+                classNames={{
+                  months: "flex flex-col gap-2",
+                  month: "flex flex-col gap-5",
+                  caption: "flex justify-center pt-1 pb-1 relative items-center",
+                  caption_label: "text-base font-semibold tracking-tight capitalize",
+                  nav: "flex items-center gap-1",
+                  nav_button:
+                    "h-9 w-9 rounded-2xl bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground border border-border/40 transition-all hover:scale-105 inline-flex items-center justify-center",
+                  nav_button_previous: "absolute left-1",
+                  nav_button_next: "absolute right-1",
+                  table: "w-full border-collapse",
+                  head_row: "flex mb-2",
+                  head_cell:
+                    "text-muted-foreground/70 rounded-md w-10 font-bold text-[10px] uppercase tracking-[0.2em]",
+                  row: "flex w-full mt-1.5",
+                  cell: "relative h-10 w-10 text-center text-sm",
+                  day: "h-10 w-10 p-0 font-normal rounded-2xl hover:bg-foreground/5 transition-all inline-flex items-center justify-center",
+                  day_selected:
+                    "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground font-bold shadow-lg shadow-primary/30 ring-1 ring-primary-foreground/20 scale-105",
+                  day_today:
+                    "border border-primary/50 bg-primary/5 text-foreground font-semibold",
+                  day_outside: "text-muted-foreground/30 opacity-60",
+                  day_disabled: "text-muted-foreground/30 opacity-40",
+                }}
               />
             </CardContent>
           </Card>
