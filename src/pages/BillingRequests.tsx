@@ -541,7 +541,7 @@ function RequestRow({
     <li
       className={`relative px-4 sm:px-5 py-3 transition-all duration-200 cursor-default ${
         request.carried_over_to
-          ? "bg-amber-500/[0.04] dark:bg-amber-500/[0.07] border-l-[3px] border-amber-500/70 hover:bg-amber-500/[0.08]"
+          ? "bg-muted/40 border-l-[3px] border-muted-foreground/30 hover:bg-muted/60"
           : "hover:bg-primary/5 hover:pl-6 hover:shadow-[inset_3px_0_0_hsl(var(--primary))]"
       }`}
     >
@@ -554,7 +554,7 @@ function RequestRow({
             request.status === "delivered"
               ? "bg-primary border-primary text-primary-foreground"
               : request.carried_over_to
-              ? "border-dashed border-amber-500/60 text-amber-600 dark:text-amber-400"
+              ? "border-dashed border-muted-foreground/40 text-muted-foreground"
               : "border-muted-foreground/40 hover:border-primary"
           }`}
         >
