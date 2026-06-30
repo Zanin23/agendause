@@ -109,16 +109,16 @@ const Dashboard = () => {
         </div>
 
         <div className="grid lg:grid-cols-[auto_1fr] gap-6 lg:gap-8 items-start">
-          <Card className="lg:sticky lg:top-20 w-full lg:w-auto rounded-3xl border border-border/60 bg-card/60 backdrop-blur-xl shadow-2xl shadow-primary/5 overflow-hidden">
+          <Card className="lg:sticky lg:top-20 w-full lg:w-auto relative overflow-hidden rounded-3xl border border-border/60 bg-card/60 backdrop-blur-xl shadow-2xl shadow-primary/5">
             <div
-              className="pointer-events-none absolute inset-0 -z-10 opacity-60"
+              className="pointer-events-none absolute inset-0 opacity-70"
               aria-hidden
               style={{
                 background:
                   "radial-gradient(60% 50% at 30% 0%, hsl(var(--primary) / 0.12), transparent 70%), radial-gradient(50% 40% at 100% 100%, hsl(var(--primary) / 0.08), transparent 70%)",
               }}
             />
-            <CardContent className="p-4 sm:p-5 flex justify-center">
+            <CardContent className="relative p-4 sm:p-5 flex justify-center">
               <Calendar
                 mode="single"
                 selected={selectedDate}
