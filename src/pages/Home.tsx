@@ -88,7 +88,15 @@ const Home = () => {
                 </Link>
               </div>
             </div>
-            <img src={logoAsset.url} alt="Use Sistemas" className="hero-float hidden sm:block h-16 md:h-20 w-auto opacity-90 self-start md:self-auto" />
+            <img
+              src={logoAsset.url}
+              alt=""
+              aria-hidden="true"
+              className="hero-float hidden sm:block h-16 md:h-20 w-auto opacity-90 self-start md:self-auto"
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).style.display = "none";
+              }}
+            />
           </div>
         </div>
 
