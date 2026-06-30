@@ -5,8 +5,28 @@ import { BackButton } from "@/components/BackButton";
 import { SEO } from "@/components/SEO";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { useA11y, type FontScale } from "@/hooks/useA11y";
-import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
+
+function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label: string }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-label={label}
+      onClick={() => onChange(!checked)}
+      className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${
+        checked ? "bg-primary" : "bg-muted"
+      }`}
+    >
+      <span
+        className={`inline-block h-5 w-5 transform rounded-full bg-background shadow transition-transform ${
+          checked ? "translate-x-5" : "translate-x-0.5"
+        }`}
+      />
+    </button>
+  );
+}
 
 const Settings = () => {
   const { workspaces, activeId, setActive, loading } = useWorkspace();
@@ -136,7 +156,7 @@ const Settings = () => {
                 <div className="font-medium">Texto em negrito</div>
                 <div className="text-sm text-muted-foreground">Aumenta o peso das fontes para mais contraste.</div>
               </div>
-              <Switch checked={bold} onCheckedChange={setBold} aria-label="Texto em negrito" />
+              <Toggle checked={bold} onChange={setBold} label="Texto em negrito" />
             </label>
 
             <label className="flex items-center justify-between gap-4 p-4 rounded-xl border border-border cursor-pointer">
@@ -144,7 +164,7 @@ const Settings = () => {
                 <div className="font-medium">Alto contraste</div>
                 <div className="text-sm text-muted-foreground">Realça textos secundários e indicadores de foco.</div>
               </div>
-              <Switch checked={contrast} onCheckedChange={setContrast} aria-label="Alto contraste" />
+              <Toggle checked={contrast} onChange={setContrast} label="Alto contraste" />
             </label>
           </div>
         </section>
