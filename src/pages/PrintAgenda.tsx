@@ -238,10 +238,23 @@ const PrintAgenda = () => {
           .agenda-event-extra { font-size: 7pt !important; }
           .agenda-tip { display: none !important; }
         }
+        @media (max-width: 767px) {
+          .agenda-page { padding: 16px !important; }
+          .agenda-header {
+            flex-direction: column !important;
+            gap: 12px !important;
+            align-items: flex-start !important;
+          }
+          .agenda-title { font-size: 36px !important; word-break: break-word; overflow-wrap: anywhere; }
+          .agenda-sub { font-size: 16px !important; word-break: break-word; }
+          .agenda-layers-print { width: 80px !important; height: 80px !important; }
+          .agenda-grid { grid-template-columns: 1fr !important; }
+          .agenda-day { min-height: 0 !important; }
+        }
       `}</style>
 
       <div className="no-print border-b border-neutral-200">
-        <div className="max-w-[1200px] mx-auto px-6 py-4 flex items-center justify-between gap-4">
+        <div className="max-w-[1200px] mx-auto px-4 sm:px-6 py-3 sm:py-4 flex flex-wrap items-center justify-between gap-3">
           <BackButton to="/" />
 
           <div className="flex items-center gap-2">
@@ -297,15 +310,15 @@ const PrintAgenda = () => {
         </div>
       </div>
 
-      <main className="agenda-page max-w-[1200px] mx-auto px-8 py-8">
+      <main className="agenda-page max-w-[1200px] mx-auto px-4 sm:px-8 py-4 sm:py-8">
         {/* Header */}
-        <header className="agenda-header flex items-start justify-between gap-8 mb-6">
+        <header className="agenda-header flex flex-col md:flex-row md:items-start md:justify-between gap-4 md:gap-8 mb-6">
           <div className="min-w-0">
-            <h1 className="agenda-title agenda-title-print text-[64px] leading-[0.95] uppercase">
+            <h1 className="agenda-title agenda-title-print text-[40px] sm:text-[64px] leading-[0.95] uppercase break-words">
               Agenda Semanal
             </h1>
             <p
-              className="agenda-sub agenda-sub-print text-[22px] mt-1"
+              className="agenda-sub agenda-sub-print text-[16px] sm:text-[22px] mt-1 break-words"
               style={{ color: ORANGE }}
             >
               visitas, reuniões e configurações internas
@@ -319,17 +332,17 @@ const PrintAgenda = () => {
             </div>
           </div>
 
-          <div className="agenda-legend-print flex items-center gap-6 pt-2 shrink-0">
+          <div className="agenda-legend-print flex items-center gap-6 pt-2 shrink-0 self-start">
             <img
               src={useLogo.url}
               alt="Use Sistemas"
-              className="agenda-layers-print h-60 w-60 shrink-0 object-contain"
+              className="agenda-layers-print h-24 w-24 sm:h-60 sm:w-60 shrink-0 object-contain"
             />
           </div>
         </header>
 
         {/* Week grid */}
-        <div className="agenda-grid grid grid-cols-5 gap-3">
+        <div className="agenda-grid grid grid-cols-1 sm:grid-cols-5 gap-3">
           {weekDays.map((day, idx) => {
             const events = eventsByDay[idx];
             const isToday = isSameDay(day, new Date());
