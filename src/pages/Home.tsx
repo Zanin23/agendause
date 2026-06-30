@@ -11,10 +11,8 @@ const Home = () => {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const rawName: string | undefined = user?.user_metadata?.full_name;
-  const emailLocal = user?.email ? user.email.split("@")[0] : "";
-  const candidate = (rawName || emailLocal || "").split(" ")[0];
-  // Avoid showing an email-like or overly long token as the greeting name.
-  const firstName = candidate && !candidate.includes("@") && candidate.length <= 18 ? candidate : "";
+  // Only use a proper name; ignore the email local-part so we don't greet "Olá, foo123".
+  const firstName = rawName ? rawName.split(" ")[0] : "";
 
   const cards = [
     {
