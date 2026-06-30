@@ -35,11 +35,31 @@ function nowInTz(tz = "America/Sao_Paulo") {
   return { hhmm: `${get("hour")}:${get("minute")}`, weekday: wdMap[get("weekday")] ?? 0 };
 }
 
+function currentWeekStart(tz = "America/Sao_Paulo") {
+  // Returns Monday of the current week (YYYY-MM-DD) in the given timezone.
+  const fmt = new Intl.DateTimeFormat("en-CA", {
+    timeZone: tz,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    weekday: "short",
+  });
+  const parts = fmt.formatToParts(new Date());
+  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "";
+  const wdMap: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+  const wd = wdMap[get("weekday")] ?? 1;
+  const diff = (wd + 6) % 7; // days since Monday
+  const d = new Date(`${get("year")}-${get("month")}-${get("day")}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() - diff);
+  return d.toISOString().slice(0, 10);
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   const supabase = createClient(SUPABASE_URL, SERVICE_ROLE);
   const { hhmm, weekday } = nowInTz();
+  const weekStart = currentWeekStart();
 
   // Body may override (for manual test): { force: true, user_id?: string }
   let body: any = {};
@@ -75,7 +95,8 @@ Deno.serve(async (req) => {
       .from("billing_requests")
       .select("id", { count: "exact", head: true })
       .eq("user_id", s.user_id)
-      .eq("status", "pending");
+      .eq("status", "pending")
+      .eq("week_start", weekStart);
 
     if (!pending || pending === 0) continue;
 
