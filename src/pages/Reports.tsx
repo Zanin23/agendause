@@ -325,40 +325,126 @@ const Reports = () => {
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-3">
-            {filtered.map((t) => {
-              const total = t.user_count + t.guest_count;
-              return (
-                <Card key={t.id} className="hover:border-primary/50 transition-colors">
-                  <CardContent className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
-                    <div className="min-w-0 space-y-1 flex-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="font-semibold break-words">{t.title}</h3>
-                        {t.client && <Badge variant="secondary">{t.client}</Badge>}
-                      </div>
-                      <div className="text-xs text-muted-foreground flex items-center gap-3 flex-wrap">
-                        <span>{format(new Date(t.scheduled_at), "d MMM yyyy 'às' HH:mm", { locale: ptBR })}</span>
-                        {t.location && <span>• {t.location}</span>}
-                        <span className="inline-flex items-center gap-1">
-                          <Users className="h-3 w-3" /> {total} aceite{total === 1 ? "" : "s"}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex gap-2 w-full sm:w-auto">
-                      <Link to={`/treinamento/${t.id}`} className="flex-1 sm:flex-none">
-                        <Button variant="outline" size="sm" className="w-full sm:w-auto">Detalhes</Button>
-                      </Link>
-                      <Link to={`/treinamento/${t.id}/termo`} className="flex-1 sm:flex-none">
-                        <Button size="sm" className="w-full sm:w-auto">
-                          <FileText className="h-4 w-4" /> Termo
-                        </Button>
-                      </Link>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
+          <>
+            {/* Summary strip */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+              <SummaryStat label="Treinamentos" value={summary.total} icon={<CalendarClock className="h-4 w-4" />} />
+              <SummaryStat label="Com aceite" value={summary.withAcc} icon={<CheckCircle2 className="h-4 w-4" />} accent />
+              <SummaryStat label="Sem aceite" value={summary.without} icon={<AlertTriangle className="h-4 w-4" />} muted />
+              <SummaryStat label="Participantes" value={summary.participants} icon={<Users className="h-4 w-4" />} />
+            </div>
+
+            <div className="space-y-8">
+              {grouped.map((g) => (
+                <section key={g.key} className="space-y-2">
+                  <div className="flex items-baseline gap-3 px-1">
+                    <h2 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground capitalize">
+                      {format(g.date, "MMMM 'de' yyyy", { locale: ptBR })}
+                    </h2>
+                    <div className="h-px flex-1 bg-border/60" aria-hidden />
+                    <span className="text-[11px] text-muted-foreground">{g.items.length}</span>
+                  </div>
+                  <Card className="overflow-hidden">
+                    <ul className="divide-y divide-border/60">
+                      {g.items.map((t) => {
+                        const total = t.user_count + t.guest_count;
+                        const hasAcc = total > 0;
+                        const date = new Date(t.scheduled_at);
+                        return (
+                          <li
+                            key={t.id}
+                            className={`group relative flex items-center gap-3 sm:gap-4 px-3 sm:px-4 py-3 transition-colors ${
+                              hasAcc ? "hover:bg-primary/5" : "hover:bg-muted/40"
+                            }`}
+                          >
+                            {/* Date chip */}
+                            <div
+                              className={`shrink-0 w-12 sm:w-14 rounded-xl border text-center py-1.5 ${
+                                hasAcc
+                                  ? "border-primary/40 bg-primary/10 text-primary"
+                                  : "border-border bg-muted/40 text-muted-foreground"
+                              }`}
+                            >
+                              <div className="text-[9px] uppercase tracking-widest font-semibold leading-none">
+                                {format(date, "MMM", { locale: ptBR })}
+                              </div>
+                              <div className="text-lg sm:text-xl font-bold leading-tight mt-0.5">
+                                {format(date, "d")}
+                              </div>
+                              <div className="text-[9px] uppercase tracking-widest text-muted-foreground leading-none">
+                                {format(date, "EEE", { locale: ptBR })}
+                              </div>
+                            </div>
+
+                            {/* Title + meta */}
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <h3 className="font-medium truncate">{t.title}</h3>
+                                {t.client && (
+                                  <Badge variant="secondary" className="text-[10px] font-normal">
+                                    {t.client}
+                                  </Badge>
+                                )}
+                                {t.status === "cancelado" && (
+                                  <Badge variant="outline" className="text-[10px] border-destructive/40 text-destructive">
+                                    Cancelado
+                                  </Badge>
+                                )}
+                              </div>
+                              <div className="text-xs text-muted-foreground flex items-center gap-2.5 flex-wrap mt-1">
+                                <span className="inline-flex items-center gap-1">
+                                  <CalendarClock className="h-3 w-3" />
+                                  {format(date, "HH:mm")}
+                                </span>
+                                {t.location && (
+                                  <span className="inline-flex items-center gap-1 truncate max-w-[160px] sm:max-w-none">
+                                    <Building2 className="h-3 w-3" /> {t.location}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Aceite badge */}
+                            <div
+                              className={`hidden sm:flex shrink-0 flex-col items-center justify-center min-w-[56px] rounded-lg px-2 py-1.5 border ${
+                                hasAcc
+                                  ? "border-primary/30 bg-primary/5 text-primary"
+                                  : "border-dashed border-border text-muted-foreground/70"
+                              }`}
+                              title={`${total} aceite${total === 1 ? "" : "s"}`}
+                            >
+                              <Users className="h-3 w-3" />
+                              <span className="text-sm font-semibold leading-none mt-1">{total}</span>
+                            </div>
+
+                            {/* Actions */}
+                            <div className="flex items-center gap-1 shrink-0">
+                              <Link to={`/treinamento/${t.id}`} aria-label="Detalhes">
+                                <Button variant="ghost" size="sm" className="h-9 px-2 sm:px-3">
+                                  <span className="hidden sm:inline">Detalhes</span>
+                                  <ChevronRight className="h-4 w-4 sm:hidden" />
+                                </Button>
+                              </Link>
+                              <Link to={`/treinamento/${t.id}/termo`} aria-label="Termo">
+                                <Button
+                                  variant={hasAcc ? "default" : "outline"}
+                                  size="sm"
+                                  className="h-9 px-2 sm:px-3"
+                                >
+                                  <FileText className="h-4 w-4" />
+                                  <span className="hidden sm:inline">Termo</span>
+                                </Button>
+                              </Link>
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </Card>
+                </section>
+              ))}
+            </div>
+          </>
         )}
       </main>
     </div>
