@@ -47,6 +47,24 @@
       } catch (e) {}
     })();
   </script>
+  <script>
+    (function () {
+      try {
+        var scale = localStorage.getItem('treinacheck-a11y-scale');
+        var sizes = { normal: '16px', large: '18px', xlarge: '20px' };
+        if (scale && sizes[scale]) {
+          document.documentElement.style.fontSize = sizes[scale];
+          document.documentElement.dataset.fontScale = scale;
+        }
+        if (localStorage.getItem('treinacheck-a11y-bold') === '1') {
+          document.documentElement.classList.add('a11y-bold');
+        }
+        if (localStorage.getItem('treinacheck-a11y-contrast') === '1') {
+          document.documentElement.classList.add('a11y-contrast');
+        }
+      } catch (e) {}
+    })();
+  </script>
 </head>
 
   <body>
