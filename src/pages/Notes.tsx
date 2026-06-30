@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { StickyNote, Plus, Trash2, Pencil, Save, X, Building2, CalendarDays, PlusCircle, Search, Feather } from "lucide-react";
+import { StickyNote, Plus, Trash2, Pencil, Save, X, Building2, CalendarDays, PlusCircle, Search, Feather, Paperclip, FileText, Image as ImageIcon, Download, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { AppHeader } from "@/components/AppHeader";
@@ -27,6 +27,25 @@ type Note = {
   content: string;
   created_at: string;
 };
+
+type Attachment = {
+  id: string;
+  note_id: string;
+  user_id: string;
+  file_name: string;
+  mime_type: string | null;
+  size_bytes: number | null;
+  storage_path: string;
+  created_at: string;
+};
+
+const formatBytes = (n?: number | null) => {
+  if (!n && n !== 0) return "";
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+  return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+};
+const isImage = (mime?: string | null) => !!mime && mime.startsWith("image/");
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
 
@@ -68,6 +87,9 @@ const Notes = () => {
   const { user } = useAuth();
   const composerVariant = useComposerVariant();
   const [notes, setNotes] = useState<Note[]>([]);
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const [uploadingFor, setUploadingFor] = useState<string | null>(null);
   const [companies, setCompanies] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -88,13 +110,15 @@ const Notes = () => {
 
   const load = async () => {
     setLoading(true);
-    const [notesRes, trainingsRes] = await Promise.all([
+    const [notesRes, trainingsRes, attRes] = await Promise.all([
       supabase.from("company_notes").select("*").order("note_date", { ascending: false }).order("created_at", { ascending: false }),
       supabase.from("trainings").select("client").not("client", "is", null),
+      supabase.from("note_attachments" as any).select("*").order("created_at", { ascending: true }),
     ]);
     if (notesRes.error) toast.error(notesRes.error.message);
     const list = (notesRes.data ?? []) as Note[];
     setNotes(list);
+    setAttachments(((attRes as any)?.data ?? []) as Attachment[]);
     const setNames = new Set<string>();
     list.forEach((n) => setNames.add(n.company));
     (trainingsRes.data ?? []).forEach((t: any) => t.client && setNames.add(t.client));
@@ -111,28 +135,90 @@ const Notes = () => {
     if (!user) return;
     const company = (selectedCompany || companyInput).trim();
     if (!company) return toast.error("Selecione ou informe uma empresa");
-    if (!content.trim()) return toast.error("Escreva uma anotação");
+    if (!content.trim() && pendingFiles.length === 0)
+      return toast.error("Escreva uma anotação ou anexe um arquivo");
     setSaving(true);
-    const { error } = await supabase.from("company_notes").insert(({
+    const { data: inserted, error } = await supabase.from("company_notes").insert(({
       user_id: user.id,
       company,
       note_date: noteDate,
       content: content.trim(),
-    }) as any);
+    }) as any).select("*").single();
+    if (error) {
+      setSaving(false);
+      return toast.error(error.message);
+    }
+    if (pendingFiles.length > 0 && inserted) {
+      await uploadFilesForNote((inserted as any).id, pendingFiles);
+    }
     setSaving(false);
-    if (error) return toast.error(error.message);
     toast.success("Anotação adicionada");
     setContent("");
     setCompanyInput("");
+    setPendingFiles([]);
     if (!selectedCompany) setSelectedCompany(company);
     load();
   };
 
+  const uploadFilesForNote = async (noteId: string, files: File[]) => {
+    if (!user) return;
+    for (const file of files) {
+      const safe = file.name.replace(/[^a-zA-Z0-9._-]+/g, "_");
+      const path = `${user.id}/${noteId}/${Date.now()}-${safe}`;
+      const up = await supabase.storage.from("note-attachments").upload(path, file, {
+        contentType: file.type || undefined,
+        upsert: false,
+      });
+      if (up.error) {
+        toast.error(`Falha ao enviar ${file.name}: ${up.error.message}`);
+        continue;
+      }
+      const ins = await supabase.from("note_attachments" as any).insert({
+        note_id: noteId,
+        user_id: user.id,
+        file_name: file.name,
+        mime_type: file.type || null,
+        size_bytes: file.size,
+        storage_path: path,
+      } as any);
+      if (ins.error) toast.error(ins.error.message);
+    }
+  };
+
+  const addFilesToExistingNote = async (noteId: string, files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    setUploadingFor(noteId);
+    await uploadFilesForNote(noteId, Array.from(files));
+    setUploadingFor(null);
+    load();
+  };
+
+  const openAttachment = async (att: Attachment) => {
+    const { data, error } = await supabase.storage
+      .from("note-attachments")
+      .createSignedUrl(att.storage_path, 60 * 10, { download: att.file_name });
+    if (error || !data) return toast.error(error?.message || "Não foi possível gerar o link");
+    window.open(data.signedUrl, "_blank");
+  };
+
+  const removeAttachment = async (att: Attachment) => {
+    if (!confirm(`Remover o anexo "${att.file_name}"?`)) return;
+    await supabase.storage.from("note-attachments").remove([att.storage_path]);
+    const { error } = await supabase.from("note_attachments" as any).delete().eq("id", att.id);
+    if (error) return toast.error(error.message);
+    setAttachments((p) => p.filter((a) => a.id !== att.id));
+  };
+
   const remove = async (id: string) => {
     if (!confirm("Remover esta anotação?")) return;
+    const noteAtts = attachments.filter((a) => a.note_id === id);
+    if (noteAtts.length > 0) {
+      await supabase.storage.from("note-attachments").remove(noteAtts.map((a) => a.storage_path));
+    }
     const { error } = await supabase.from("company_notes").delete().eq("id", id);
     if (error) return toast.error(error.message);
     setNotes((p) => p.filter((n) => n.id !== id));
+    setAttachments((p) => p.filter((a) => a.note_id !== id));
   };
 
   const startEdit = (n: Note) => {
@@ -388,14 +474,56 @@ const Notes = () => {
                   />
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] italic text-muted-foreground">
-                    {content.length} caracteres
-                  </span>
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <label className="inline-flex items-center gap-1.5 text-[11px] tracking-[0.22em] uppercase text-primary hover:text-primary/80 cursor-pointer transition-colors">
+                      <Paperclip className="h-3.5 w-3.5" />
+                      Anexar
+                      <input
+                        type="file"
+                        multiple
+                        className="hidden"
+                        onChange={(e) => {
+                          const files = e.target.files ? Array.from(e.target.files) : [];
+                          setPendingFiles((p) => [...p, ...files]);
+                          e.currentTarget.value = "";
+                        }}
+                      />
+                    </label>
+                    <span className="text-[11px] italic text-muted-foreground">
+                      {content.length} caracteres
+                    </span>
+                  </div>
                   <Button type="submit" disabled={saving} className="rounded-full px-5">
                     <Feather className="h-4 w-4" />
                     {saving ? "Salvando…" : "Registrar"}
                   </Button>
                 </div>
+                {pendingFiles.length > 0 && (
+                  <ul className="flex flex-wrap gap-2 pt-1">
+                    {pendingFiles.map((f, i) => (
+                      <li
+                        key={`${f.name}-${i}`}
+                        className="inline-flex items-center gap-2 text-xs bg-muted/60 border border-border/60 rounded-full pl-3 pr-1 py-1"
+                      >
+                        {f.type.startsWith("image/") ? (
+                          <ImageIcon className="h-3.5 w-3.5 text-primary" />
+                        ) : (
+                          <FileText className="h-3.5 w-3.5 text-primary" />
+                        )}
+                        <span className="max-w-[180px] truncate">{f.name}</span>
+                        <span className="text-muted-foreground">{formatBytes(f.size)}</span>
+                        <button
+                          type="button"
+                          onClick={() => setPendingFiles((p) => p.filter((_, idx) => idx !== i))}
+                          className="h-5 w-5 inline-flex items-center justify-center rounded-full hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
+                          title="Remover"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </form>
             </div>
 
@@ -484,12 +612,71 @@ const Notes = () => {
                                     <p className="whitespace-pre-wrap text-[15px] leading-relaxed text-foreground/95">
                                       {n.content}
                                     </p>
+                                    {(() => {
+                                      const noteAtts = attachments.filter((a) => a.note_id === n.id);
+                                      if (noteAtts.length === 0) return null;
+                                      return (
+                                        <ul className="mt-3 flex flex-wrap gap-2">
+                                          {noteAtts.map((a) => (
+                                            <li
+                                              key={a.id}
+                                              className="group/att inline-flex items-center gap-2 text-xs bg-background/60 border border-border/60 rounded-lg pl-2 pr-1 py-1 hover:border-primary/50 transition-colors"
+                                            >
+                                              <button
+                                                type="button"
+                                                onClick={() => openAttachment(a)}
+                                                className="inline-flex items-center gap-2 min-w-0"
+                                              >
+                                                {isImage(a.mime_type) ? (
+                                                  <ImageIcon className="h-3.5 w-3.5 text-primary shrink-0" />
+                                                ) : (
+                                                  <FileText className="h-3.5 w-3.5 text-primary shrink-0" />
+                                                )}
+                                                <span className="max-w-[200px] truncate underline-offset-2 group-hover/att:underline">
+                                                  {a.file_name}
+                                                </span>
+                                                {a.size_bytes ? (
+                                                  <span className="text-muted-foreground">{formatBytes(a.size_bytes)}</span>
+                                                ) : null}
+                                                <Download className="h-3 w-3 text-muted-foreground" />
+                                              </button>
+                                              {user?.id === a.user_id && (
+                                                <button
+                                                  type="button"
+                                                  onClick={() => removeAttachment(a)}
+                                                  className="h-5 w-5 inline-flex items-center justify-center rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                                  title="Remover anexo"
+                                                >
+                                                  <X className="h-3 w-3" />
+                                                </button>
+                                              )}
+                                            </li>
+                                          ))}
+                                        </ul>
+                                      );
+                                    })()}
                                     <p className="mt-3 text-[11px] tracking-[0.22em] uppercase text-muted-foreground/80">
                                       Registrado às {formatTime(n.created_at)}
                                     </p>
                                   </div>
                                   {user?.id === n.user_id && (
                                     <div className="flex gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                                      <label
+                                        className="h-8 w-8 inline-flex items-center justify-center rounded-md hover:bg-muted cursor-pointer text-muted-foreground hover:text-foreground"
+                                        title="Anexar arquivo"
+                                      >
+                                        {uploadingFor === n.id ? (
+                                          <Loader2 className="h-4 w-4 animate-spin" />
+                                        ) : (
+                                          <Paperclip className="h-4 w-4" />
+                                        )}
+                                        <input
+                                          type="file"
+                                          multiple
+                                          className="hidden"
+                                          onChange={(e) => addFilesToExistingNote(n.id, e.target.files)}
+                                        />
+                                      </label>
                                       <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => startEdit(n)}>
                                         <Pencil className="h-4 w-4" />
                                       </Button>
