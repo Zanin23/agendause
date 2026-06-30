@@ -612,12 +612,71 @@ const Notes = () => {
                                     <p className="whitespace-pre-wrap text-[15px] leading-relaxed text-foreground/95">
                                       {n.content}
                                     </p>
+                                    {(() => {
+                                      const noteAtts = attachments.filter((a) => a.note_id === n.id);
+                                      if (noteAtts.length === 0) return null;
+                                      return (
+                                        <ul className="mt-3 flex flex-wrap gap-2">
+                                          {noteAtts.map((a) => (
+                                            <li
+                                              key={a.id}
+                                              className="group/att inline-flex items-center gap-2 text-xs bg-background/60 border border-border/60 rounded-lg pl-2 pr-1 py-1 hover:border-primary/50 transition-colors"
+                                            >
+                                              <button
+                                                type="button"
+                                                onClick={() => openAttachment(a)}
+                                                className="inline-flex items-center gap-2 min-w-0"
+                                              >
+                                                {isImage(a.mime_type) ? (
+                                                  <ImageIcon className="h-3.5 w-3.5 text-primary shrink-0" />
+                                                ) : (
+                                                  <FileText className="h-3.5 w-3.5 text-primary shrink-0" />
+                                                )}
+                                                <span className="max-w-[200px] truncate underline-offset-2 group-hover/att:underline">
+                                                  {a.file_name}
+                                                </span>
+                                                {a.size_bytes ? (
+                                                  <span className="text-muted-foreground">{formatBytes(a.size_bytes)}</span>
+                                                ) : null}
+                                                <Download className="h-3 w-3 text-muted-foreground" />
+                                              </button>
+                                              {user?.id === a.user_id && (
+                                                <button
+                                                  type="button"
+                                                  onClick={() => removeAttachment(a)}
+                                                  className="h-5 w-5 inline-flex items-center justify-center rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                                  title="Remover anexo"
+                                                >
+                                                  <X className="h-3 w-3" />
+                                                </button>
+                                              )}
+                                            </li>
+                                          ))}
+                                        </ul>
+                                      );
+                                    })()}
                                     <p className="mt-3 text-[11px] tracking-[0.22em] uppercase text-muted-foreground/80">
                                       Registrado às {formatTime(n.created_at)}
                                     </p>
                                   </div>
                                   {user?.id === n.user_id && (
                                     <div className="flex gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                                      <label
+                                        className="h-8 w-8 inline-flex items-center justify-center rounded-md hover:bg-muted cursor-pointer text-muted-foreground hover:text-foreground"
+                                        title="Anexar arquivo"
+                                      >
+                                        {uploadingFor === n.id ? (
+                                          <Loader2 className="h-4 w-4 animate-spin" />
+                                        ) : (
+                                          <Paperclip className="h-4 w-4" />
+                                        )}
+                                        <input
+                                          type="file"
+                                          multiple
+                                          className="hidden"
+                                          onChange={(e) => addFilesToExistingNote(n.id, e.target.files)}
+                                        />
+                                      </label>
                                       <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => startEdit(n)}>
                                         <Pencil className="h-4 w-4" />
                                       </Button>
