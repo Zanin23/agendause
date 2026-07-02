@@ -23,6 +23,8 @@ import BillingRequests from "./pages/BillingRequests";
 import Notes from "./pages/Notes";
 import SelectWorkspace from "./pages/SelectWorkspace";
 import Settings from "./pages/Settings";
+import Index from "./pages/Index";
+import Article from "./pages/Article";
 
 const queryClient = new QueryClient();
 
@@ -40,6 +42,8 @@ const App = () => (
             <Route path="/selecionar-base" element={<ProtectedRoute requireWorkspace={false}><SelectWorkspace /></ProtectedRoute>} />
             <Route path="/configuracoes" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
             <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+            <Route path="/blog" element={<Index />} />
+            <Route path="/blog/:slug" element={<Article />} />
             <Route path="/agenda" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/relatorios" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
             <Route path="/treinamento/:id" element={<ProtectedRoute><TrainingDetail /></ProtectedRoute>} />

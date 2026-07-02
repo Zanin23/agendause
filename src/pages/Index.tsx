@@ -9,6 +9,7 @@ import {
   GridWrapper,
 } from "@/components/GridContainer";
 import { articlesData } from "@/data/articles";
+import { SEO } from "@/components/SEO";
 
 const Index = () => {
   const articlesRef = useRef<(HTMLElement | null)[]>([]);
@@ -45,6 +46,11 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background relative">
+      <SEO
+        title="Voyager Press — Histórias de viagem e lifestyle"
+        description="Notícias, ensaios e destinos inspiradores da Voyager Press: uma redação moderna de viagem e lifestyle."
+        path="/blog"
+      />
       <Header />
 
       <Section>
