@@ -70,7 +70,7 @@ Deno.serve(async (req) => {
   // Find users whose settings match this minute
   const { data: settings, error: settingsErr } = await supabase
     .from("billing_notification_settings")
-    .select("user_id, enabled, times, weekdays")
+    .select("user_id, enabled, times, weekdays, workspace_id")
     .eq("enabled", true);
 
   if (settingsErr) {
@@ -95,6 +95,7 @@ Deno.serve(async (req) => {
       .from("billing_requests")
       .select("id", { count: "exact", head: true })
       .eq("user_id", s.user_id)
+      .eq("workspace_id", s.workspace_id)
       .eq("status", "pending")
       .eq("week_start", weekStart)
       .is("carried_over_to", null);
