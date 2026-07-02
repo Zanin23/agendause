@@ -14,6 +14,9 @@ import {
   GridContent,
 } from "@/components/GridContainer";
 import { getArticleBySlug } from "@/data/articles";
+import { Helmet } from "react-helmet-async";
+
+const SITE_URL = "https://agendause.lovable.app";
 
 const Article = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -26,8 +29,40 @@ const Article = () => {
     return <Navigate to="/404" replace />;
   }
 
+  const url = `${SITE_URL}/blog/${articleData.slug}`;
+  const description = articleData.subtitle || articleData.title;
+  const image = articleData.heroImage?.startsWith("http")
+    ? articleData.heroImage
+    : `${SITE_URL}${articleData.heroImage}`;
+
   return (
     <div className="min-h-screen bg-background">
+      <Helmet>
+        <title>{`${articleData.title} — Voyager Press`}</title>
+        <meta name="description" content={description} />
+        <link rel="canonical" href={url} />
+        <meta property="og:type" content="article" />
+        <meta property="og:title" content={articleData.title} />
+        <meta property="og:description" content={description} />
+        <meta property="og:url" content={url} />
+        <meta property="og:image" content={image} />
+        <meta property="article:published_time" content={articleData.publishDate} />
+        <meta property="article:author" content={articleData.author.name} />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={articleData.title} />
+        <meta name="twitter:description" content={description} />
+        <meta name="twitter:image" content={image} />
+        <script type="application/ld+json">{JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "Article",
+          headline: articleData.title,
+          description,
+          image,
+          datePublished: articleData.publishDate,
+          author: { "@type": "Person", name: articleData.author.name },
+          mainEntityOfPage: url,
+        })}</script>
+      </Helmet>
       <Header />
 
       <ArticleWrapper>
