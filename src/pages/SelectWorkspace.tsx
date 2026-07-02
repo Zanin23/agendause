@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import { Database, Loader2 } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
 import { SEO } from "@/components/SEO";
@@ -10,6 +10,9 @@ const SelectWorkspace = () => {
   const { workspaces, loading, setActive, activeId } = useWorkspace();
   const navigate = useNavigate();
   const [pendingId, setPendingId] = useState<string | null>(null);
+
+  // Uma vez selecionada, a base fica fixada. Só é possível trocar via /configuracoes.
+  if (activeId) return <Navigate to="/" replace />;
 
   const choose = async (id: string) => {
     try {
