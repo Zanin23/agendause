@@ -96,7 +96,8 @@ Deno.serve(async (req) => {
       .select("id", { count: "exact", head: true })
       .eq("user_id", s.user_id)
       .eq("status", "pending")
-      .eq("week_start", weekStart);
+      .eq("week_start", weekStart)
+      .is("carried_over_to", null);
 
     if (!pending || pending === 0) continue;
 
