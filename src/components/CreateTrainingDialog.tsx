@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { Feather, CalendarClock, MapPin, Timer, Building2, BookOpen } from "lucide-react";
+import { VISIT_TYPES, type VisitType } from "@/lib/visitType";
 
 type Props = {
   open: boolean;
@@ -25,6 +26,7 @@ export const CreateTrainingDialog = ({ open, onOpenChange, onCreated }: Props) =
   const [duration, setDuration] = useState(60);
   const [location, setLocation] = useState("");
   const [internalNotes, setInternalNotes] = useState("");
+  const [visitType, setVisitType] = useState<VisitType>("presencial");
   const [loading, setLoading] = useState(false);
   const [companies, setCompanies] = useState<string[]>([]);
 
@@ -51,7 +53,7 @@ export const CreateTrainingDialog = ({ open, onOpenChange, onCreated }: Props) =
 
   const reset = () => {
     setTitle(""); setClient(""); setDescription(""); setDate(""); setTime("09:00");
-    setDuration(60); setLocation(""); setInternalNotes("");
+    setDuration(60); setLocation(""); setInternalNotes(""); setVisitType("presencial");
   };
 
   const submit = async (e: React.FormEvent) => {
@@ -67,6 +69,7 @@ export const CreateTrainingDialog = ({ open, onOpenChange, onCreated }: Props) =
       duration_minutes: duration,
       location: location || null,
       internal_notes: internalNotes.trim() || null,
+      visit_type: visitType,
       created_by: user.id,
     } as any);
     setLoading(false);
