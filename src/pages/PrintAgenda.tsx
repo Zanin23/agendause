@@ -28,7 +28,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
-import { getVisitType } from "@/lib/visitType";
+import { getVisitType, VISIT_TYPES } from "@/lib/visitType";
 
 type Training = {
   id: string;
@@ -667,6 +667,20 @@ const EventCard = ({
 
 const Legend = () => (
   <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[13px]">
+    {VISIT_TYPES.map((vt) => {
+      const Icon = vt.icon;
+      return (
+        <div key={vt.id} className="flex items-center gap-2">
+          <span
+            className="inline-flex items-center justify-center h-4 w-4 rounded-full border"
+            style={{ color: vt.color, borderColor: vt.color, background: vt.bg }}
+          >
+            <Icon className="h-2.5 w-2.5" strokeWidth={2.5} />
+          </span>
+          <span>{vt.short}</span>
+        </div>
+      );
+    })}
     <div className="flex items-center gap-2">
       <span
         className="w-4 h-4 rounded-full inline-block"
