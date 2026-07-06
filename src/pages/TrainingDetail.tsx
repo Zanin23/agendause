@@ -23,7 +23,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { VISIT_TYPES, getVisitType, type VisitType } from "@/lib/visitType";
+import { VISIT_TYPES, type VisitType } from "@/lib/visitType";
 
 type Training = {
   id: string;
