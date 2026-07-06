@@ -721,6 +721,120 @@
   }
 }
 
+/* -------------------------------------------------------------------------
+   Hero card background variants — rotate every 5 minutes.
+   All share a "Grid + Nodes" language (chosen direction) with 3 flavors.
+   ------------------------------------------------------------------------- */
+
+/* Shared nodes */
+@keyframes hero-node-pulse {
+  0%, 100% { opacity: 0.25; transform: scale(1); }
+  50%      { opacity: 0.85; transform: scale(1.6); }
+}
+@keyframes hero-line-sweep-v {
+  0%   { transform: translateY(-40%); opacity: 0; }
+  20%  { opacity: 1; }
+  80%  { opacity: 1; }
+  100% { transform: translateY(140%); opacity: 0; }
+}
+@keyframes hero-line-sweep-h {
+  0%   { transform: translateX(-40%); opacity: 0; }
+  20%  { opacity: 1; }
+  80%  { opacity: 1; }
+  100% { transform: translateX(140%); opacity: 0; }
+}
+@keyframes hero-grid-diagonal {
+  0%   { background-position: 0 0; }
+  100% { background-position: 80px 80px; }
+}
+@keyframes hero-node-orbit {
+  0%   { transform: rotate(0deg) translateX(60px) rotate(0deg); }
+  100% { transform: rotate(360deg) translateX(60px) rotate(-360deg); }
+}
+
+.hero-node {
+  position: absolute;
+  border-radius: 9999px;
+  background: var(--color-primary);
+  filter: blur(1px);
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+/* ---- Variant A: Moving grid + pulsing nodes + vertical sweep ---- */
+.hero-var-a-grid {
+  position: absolute; inset: -80px;
+  background-image:
+    linear-gradient(to right, color-mix(in oklch, var(--color-primary) 18%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in oklch, var(--color-primary) 18%, transparent) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(ellipse at center, black 30%, transparent 78%);
+  -webkit-mask-image: radial-gradient(ellipse at center, black 30%, transparent 78%);
+  opacity: 0.5;
+  animation: hero-grid-pan 22s linear infinite;
+  pointer-events: none;
+}
+.hero-var-a-sweep {
+  position: absolute; inset-inline: 0;
+  height: 40%;
+  background: linear-gradient(to bottom, transparent, color-mix(in oklch, var(--color-primary) 12%, transparent), transparent);
+  animation: hero-line-sweep-v 9s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* ---- Variant B: Diagonal grid + horizontal sweep + wider nodes ---- */
+.hero-var-b-grid {
+  position: absolute; inset: -80px;
+  background-image:
+    linear-gradient(45deg,  color-mix(in oklch, var(--color-primary) 16%, transparent) 1px, transparent 1px),
+    linear-gradient(-45deg, color-mix(in oklch, var(--color-primary) 16%, transparent) 1px, transparent 1px);
+  background-size: 40px 40px;
+  mask-image: radial-gradient(ellipse at 30% 40%, black 30%, transparent 80%);
+  -webkit-mask-image: radial-gradient(ellipse at 30% 40%, black 30%, transparent 80%);
+  opacity: 0.45;
+  animation: hero-grid-diagonal 26s linear infinite;
+  pointer-events: none;
+}
+.hero-var-b-sweep {
+  position: absolute; inset-block: 0;
+  width: 35%;
+  background: linear-gradient(to right, transparent, color-mix(in oklch, var(--color-primary) 14%, transparent), transparent);
+  animation: hero-line-sweep-h 11s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* ---- Variant C: Dotted grid + orbiting nodes + slow vignette ---- */
+.hero-var-c-dots {
+  position: absolute; inset: -40px;
+  background-image: radial-gradient(color-mix(in oklch, var(--color-primary) 45%, transparent) 1.2px, transparent 1.2px);
+  background-size: 26px 26px;
+  mask-image: radial-gradient(ellipse at 70% 50%, black 25%, transparent 78%);
+  -webkit-mask-image: radial-gradient(ellipse at 70% 50%, black 25%, transparent 78%);
+  opacity: 0.55;
+  animation: hero-grid-pan 30s linear infinite;
+  pointer-events: none;
+}
+.hero-var-c-orbit {
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 6px; height: 6px;
+  margin: -3px 0 0 -3px;
+  border-radius: 9999px;
+  background: var(--color-primary);
+  box-shadow: 0 0 12px color-mix(in oklch, var(--color-primary) 60%, transparent);
+  animation: hero-node-orbit 16s linear infinite;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-var-a-grid, .hero-var-a-sweep,
+  .hero-var-b-grid, .hero-var-b-sweep,
+  .hero-var-c-dots, .hero-var-c-orbit,
+  .hero-node {
+    animation: none !important;
+  }
+}
+
 /* Highlight card hex pattern background */
 .bg-pattern-hex {
   position: relative;
