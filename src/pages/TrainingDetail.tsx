@@ -23,6 +23,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { VISIT_TYPES, getVisitType, type VisitType } from "@/lib/visitType";
 
 type Training = {
   id: string;
@@ -37,6 +38,7 @@ type Training = {
   cancellation_reason: string | null;
   cancelled_at: string | null;
   internal_notes: string | null;
+  visit_type: string | null;
 };
 
 type Acceptance = {
@@ -465,6 +467,21 @@ const TrainingDetail = () => {
               <Pencil className="h-3 w-3" /> Editar data
             </Button>
           </div>
+
+          <VisitTypeSelector
+            value={(training.visit_type as VisitType) ?? "presencial"}
+            onChange={async (next) => {
+              const prev = training.visit_type;
+              setTraining({ ...training, visit_type: next });
+              const { error } = await supabase.from("trainings").update({ visit_type: next } as any).eq("id", training.id);
+              if (error) {
+                setTraining({ ...training, visit_type: prev });
+                toast.error(error.message);
+              } else {
+                toast.success("Tipo atualizado");
+              }
+            }}
+          />
 
           {training.description && (
             <div>
