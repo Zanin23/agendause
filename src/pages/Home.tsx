@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { CalendarDays, CalendarPlus, FileCheck2, ArrowRight, ClipboardList, Receipt, StickyNote } from "lucide-react";
 import logoAsset from "@/assets/logo-use-sistemas.png.asset.json";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AppHeader } from "@/components/AppHeader";
 import { SEO } from "@/components/SEO";
 import { CreateTrainingDialog } from "@/components/CreateTrainingDialog";
@@ -10,6 +10,16 @@ import { useAuth } from "@/hooks/useAuth";
 const Home = () => {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
+  // Rotate the hero background animation every 5 minutes (0, 1, 2).
+  const [heroVariant, setHeroVariant] = useState<0 | 1 | 2>(() => {
+    return (Math.floor(Date.now() / (5 * 60 * 1000)) % 3) as 0 | 1 | 2;
+  });
+  useEffect(() => {
+    const id = setInterval(() => {
+      setHeroVariant((v) => (((v + 1) % 3) as 0 | 1 | 2));
+    }, 5 * 60 * 1000);
+    return () => clearInterval(id);
+  }, []);
   const rawName: string | undefined = user?.user_metadata?.full_name;
   // Only use a proper name; ignore the email local-part so we don't greet "Olá, foo123".
   const firstName = rawName ? rawName.split(" ")[0] : "";
@@ -56,10 +66,7 @@ const Home = () => {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-16 space-y-8 sm:space-y-12">
         <div className="relative overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-card via-card to-background p-6 sm:p-8 md:p-10">
           <div className="absolute inset-0 opacity-[0.07] pointer-events-none" style={{ background: "var(--gradient-hero)" }} />
-          <div className="hero-grid" />
-          <div className="hero-orb hero-orb-1" />
-          <div className="hero-orb hero-orb-2" />
-          <div className="hero-shimmer" />
+          <HeroAnimatedBg variant={heroVariant} />
           <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-6">
             <div className="min-w-0">
               <p className="text-xs uppercase tracking-[0.3em] text-primary font-semibold">TreinaCheck · Use Sistemas</p>
