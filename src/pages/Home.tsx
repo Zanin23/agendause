@@ -169,3 +169,41 @@ const ActionCard = ({ icon: Icon, title, description, cta, to, onClick, primary 
 };
 
 export default Home;
+
+/* Hero background animations — 3 variants rotating every 5 minutes.
+   All share the "Grid + Nodes" language. */
+function HeroAnimatedBg({ variant }: { variant: 0 | 1 | 2 }) {
+  if (variant === 0) {
+    return (
+      <div key="a" className="absolute inset-0 pointer-events-none animate-fade-in">
+        <div className="hero-var-a-grid" />
+        <span className="hero-node" style={{ top: "26%", left: "34%", width: 6, height: 6, animation: "hero-node-pulse 4s ease-in-out infinite" }} />
+        <span className="hero-node" style={{ top: "66%", left: "22%", width: 8, height: 8, animation: "hero-node-pulse 6s ease-in-out 1s infinite" }} />
+        <span className="hero-node" style={{ top: "48%", right: "26%", width: 6, height: 6, animation: "hero-node-pulse 5s ease-in-out 2s infinite" }} />
+        <span className="hero-node" style={{ bottom: "24%", right: "34%", width: 8, height: 8, animation: "hero-node-pulse 7s ease-in-out .5s infinite" }} />
+        <div className="hero-var-a-sweep" />
+      </div>
+    );
+  }
+  if (variant === 1) {
+    return (
+      <div key="b" className="absolute inset-0 pointer-events-none animate-fade-in">
+        <div className="hero-var-b-grid" />
+        <span className="hero-node" style={{ top: "34%", left: "18%", width: 7, height: 7, animation: "hero-node-pulse 5s ease-in-out infinite" }} />
+        <span className="hero-node" style={{ top: "22%", right: "22%", width: 6, height: 6, animation: "hero-node-pulse 6.5s ease-in-out 1.2s infinite" }} />
+        <span className="hero-node" style={{ bottom: "28%", left: "42%", width: 8, height: 8, animation: "hero-node-pulse 4.5s ease-in-out .8s infinite" }} />
+        <span className="hero-node" style={{ bottom: "18%", right: "18%", width: 7, height: 7, animation: "hero-node-pulse 7s ease-in-out 2s infinite" }} />
+        <div className="hero-var-b-sweep" />
+      </div>
+    );
+  }
+  return (
+    <div key="c" className="absolute inset-0 pointer-events-none animate-fade-in">
+      <div className="hero-var-c-dots" />
+      <span className="hero-node" style={{ top: "30%", left: "28%", width: 7, height: 7, animation: "hero-node-pulse 5.5s ease-in-out infinite" }} />
+      <span className="hero-node" style={{ top: "58%", right: "32%", width: 8, height: 8, animation: "hero-node-pulse 6s ease-in-out 1s infinite" }} />
+      <span className="hero-node" style={{ bottom: "22%", left: "20%", width: 6, height: 6, animation: "hero-node-pulse 4.8s ease-in-out 1.6s infinite" }} />
+      <div className="hero-var-c-orbit" />
+    </div>
+  );
+}
