@@ -1,0 +1,1 @@
+ALTER TABLE public.trainings ADD COLUMN IF NOT EXISTS visit_type TEXT NOT NULL DEFAULT 'presencial' CHECK (visit_type IN ('presencial','interno','remoto'));

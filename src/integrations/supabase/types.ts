@@ -798,6 +798,7 @@ export type Database = {
           status: string
           title: string
           updated_at: string
+          visit_type: string
           workspace_id: string
         }
         Insert: {
@@ -817,6 +818,7 @@ export type Database = {
           status?: string
           title: string
           updated_at?: string
+          visit_type?: string
           workspace_id: string
         }
         Update: {
@@ -836,6 +838,7 @@ export type Database = {
           status?: string
           title?: string
           updated_at?: string
+          visit_type?: string
           workspace_id?: string
         }
         Relationships: [
