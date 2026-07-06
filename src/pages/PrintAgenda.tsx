@@ -28,6 +28,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
+import { getVisitType } from "@/lib/visitType";
 
 type Training = {
   id: string;
@@ -40,6 +41,7 @@ type Training = {
   status: "agendado" | "realizado" | "reagendado" | "cancelado" | "concluido";
   cancellation_reason?: string | null;
   confirmed_at?: string | null;
+  visit_type?: string | null;
 };
 
 const DAY_LABELS = ["SEG", "TER", "QUA", "QUI", "SEX"];
@@ -585,6 +587,23 @@ const EventCard = ({
           <span>{t.duration_minutes} min</span>
           {t.location && <span>• {t.location}</span>}
         </div>
+        {(() => {
+          const vt = getVisitType(t.visit_type);
+          const Icon = vt.icon;
+          return (
+            <div
+              className="agenda-event-type inline-flex items-center gap-1 mt-1 rounded-full px-1.5 py-[1px] text-[9px] font-semibold uppercase tracking-wide border"
+              style={{
+                color: isCancelled ? RED : vt.color,
+                borderColor: isCancelled ? RED : vt.color,
+                background: isCancelled ? "transparent" : vt.bg,
+              }}
+            >
+              <Icon className="h-2.5 w-2.5" />
+              {vt.short}
+            </div>
+          );
+        })()}
         {isResched && t.description && (
           <div
             className="text-[10px] mt-0.5 flex items-center gap-1"

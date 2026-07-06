@@ -23,6 +23,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { VISIT_TYPES, type VisitType } from "@/lib/visitType";
 
 type Training = {
   id: string;
@@ -37,6 +38,7 @@ type Training = {
   cancellation_reason: string | null;
   cancelled_at: string | null;
   internal_notes: string | null;
+  visit_type: string | null;
 };
 
 type Acceptance = {
@@ -466,6 +468,21 @@ const TrainingDetail = () => {
             </Button>
           </div>
 
+          <VisitTypeSelector
+            value={(training.visit_type as VisitType) ?? "presencial"}
+            onChange={async (next) => {
+              const prev = training.visit_type;
+              setTraining({ ...training, visit_type: next });
+              const { error } = await supabase.from("trainings").update({ visit_type: next } as any).eq("id", training.id);
+              if (error) {
+                setTraining({ ...training, visit_type: prev });
+                toast.error(error.message);
+              } else {
+                toast.success("Tipo atualizado");
+              }
+            }}
+          />
+
           {training.description && (
             <div>
               <h2 className="text-sm uppercase tracking-wider text-muted-foreground mb-2">O que foi treinado</h2>
@@ -822,3 +839,36 @@ const TrainingDetail = () => {
 };
 
 export default TrainingDetail;
+
+const VisitTypeSelector = ({ value, onChange }: { value: VisitType; onChange: (v: VisitType) => void }) => {
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <span className="text-xs uppercase tracking-wider text-muted-foreground mr-1">Tipo:</span>
+      {VISIT_TYPES.map((opt) => {
+        const Icon = opt.icon;
+        const active = value === opt.id;
+        return (
+          <button
+            key={opt.id}
+            type="button"
+            onClick={() => !active && onChange(opt.id)}
+            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium border transition-colors ${
+              active
+                ? "text-foreground"
+                : "border-border text-muted-foreground hover:text-foreground hover:border-primary/40"
+            }`}
+            style={
+              active
+                ? { borderColor: opt.color, background: opt.bg, color: opt.color }
+                : undefined
+            }
+            aria-pressed={active}
+          >
+            <Icon className="h-3.5 w-3.5" />
+            {opt.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+};
