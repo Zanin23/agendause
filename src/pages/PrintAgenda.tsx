@@ -530,12 +530,30 @@ const EventCard = ({
       tabIndex={0}
     >
       <div
-        className="agenda-event border-2 rounded-sm px-2.5 py-2 text-[13px] leading-snug bg-white hover:bg-orange-50/40 transition-colors"
+        className="agenda-event relative border-2 rounded-sm px-2.5 py-2 pr-7 text-[13px] leading-snug bg-white hover:bg-orange-50/40 transition-colors"
         style={{
           borderColor,
           background: isCancelled ? "#FDECEC" : isDone ? "#EEF1FB" : "white",
         }}
       >
+        {(() => {
+          const vt = getVisitType(t.visit_type);
+          const Icon = vt.icon;
+          return (
+            <span
+              className="agenda-event-type absolute top-1 right-1 inline-flex items-center justify-center h-5 w-5 rounded-full border"
+              style={{
+                color: isCancelled ? RED : vt.color,
+                borderColor: isCancelled ? RED : vt.color,
+                background: isCancelled ? "transparent" : vt.bg,
+              }}
+              title={vt.label}
+              aria-label={vt.label}
+            >
+              <Icon className="h-3 w-3" strokeWidth={2.5} />
+            </span>
+          );
+        })()}
         <div className="flex items-start gap-1.5">
           {isDone && (
             <span
@@ -587,23 +605,6 @@ const EventCard = ({
           <span>{t.duration_minutes} min</span>
           {t.location && <span>• {t.location}</span>}
         </div>
-        {(() => {
-          const vt = getVisitType(t.visit_type);
-          const Icon = vt.icon;
-          return (
-            <div
-              className="agenda-event-type inline-flex items-center gap-1 mt-1 rounded-full px-1.5 py-[1px] text-[9px] font-semibold uppercase tracking-wide border"
-              style={{
-                color: isCancelled ? RED : vt.color,
-                borderColor: isCancelled ? RED : vt.color,
-                background: isCancelled ? "transparent" : vt.bg,
-              }}
-            >
-              <Icon className="h-2.5 w-2.5" />
-              {vt.short}
-            </div>
-          );
-        })()}
         {isResched && t.description && (
           <div
             className="text-[10px] mt-0.5 flex items-center gap-1"
