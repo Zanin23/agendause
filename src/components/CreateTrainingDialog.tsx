@@ -184,6 +184,32 @@ export const CreateTrainingDialog = ({ open, onOpenChange, onCreated }: Props) =
               </div>
             </section>
 
+            <section className="space-y-2">
+              <Label className={labelCls}>Tipo</Label>
+              <div className="grid grid-cols-3 gap-2">
+                {VISIT_TYPES.map((opt) => {
+                  const Icon = opt.icon;
+                  const active = visitType === opt.id;
+                  return (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() => setVisitType(opt.id)}
+                      aria-pressed={active}
+                      className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border text-xs font-medium transition-colors ${
+                        active
+                          ? "border-primary/60 bg-primary/[0.08] text-foreground"
+                          : "border-border/60 text-muted-foreground hover:border-primary/40 hover:text-foreground"
+                      }`}
+                    >
+                      <Icon className="h-4 w-4" style={active ? { color: opt.color } : undefined} />
+                      {opt.short}
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+
             <section className="space-y-1.5">
               <Label htmlFor="desc" className={labelCls}>O que será treinado</Label>
               <Textarea
