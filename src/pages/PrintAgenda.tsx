@@ -28,6 +28,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
+import { getVisitType } from "@/lib/visitType";
 
 type Training = {
   id: string;
@@ -40,6 +41,7 @@ type Training = {
   status: "agendado" | "realizado" | "reagendado" | "cancelado" | "concluido";
   cancellation_reason?: string | null;
   confirmed_at?: string | null;
+  visit_type?: string | null;
 };
 
 const DAY_LABELS = ["SEG", "TER", "QUA", "QUI", "SEX"];
