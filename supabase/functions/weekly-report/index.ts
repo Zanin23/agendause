@@ -19,27 +19,41 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const weekStartInput: string | undefined = body?.week_start;
+    const startDateInput: string | undefined = body?.start_date;
+    const endDateInput: string | undefined = body?.end_date;
     const weeksCountRaw = Number(body?.weeks ?? 1);
     const weeksCount = Math.max(1, Math.min(52, Number.isFinite(weeksCountRaw) ? Math.round(weeksCountRaw) : 1));
 
-    // Compute Monday 00:00 of the requested week (default: last full week ending yesterday)
+    // Determine period: prefer explicit start_date/end_date; fallback to week_start + weeks
     const now = new Date();
     let weekStart: Date;
-    if (weekStartInput) {
-      weekStart = new Date(weekStartInput);
+    let weekEnd: Date;
+    let useDateRange = false;
+    if (startDateInput && endDateInput) {
+      useDateRange = true;
+      weekStart = new Date(startDateInput);
+      weekStart.setHours(0, 0, 0, 0);
+      weekEnd = new Date(endDateInput);
+      // end date is inclusive → advance to next day 00:00 for the exclusive upper bound
+      weekEnd.setHours(0, 0, 0, 0);
+      weekEnd.setDate(weekEnd.getDate() + 1);
     } else {
-      // last week's Monday
-      const day = now.getDay(); // 0=Sun..6=Sat
-      const diffToMonday = (day + 6) % 7; // days since Monday
-      const thisMonday = new Date(now);
-      thisMonday.setHours(0, 0, 0, 0);
-      thisMonday.setDate(thisMonday.getDate() - diffToMonday);
-      weekStart = new Date(thisMonday);
-      weekStart.setDate(weekStart.getDate() - 7);
+      if (weekStartInput) {
+        weekStart = new Date(weekStartInput);
+      } else {
+        const day = now.getDay();
+        const diffToMonday = (day + 6) % 7;
+        const thisMonday = new Date(now);
+        thisMonday.setHours(0, 0, 0, 0);
+        thisMonday.setDate(thisMonday.getDate() - diffToMonday);
+        weekStart = new Date(thisMonday);
+        weekStart.setDate(weekStart.getDate() - 7);
+      }
+      weekStart.setHours(0, 0, 0, 0);
+      weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekEnd.getDate() + 7 * weeksCount);
     }
-    weekStart.setHours(0, 0, 0, 0);
-    const weekEnd = new Date(weekStart);
-    weekEnd.setDate(weekEnd.getDate() + 7 * weeksCount);
+    const periodDays = Math.max(1, Math.round((weekEnd.getTime() - weekStart.getTime()) / (24 * 60 * 60 * 1000)));
 
     const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
 
@@ -113,7 +127,7 @@ Deno.serve(async (req) => {
     };
 
     const prevStart = new Date(weekStart);
-    prevStart.setDate(prevStart.getDate() - 7 * weeksCount);
+    prevStart.setDate(prevStart.getDate() - periodDays);
     const prevEnd = new Date(weekStart);
 
     const [current, previous] = await Promise.all([
@@ -141,8 +155,12 @@ Deno.serve(async (req) => {
       return `- ${new Date(t.scheduled_at).toISOString().slice(0, 16).replace('T', ' ')} | ${t.title}${t.client ? ` (cliente: ${t.client})` : ''} | status: ${t.status} | aceites: ${accepts}${t.cancellation_reason ? ` | motivo cancel.: ${t.cancellation_reason}` : ''}`;
     }).join('\n');
 
-    const periodLabel = weeksCount === 1 ? 'a semana' : `o período de ${weeksCount} semanas`;
-    const prevLabel = weeksCount === 1 ? 'semana anterior' : `${weeksCount} semanas anteriores`;
+    const periodLabel = useDateRange
+      ? `o período de ${periodDays} dia${periodDays === 1 ? '' : 's'}`
+      : (weeksCount === 1 ? 'a semana' : `o período de ${weeksCount} semanas`);
+    const prevLabel = useDateRange
+      ? `os ${periodDays} dia${periodDays === 1 ? '' : 's'} anteriores`
+      : (weeksCount === 1 ? 'semana anterior' : `${weeksCount} semanas anteriores`);
     const prompt = `Você é analista de operações. Gere um relatório executivo em português (markdown) sobre ${periodLabel} de visitas/treinamentos a seguir. Seja conciso, use bullets, e inclua:
 1) Resumo do período (números-chave)
 2) Cancelamentos (quantidade, motivos recorrentes)
@@ -203,7 +221,7 @@ ${trainingsLines || '(nenhuma visita na semana)'}
     const aiJson = await aiRes.json();
     const report = aiJson?.choices?.[0]?.message?.content ?? '';
 
-    return new Response(JSON.stringify({ stats, previousStats, comparison, report, weeks: weeksCount }), {
+    return new Response(JSON.stringify({ stats, previousStats, comparison, report, weeks: weeksCount, period_days: periodDays }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
