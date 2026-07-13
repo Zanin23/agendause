@@ -67,6 +67,7 @@ const Reports = () => {
   const [report, setReport] = useState<string | null>(null);
   const [stats, setStats] = useState<any | null>(null);
   const [comparison, setComparison] = useState<any | null>(null);
+  const [weeksCount, setWeeksCount] = useState<number>(1);
 
   useEffect(() => {
     (async () => {
@@ -171,7 +172,8 @@ const Reports = () => {
     setFilterTo("");
   };
 
-  const weekLabel = `${format(weekStart, "d MMM", { locale: ptBR })} – ${format(endOfWeek(weekStart, { weekStartsOn: 1 }), "d MMM yyyy", { locale: ptBR })}`;
+  const periodEnd = endOfWeek(addWeeks(weekStart, weeksCount - 1), { weekStartsOn: 1 });
+  const weekLabel = `${format(weekStart, "d MMM", { locale: ptBR })} – ${format(periodEnd, "d MMM yyyy", { locale: ptBR })}`;
 
   const generateReport = async () => {
     setGenerating(true);
@@ -180,7 +182,7 @@ const Reports = () => {
     setComparison(null);
     try {
       const { data, error } = await supabase.functions.invoke("weekly-report", {
-        body: { week_start: weekStart.toISOString() },
+        body: { week_start: weekStart.toISOString(), weeks: weeksCount },
       });
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
@@ -217,6 +219,8 @@ const Reports = () => {
           weekStart={weekStart}
           setWeekStart={setWeekStart}
           weekLabel={weekLabel}
+          weeksCount={weeksCount}
+          setWeeksCount={setWeeksCount}
           generating={generating}
           report={report}
           stats={stats}
