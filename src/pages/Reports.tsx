@@ -866,7 +866,7 @@ const MetricCard = ({
     deltaNode = (
       <span className={`inline-flex items-center gap-0.5 text-[11px] font-medium ${color}`}>
         <Arrow className="h-3 w-3" />
-        {Math.abs(delta)}{deltaSuffix || "%"} vs semana anterior
+        {Math.abs(delta)}{deltaSuffix || "%"} vs período anterior
       </span>
     );
   }
