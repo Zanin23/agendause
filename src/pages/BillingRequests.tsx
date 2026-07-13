@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Bell, BellOff, CheckCircle2, Trash2, MessageSquarePlus, Settings, X, Smartphone, Send, ChevronLeft, ChevronRight, CalendarDays, FileDown, ArrowRightCircle, Receipt } from "lucide-react";
+import { Plus, Bell, BellOff, CheckCircle2, Trash2, MessageSquarePlus, Settings, X, Smartphone, Send, ChevronLeft, ChevronRight, CalendarDays, FileDown, ArrowRightCircle, Receipt, Pencil } from "lucide-react";
 import { BackButton } from "@/components/BackButton";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -501,6 +501,7 @@ function RequestRow({
   const [expanded, setExpanded] = useState(false);
   const [newUpdate, setNewUpdate] = useState("");
   const [busy, setBusy] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
 
   const toggleStatus = async () => {
     setBusy(true);
@@ -596,6 +597,15 @@ function RequestRow({
             Reprogramada · {formatWeekLabel(request.carried_over_to).replace(/^.*·\s*/, "")}
           </Badge>
         )}
+        <Button
+          variant="ghost"
+          size="sm"
+          className="px-2 shrink-0"
+          onClick={() => setEditOpen(true)}
+          aria-label="Editar"
+        >
+          <Pencil className="h-4 w-4 text-muted-foreground" />
+        </Button>
         <Button variant="ghost" size="sm" className="px-2 shrink-0" onClick={remove} aria-label="Excluir">
           <Trash2 className="h-4 w-4 text-muted-foreground" />
         </Button>
@@ -632,6 +642,12 @@ function RequestRow({
           </div>
         </div>
       )}
+      <EditDialog
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        request={request}
+        onSaved={onChanged}
+      />
     </li>
   );
 }
