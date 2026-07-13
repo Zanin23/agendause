@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { addWeeks, endOfWeek, format, startOfWeek } from "date-fns";
+import { addDays, addWeeks, endOfWeek, format, startOfWeek } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
   FileText,
@@ -67,7 +67,15 @@ const Reports = () => {
   const [report, setReport] = useState<string | null>(null);
   const [stats, setStats] = useState<any | null>(null);
   const [comparison, setComparison] = useState<any | null>(null);
-  const [weeksCount, setWeeksCount] = useState<number>(1);
+  // Date range for AI report (defaults: last full week Mon–Sun)
+  const [rangeStart, setRangeStart] = useState<string>(() => {
+    const thisMon = startOfWeek(new Date(), { weekStartsOn: 1 });
+    return format(addWeeks(thisMon, -1), "yyyy-MM-dd");
+  });
+  const [rangeEnd, setRangeEnd] = useState<string>(() => {
+    const thisMon = startOfWeek(new Date(), { weekStartsOn: 1 });
+    return format(addDays(addWeeks(thisMon, -1), 6), "yyyy-MM-dd");
+  });
 
   useEffect(() => {
     (async () => {
@@ -172,17 +180,26 @@ const Reports = () => {
     setFilterTo("");
   };
 
-  const periodEnd = endOfWeek(addWeeks(weekStart, weeksCount - 1), { weekStartsOn: 1 });
-  const weekLabel = `${format(weekStart, "d MMM", { locale: ptBR })} – ${format(periodEnd, "d MMM yyyy", { locale: ptBR })}`;
+  const rangeStartDate = useMemo(() => new Date(rangeStart + "T00:00:00"), [rangeStart]);
+  const rangeEndDate = useMemo(() => new Date(rangeEnd + "T00:00:00"), [rangeEnd]);
+  const periodDays = Math.max(
+    1,
+    Math.round((rangeEndDate.getTime() - rangeStartDate.getTime()) / (24 * 60 * 60 * 1000)) + 1
+  );
+  const rangeLabel = `${format(rangeStartDate, "d MMM", { locale: ptBR })} – ${format(rangeEndDate, "d MMM yyyy", { locale: ptBR })}`;
 
   const generateReport = async () => {
+    if (rangeEndDate.getTime() < rangeStartDate.getTime()) {
+      toast({ title: "Intervalo inválido", description: "A data final deve ser igual ou posterior à inicial.", variant: "destructive" });
+      return;
+    }
     setGenerating(true);
     setReport(null);
     setStats(null);
     setComparison(null);
     try {
       const { data, error } = await supabase.functions.invoke("weekly-report", {
-        body: { week_start: weekStart.toISOString(), weeks: weeksCount },
+        body: { start_date: rangeStart, end_date: rangeEnd },
       });
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
@@ -216,11 +233,12 @@ const Reports = () => {
         </div>
 
         <WeeklyAIReport
-          weekStart={weekStart}
-          setWeekStart={setWeekStart}
-          weekLabel={weekLabel}
-          weeksCount={weeksCount}
-          setWeeksCount={setWeeksCount}
+          rangeStart={rangeStart}
+          rangeEnd={rangeEnd}
+          setRangeStart={setRangeStart}
+          setRangeEnd={setRangeEnd}
+          rangeLabel={rangeLabel}
+          periodDays={periodDays}
           generating={generating}
           report={report}
           stats={stats}
