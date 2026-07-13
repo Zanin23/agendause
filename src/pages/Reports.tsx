@@ -509,6 +509,8 @@ const WeeklyAIReport = ({
   weekStart,
   setWeekStart,
   weekLabel,
+  weeksCount,
+  setWeeksCount,
   generating,
   report,
   stats,
@@ -518,6 +520,8 @@ const WeeklyAIReport = ({
   weekStart: Date;
   setWeekStart: (fn: (d: Date) => Date) => void;
   weekLabel: string;
+  weeksCount: number;
+  setWeeksCount: (n: number) => void;
   generating: boolean;
   report: string | null;
   stats: WeeklyStats | null;
@@ -540,13 +544,29 @@ const WeeklyAIReport = ({
               <Sparkles className="h-5 w-5" />
             </div>
             <div className="min-w-0">
-              <h2 className="text-lg font-semibold tracking-tight">Relatório semanal com IA</h2>
+              <h2 className="text-lg font-semibold tracking-tight">
+                Relatório {weeksCount === 1 ? "semanal" : `de ${weeksCount} semanas`} com IA
+              </h2>
               <p className="text-xs text-muted-foreground mt-0.5 capitalize">
-                Semana de {weekLabel}
+                {weeksCount === 1 ? "Semana" : "Período"} de {weekLabel}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-1.5 flex-wrap w-full sm:w-auto">
+            <select
+              value={weeksCount}
+              onChange={(e) => setWeeksCount(Number(e.target.value))}
+              disabled={generating}
+              className="h-9 px-2 rounded-md border border-input bg-background text-sm"
+              aria-label="Quantidade de semanas"
+              title="Quantidade de semanas"
+            >
+              <option value={1}>1 semana</option>
+              <option value={2}>2 semanas</option>
+              <option value={4}>4 semanas</option>
+              <option value={8}>8 semanas</option>
+              <option value={12}>12 semanas</option>
+            </select>
             <Button variant="outline" size="icon" onClick={() => setWeekStart((d) => addWeeks(d, -1))} disabled={generating} aria-label="Semana anterior">
               <ChevronLeft className="h-4 w-4" />
             </Button>
