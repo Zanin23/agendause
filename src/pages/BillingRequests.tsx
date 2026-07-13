@@ -950,6 +950,96 @@ function CreateDialog({
 }
 
 // ---------- Settings dialog ----------
+// ---------- Edit dialog ----------
+function EditDialog({
+  open,
+  onOpenChange,
+  request,
+  onSaved,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  request: Request;
+  onSaved: () => void;
+}) {
+  const [number, setNumber] = useState(request.number);
+  const [client, setClient] = useState(request.client);
+  const [title, setTitle] = useState(request.title);
+  const [description, setDescription] = useState(request.description ?? "");
+  const [week, setWeek] = useState(request.week_start);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      setNumber(request.number);
+      setClient(request.client);
+      setTitle(request.title);
+      setDescription(request.description ?? "");
+      setWeek(request.week_start);
+    }
+  }, [open, request]);
+
+  const submit = async () => {
+    if (!number.trim() || !client.trim() || !title.trim()) {
+      return toast.error("Preencha número, cliente e título");
+    }
+    setBusy(true);
+    const { error } = await sb
+      .from("billing_requests")
+      .update({
+        number: number.trim(),
+        client: client.trim(),
+        title: title.trim(),
+        description: description.trim() || null,
+        week_start: week,
+      })
+      .eq("id", request.id);
+    setBusy(false);
+    if (error) return toast.error("Erro ao salvar");
+    toast.success("Solicitação atualizada");
+    onOpenChange(false);
+    onSaved();
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Editar solicitação</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>Número</Label>
+              <Input value={number} onChange={(e) => setNumber(e.target.value)} />
+            </div>
+            <div>
+              <Label>Semana</Label>
+              <Input type="date" value={week} onChange={(e) => setWeek(e.target.value)} />
+            </div>
+          </div>
+          <div>
+            <Label>Cliente</Label>
+            <Input value={client} onChange={(e) => setClient(e.target.value)} />
+          </div>
+          <div>
+            <Label>Título</Label>
+            <Input value={title} onChange={(e) => setTitle(e.target.value)} />
+          </div>
+          <div>
+            <Label>Descrição</Label>
+            <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={busy}>Cancelar</Button>
+          <Button onClick={submit} disabled={busy}>Salvar</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function SettingsDialog({
   open,
   onOpenChange,
