@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { addWeeks, endOfWeek, format, startOfWeek } from "date-fns";
+import { addDays, addWeeks, endOfWeek, format, startOfWeek } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
   FileText,
@@ -67,7 +67,15 @@ const Reports = () => {
   const [report, setReport] = useState<string | null>(null);
   const [stats, setStats] = useState<any | null>(null);
   const [comparison, setComparison] = useState<any | null>(null);
-  const [weeksCount, setWeeksCount] = useState<number>(1);
+  // Date range for AI report (defaults: last full week Mon–Sun)
+  const [rangeStart, setRangeStart] = useState<string>(() => {
+    const thisMon = startOfWeek(new Date(), { weekStartsOn: 1 });
+    return format(addWeeks(thisMon, -1), "yyyy-MM-dd");
+  });
+  const [rangeEnd, setRangeEnd] = useState<string>(() => {
+    const thisMon = startOfWeek(new Date(), { weekStartsOn: 1 });
+    return format(addDays(addWeeks(thisMon, -1), 6), "yyyy-MM-dd");
+  });
 
   useEffect(() => {
     (async () => {
@@ -172,17 +180,26 @@ const Reports = () => {
     setFilterTo("");
   };
 
-  const periodEnd = endOfWeek(addWeeks(weekStart, weeksCount - 1), { weekStartsOn: 1 });
-  const weekLabel = `${format(weekStart, "d MMM", { locale: ptBR })} – ${format(periodEnd, "d MMM yyyy", { locale: ptBR })}`;
+  const rangeStartDate = useMemo(() => new Date(rangeStart + "T00:00:00"), [rangeStart]);
+  const rangeEndDate = useMemo(() => new Date(rangeEnd + "T00:00:00"), [rangeEnd]);
+  const periodDays = Math.max(
+    1,
+    Math.round((rangeEndDate.getTime() - rangeStartDate.getTime()) / (24 * 60 * 60 * 1000)) + 1
+  );
+  const rangeLabel = `${format(rangeStartDate, "d MMM", { locale: ptBR })} – ${format(rangeEndDate, "d MMM yyyy", { locale: ptBR })}`;
 
   const generateReport = async () => {
+    if (rangeEndDate.getTime() < rangeStartDate.getTime()) {
+      toast({ title: "Intervalo inválido", description: "A data final deve ser igual ou posterior à inicial.", variant: "destructive" });
+      return;
+    }
     setGenerating(true);
     setReport(null);
     setStats(null);
     setComparison(null);
     try {
       const { data, error } = await supabase.functions.invoke("weekly-report", {
-        body: { week_start: weekStart.toISOString(), weeks: weeksCount },
+        body: { start_date: rangeStart, end_date: rangeEnd },
       });
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
@@ -216,11 +233,12 @@ const Reports = () => {
         </div>
 
         <WeeklyAIReport
-          weekStart={weekStart}
-          setWeekStart={setWeekStart}
-          weekLabel={weekLabel}
-          weeksCount={weeksCount}
-          setWeeksCount={setWeeksCount}
+          rangeStart={rangeStart}
+          rangeEnd={rangeEnd}
+          setRangeStart={setRangeStart}
+          setRangeEnd={setRangeEnd}
+          rangeLabel={rangeLabel}
+          periodDays={periodDays}
           generating={generating}
           report={report}
           stats={stats}
@@ -506,22 +524,24 @@ type WeeklyStats = {
 };
 
 const WeeklyAIReport = ({
-  weekStart,
-  setWeekStart,
-  weekLabel,
-  weeksCount,
-  setWeeksCount,
+  rangeStart,
+  rangeEnd,
+  setRangeStart,
+  setRangeEnd,
+  rangeLabel,
+  periodDays,
   generating,
   report,
   stats,
   comparison,
   onGenerate,
 }: {
-  weekStart: Date;
-  setWeekStart: (fn: (d: Date) => Date) => void;
-  weekLabel: string;
-  weeksCount: number;
-  setWeeksCount: (n: number) => void;
+  rangeStart: string;
+  rangeEnd: string;
+  setRangeStart: (v: string) => void;
+  setRangeEnd: (v: string) => void;
+  rangeLabel: string;
+  periodDays: number;
   generating: boolean;
   report: string | null;
   stats: WeeklyStats | null;
@@ -545,54 +565,77 @@ const WeeklyAIReport = ({
             </div>
             <div className="min-w-0">
               <h2 className="text-lg font-semibold tracking-tight">
-                Relatório {weeksCount === 1 ? "semanal" : `de ${weeksCount} semanas`} com IA
+                Relatório com IA
               </h2>
               <p className="text-xs text-muted-foreground mt-0.5 capitalize">
-                {weeksCount === 1 ? "Semana" : "Período"} de {weekLabel}
+                Período de {rangeLabel} · {periodDays} dia{periodDays === 1 ? "" : "s"}
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-1.5 flex-wrap w-full sm:w-auto">
-            <select
-              value={weeksCount}
-              onChange={(e) => setWeeksCount(Number(e.target.value))}
-              disabled={generating}
-              className="h-9 px-2 rounded-md border border-input bg-background text-sm"
-              aria-label="Quantidade de semanas"
-              title="Quantidade de semanas"
-            >
-              <option value={1}>1 semana</option>
-              <option value={2}>2 semanas</option>
-              <option value={4}>4 semanas</option>
-              <option value={8}>8 semanas</option>
-              <option value={12}>12 semanas</option>
-            </select>
-            <Button variant="outline" size="icon" onClick={() => setWeekStart((d) => addWeeks(d, -1))} disabled={generating} aria-label="Semana anterior">
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setWeekStart(() => startOfWeek(new Date(), { weekStartsOn: 1 }))}
-              disabled={generating}
-              title="Voltar para a semana atual"
-              className="flex-1 sm:flex-none"
-            >
-              {(() => {
-                const thisMon = startOfWeek(new Date(), { weekStartsOn: 1 });
-                const diff = Math.round(
-                  (weekStart.getTime() - thisMon.getTime()) / (7 * 24 * 60 * 60 * 1000)
-                );
-                if (diff === 0) return "Semana atual";
-                if (diff === -1) return "Semana passada";
-                if (diff === 1) return "Próxima semana";
-                if (diff < -1) return `Há ${Math.abs(diff)} semanas`;
-                return `Em ${diff} semanas`;
-              })()}
-            </Button>
-            <Button variant="outline" size="icon" onClick={() => setWeekStart((d) => addWeeks(d, 1))} disabled={generating} aria-label="Próxima semana">
-              <ChevronRight className="h-4 w-4" />
-            </Button>
+          <div className="flex items-end gap-2 flex-wrap w-full sm:w-auto">
+            <div className="flex flex-col gap-1">
+              <label className="text-[10px] uppercase tracking-wider text-muted-foreground">De</label>
+              <Input
+                type="date"
+                value={rangeStart}
+                onChange={(e) => setRangeStart(e.target.value)}
+                disabled={generating}
+                className="h-9 w-[150px]"
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-[10px] uppercase tracking-wider text-muted-foreground">Até</label>
+              <Input
+                type="date"
+                value={rangeEnd}
+                onChange={(e) => setRangeEnd(e.target.value)}
+                disabled={generating}
+                className="h-9 w-[150px]"
+              />
+            </div>
+            <div className="flex flex-wrap gap-1">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={generating}
+                onClick={() => {
+                  const thisMon = startOfWeek(new Date(), { weekStartsOn: 1 });
+                  const lastMon = addWeeks(thisMon, -1);
+                  setRangeStart(format(lastMon, "yyyy-MM-dd"));
+                  setRangeEnd(format(addDays(lastMon, 6), "yyyy-MM-dd"));
+                }}
+              >
+                Semana passada
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={generating}
+                onClick={() => {
+                  const today = new Date();
+                  const first = new Date(today.getFullYear(), today.getMonth(), 1);
+                  setRangeStart(format(first, "yyyy-MM-dd"));
+                  setRangeEnd(format(today, "yyyy-MM-dd"));
+                }}
+              >
+                Este mês
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={generating}
+                onClick={() => {
+                  const today = new Date();
+                  setRangeStart(format(addDays(today, -29), "yyyy-MM-dd"));
+                  setRangeEnd(format(today, "yyyy-MM-dd"));
+                }}
+              >
+                Últimos 30 dias
+              </Button>
+            </div>
             <Button onClick={onGenerate} disabled={generating} size="sm" className="ml-0 sm:ml-2 w-full sm:w-auto">
               {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
               {generating ? "Gerando..." : report ? "Atualizar" : "Gerar relatório"}
@@ -823,7 +866,7 @@ const MetricCard = ({
     deltaNode = (
       <span className={`inline-flex items-center gap-0.5 text-[11px] font-medium ${color}`}>
         <Arrow className="h-3 w-3" />
-        {Math.abs(delta)}{deltaSuffix || "%"} vs semana anterior
+        {Math.abs(delta)}{deltaSuffix || "%"} vs período anterior
       </span>
     );
   }
