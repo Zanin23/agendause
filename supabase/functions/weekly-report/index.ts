@@ -19,6 +19,8 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const weekStartInput: string | undefined = body?.week_start;
+    const weeksCountRaw = Number(body?.weeks ?? 1);
+    const weeksCount = Math.max(1, Math.min(52, Number.isFinite(weeksCountRaw) ? Math.round(weeksCountRaw) : 1));
 
     // Compute Monday 00:00 of the requested week (default: last full week ending yesterday)
     const now = new Date();
@@ -37,7 +39,7 @@ Deno.serve(async (req) => {
     }
     weekStart.setHours(0, 0, 0, 0);
     const weekEnd = new Date(weekStart);
-    weekEnd.setDate(weekEnd.getDate() + 7);
+    weekEnd.setDate(weekEnd.getDate() + 7 * weeksCount);
 
     const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
 
@@ -111,7 +113,7 @@ Deno.serve(async (req) => {
     };
 
     const prevStart = new Date(weekStart);
-    prevStart.setDate(prevStart.getDate() - 7);
+    prevStart.setDate(prevStart.getDate() - 7 * weeksCount);
     const prevEnd = new Date(weekStart);
 
     const [current, previous] = await Promise.all([
@@ -139,13 +141,15 @@ Deno.serve(async (req) => {
       return `- ${new Date(t.scheduled_at).toISOString().slice(0, 16).replace('T', ' ')} | ${t.title}${t.client ? ` (cliente: ${t.client})` : ''} | status: ${t.status} | aceites: ${accepts}${t.cancellation_reason ? ` | motivo cancel.: ${t.cancellation_reason}` : ''}`;
     }).join('\n');
 
-    const prompt = `Você é analista de operações. Gere um relatório executivo em português (markdown) sobre a semana de visitas/treinamentos a seguir. Seja conciso, use bullets, e inclua:
-1) Resumo da semana (números-chave)
+    const periodLabel = weeksCount === 1 ? 'a semana' : `o período de ${weeksCount} semanas`;
+    const prevLabel = weeksCount === 1 ? 'semana anterior' : `${weeksCount} semanas anteriores`;
+    const prompt = `Você é analista de operações. Gere um relatório executivo em português (markdown) sobre ${periodLabel} de visitas/treinamentos a seguir. Seja conciso, use bullets, e inclua:
+1) Resumo do período (números-chave)
 2) Cancelamentos (quantidade, motivos recorrentes)
 3) Taxa de confirmação dos clientes e leitura dela
 4) Clientes mais atendidos
-5) **Comparativo com a semana anterior** — destaque variações relevantes (visitas, cancelamentos, aceites, taxa de confirmação) e interprete o que mudou
-6) Observações e recomendações práticas para a próxima semana
+5) **Comparativo com ${prevLabel}** — destaque variações relevantes (visitas, cancelamentos, aceites, taxa de confirmação) e interprete o que mudou
+6) Observações e recomendações práticas para o próximo período
 
 Dados agregados (JSON):
 ${JSON.stringify(stats, null, 2)}
@@ -199,7 +203,7 @@ ${trainingsLines || '(nenhuma visita na semana)'}
     const aiJson = await aiRes.json();
     const report = aiJson?.choices?.[0]?.message?.content ?? '';
 
-    return new Response(JSON.stringify({ stats, previousStats, comparison, report }), {
+    return new Response(JSON.stringify({ stats, previousStats, comparison, report, weeks: weeksCount }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
