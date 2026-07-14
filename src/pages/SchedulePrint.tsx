@@ -74,6 +74,11 @@ export default function SchedulePrint() {
                         Status: {STATUS_LABELS[it.status] || it.status}
                         {it.assignee && <> · Resp.: {it.assignee}</>}
                       </div>
+                      {it.notes && (
+                        <div className="mt-1 text-[11px] text-black/70 border-l-2 border-black/20 pl-2 whitespace-pre-wrap">
+                          {it.notes}
+                        </div>
+                      )}
                     </div>
                   </li>
                 ))}
@@ -81,13 +86,6 @@ export default function SchedulePrint() {
             </section>
           ))}
         </div>
-
-        {schedule.observations && (
-          <section className="pt-4 border-t border-black/20">
-            <h2 className="font-bold uppercase text-sm mb-2">Observações</h2>
-            <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed">{schedule.observations}</pre>
-          </section>
-        )}
 
         {schedule.accepted_at && (
           <footer className="pt-6 mt-6 border-t border-black/20 text-sm">
