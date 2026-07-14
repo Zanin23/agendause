@@ -71,6 +71,7 @@ export default function SchedulePrint() {
                       <div>{it.title}</div>
                       <div className="text-[11px] text-black/60">
                         Status: {STATUS_LABELS[it.status] || it.status}
+                        {it.done_date && <> · Concluído em: {format(new Date(it.done_date), "dd/MM/yyyy")}</>}
                         {it.assignee && <> · Resp.: {it.assignee}</>}
                       </div>
                       {it.notes && (
