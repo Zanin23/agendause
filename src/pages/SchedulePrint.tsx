@@ -70,7 +70,6 @@ export default function SchedulePrint() {
                     <div className="flex-1">
                       <div>{it.title}</div>
                       <div className="text-[11px] text-black/60">
-                        {it.planned_date && <>Previsto: {format(new Date(it.planned_date), "dd/MM/yyyy")} · </>}
                         Status: {STATUS_LABELS[it.status] || it.status}
                         {it.assignee && <> · Resp.: {it.assignee}</>}
                       </div>
