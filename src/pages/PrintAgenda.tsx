@@ -520,6 +520,11 @@ const EventCard = ({
       className="block cursor-grab active:cursor-grabbing"
       draggable
       onDragStart={(e) => {
+        const target = e.target as HTMLElement;
+        if (target.closest("button, .no-print")) {
+          e.preventDefault();
+          return;
+        }
         e.dataTransfer.effectAllowed = "move";
         e.dataTransfer.setData("text/plain", t.id);
         onDragStart();
