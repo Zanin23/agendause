@@ -11,6 +11,7 @@ import Dashboard from "./pages/Dashboard";
 import Reports from "./pages/Reports";
 import TrainingDetail from "./pages/TrainingDetail";
 import PrintAgenda from "./pages/PrintAgenda";
+import PrintLayoutCompare from "./pages/PrintLayoutCompare";
 import TrainingTerm from "./pages/TrainingTerm";
 import GuestAccept from "./pages/GuestAccept";
 import NotFound from "./pages/NotFound";
@@ -52,6 +53,7 @@ const App = () => (
             <Route path="/treinamento/:id" element={<ProtectedRoute><TrainingDetail /></ProtectedRoute>} />
             <Route path="/treinamento/:id/termo" element={<ProtectedRoute><TrainingTerm /></ProtectedRoute>} />
             <Route path="/agenda/imprimir" element={<ProtectedRoute><PrintAgenda /></ProtectedRoute>} />
+            <Route path="/agenda/imprimir/comparar" element={<ProtectedRoute><PrintLayoutCompare /></ProtectedRoute>} />
             <Route path="/cronogramas" element={<ProtectedRoute><Schedules /></ProtectedRoute>} />
             <Route path="/cronogramas/novo" element={<ProtectedRoute><ScheduleNew /></ProtectedRoute>} />
             <Route path="/cronogramas/:id" element={<ProtectedRoute><ScheduleEditor /></ProtectedRoute>} />
