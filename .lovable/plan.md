@@ -1,49 +1,38 @@
-## Múltiplos workspaces ("bases de dados")
+## Diagnóstico
 
-Cria duas bases lógicas — **Implantação** e **Waldemar** — isoladas em todos os módulos, com seleção obrigatória no primeiro acesso, persistência por usuário e uma aba de **Configurações** para trocar a base ativa.
+A pré-visualização está saindo empilhada (uma coluna por linha) e em retrato porque:
 
-### Conceito
+1. A media query `@media (max-width: 767px)` está definida **depois** do `@media print` e força `grid-template-columns: 1fr` — como o Chrome usa a largura da janela de preview do PDF (estreita), a regra mobile vence a de impressão e destrói o grid de 5 colunas.
+2. O `@page { size: A4 landscape }` funciona, mas o diálogo "Guardar como PDF" do Chrome ignora a orientação declarada em CSS se o usuário não a definir manualmente — por isso continua em retrato.
+3. As alturas fixas (`200mm`) que forcei na tentativa anterior brigam com o layout empilhado e cortam conteúdo.
 
-Um único banco real continua sendo usado. A separação é feita por uma coluna `workspace_id` em cada tabela do app, combinada com RLS que filtra por workspace. Cada usuário tem uma associação `(user_id, workspace_id)` indicando a quais bases ele tem acesso, e uma preferência de "base ativa".
+## Opções de visualização (escolha uma)
 
-### Backend (migração)
+### Opção A — Paisagem, grade de 5 colunas (espelha a tela)
+Layout idêntico ao da agenda na tela: 5 colunas lado a lado, cabeçalho + logo no topo, tudo comprimido em 1 folha A4 paisagem.
+- Prós: familiar, mostra a semana inteira "de relance".
+- Contras: cards ficam pequenos; observações longas podem truncar.
 
-1. Nova tabela `workspaces` (`id`, `slug`, `name`). Insere `implantacao` e `waldemar`.
-2. Nova tabela `workspace_members` (`workspace_id`, `user_id`, `role`) — controla acesso por base.
-3. Nova coluna `active_workspace_id` em `profiles` — preferência atual.
-4. Adiciona coluna `workspace_id uuid` (NOT NULL após backfill) em:
-   - `trainings`, `training_attachments`, `training_acceptances`, `training_reschedules`
-   - `implementation_schedules`, `implementation_templates`, `schedule_phases`, `schedule_items`, `schedule_comments`
-   - `billing_requests`, `billing_request_updates`, `billing_notification_settings`
-   - `company_notes`
-   - `guest_acceptances`
-5. **Backfill**: todos os registros existentes recebem o `workspace_id` de **Implantação**. Todos os usuários atuais ganham acesso a **Implantação** e a **Waldemar** (já que pediu para poder alternar nas configurações), com Implantação como ativa.
-6. Função `current_workspace()` `SECURITY DEFINER` que lê `profiles.active_workspace_id` do `auth.uid()`.
-7. Atualiza **todas** as policies RLS dessas tabelas para exigir `workspace_id = current_workspace()` além das regras atuais de propriedade. INSERTs passam a exigir o workspace ativo.
-8. Triggers `BEFORE INSERT` que preenchem `workspace_id` automaticamente com `current_workspace()` quando não enviado pelo cliente — evita ter de alterar cada `insert` no frontend.
-9. Ajusta as RPCs existentes (`get_schedule_by_token`, `accept_schedule_by_token`, `get_public_training*`) para continuarem públicas (links de aceite não dependem de workspace ativo).
+### Opção B — Retrato, 5 colunas estreitas
+Mesmo grid de 5 colunas, mas em A4 retrato (colunas mais estreitas e altas).
+- Prós: mais espaço vertical por dia → cabem mais eventos sem truncar.
+- Contras: texto dos cards fica bem estreito.
 
-### Frontend
+### Opção C — Retrato, 2 colunas × linhas (dias empilhados em pares)
+Segunda/Terça na 1ª linha, Quarta/Quinta na 2ª, Sexta sozinha na 3ª.
+- Prós: cards grandes e legíveis, boa hierarquia.
+- Contras: não é o mesmo "formato calendário" da tela.
 
-- **Hook `useWorkspace`**: lê `profiles.active_workspace_id` + lista de workspaces do usuário, expõe `switchWorkspace(id)`.
-- **Tela "Selecionar base"** (`/selecionar-base`): aparece logo após login se nenhuma base ativa estiver definida. Mostra cards "Implantação" e "Waldemar" (apenas as que o usuário tem acesso).
-- **`ProtectedRoute`**: se usuário logado e sem `active_workspace_id`, redireciona para `/selecionar-base`.
-- **AppHeader**: badge discreto com o nome da base ativa, clicável para abrir Configurações.
-- **Página `/configuracoes`**: card "Base de dados ativa" com seletor + ação de trocar; ao trocar, invalida o cache do React Query e recarrega.
-- Adiciona card "Configurações" na Home.
-- Atualiza queries existentes para invalidar quando `workspace_id` muda (chave de query inclui workspace ativo, garantindo dados frescos ao alternar).
+### Opção D — Paisagem, tabela compacta (linhas = eventos, colunas = dia/hora/cliente/tipo/local)
+Formato de lista/relatório em vez de calendário.
+- Prós: garantidamente cabe em 1 folha, fácil de ler impresso.
+- Contras: perde o visual de "agenda semanal".
 
-### Detalhes técnicos
+## Correção técnica (aplicada em qualquer opção)
 
-- Workspaces ficam visíveis para `authenticated` somente via `workspace_members` (membership-based RLS).
-- Coluna `workspace_id` começa como `NULL`, backfill, depois `ALTER COLUMN SET NOT NULL` no mesmo migration.
-- Policies serão **dropadas e recriadas** para incluir o filtro de workspace — não há `ALTER POLICY` ampla disponível.
-- `guest_acceptances` e tabelas com acesso anônimo continuam abertas pelas RPCs existentes; o `workspace_id` é gravado via trigger no insert anônimo, usando o workspace do schedule/training relacionado.
-- A query do dashboard de "próximos treinamentos", relatórios, etc., não muda em código — o filtro vem da RLS.
+- Envolver as regras mobile em `@media (max-width: 767px) and not print` **ou** mover o bloco `@media print` para o final do `<style>` para vencer por ordem.
+- Remover as alturas fixas em `mm` que estavam cortando conteúdo; usar apenas `page-break-inside: avoid` + `overflow: hidden` no `main`.
+- Manter `@page { size: A4 <orientação>; margin: 5mm }` conforme a opção.
+- Instrução visível na toolbar: "No diálogo de impressão, selecione orientação = <Paisagem/Retrato>" (o Chrome exige seleção manual).
 
-### Riscos
-
-- Backfill grande de policies: revisão cuidadosa no migration. Caso uma policy nova quebre algum fluxo, ajustamos pontualmente.
-- Após a migração, qualquer novo módulo precisará incluir `workspace_id` + trigger.
-
-Aprovar para eu rodar o migration e implementar o frontend.
+Responda com **A**, **B**, **C** ou **D** que eu implemento.
