@@ -5,7 +5,7 @@ import { ptBR } from "date-fns/locale";
 import {
   ArrowUp, ArrowDown, Plus, Trash2, Copy, Printer, Link2, Download, Save,
   ChevronDown, ChevronRight, CheckCircle2, Circle, Clock, Ban, CalendarClock, Settings2,
-  CalendarDays, Flag, Unlink, HandshakeIcon,
+  CalendarDays, Flag, Unlink, Handshake,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -255,6 +255,17 @@ export default function ScheduleEditor() {
             <Link to={`/cronogramas/${schedule.id}/imprimir`}>
               <Button variant="ghost" size="sm" className="px-2 sm:px-3">
                 <Printer className="h-4 w-4" /> <span className="hidden sm:inline">PDF</span>
+              </Button>
+            </Link>
+            <Link to={`/cronogramas/${schedule.id}/termo`}>
+              <Button
+                variant={progress.pct === 100 ? "default" : "ghost"}
+                size="sm"
+                className="px-2 sm:px-3"
+                title="Termo de passagem para o Suporte"
+              >
+                <Handshake className="h-4 w-4" />
+                <span className="hidden sm:inline">Termo p/ Suporte</span>
               </Button>
             </Link>
           </div>
