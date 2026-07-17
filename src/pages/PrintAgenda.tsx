@@ -49,6 +49,8 @@ const ORANGE = "#F26B1F";
 const BLUE = "#6F7FB8";
 const RED = "#E22B2B";
 const GREEN = "#1F9D55";
+const INK = "#1B2340";
+const CREAM = "#F7EFE1";
 
 const PrintAgenda = () => {
   const navigate = useNavigate();
