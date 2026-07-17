@@ -5,7 +5,7 @@ import { ptBR } from "date-fns/locale";
 import {
   ArrowUp, ArrowDown, Plus, Trash2, Copy, Printer, Link2, Download, Save,
   ChevronDown, ChevronRight, CheckCircle2, Circle, Clock, Ban, CalendarClock, Settings2,
-  CalendarDays, Flag, Unlink,
+  CalendarDays, Flag, Unlink, HandshakeIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
