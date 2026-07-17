@@ -71,20 +71,20 @@ const PrintAgenda = () => {
   const [exporting, setExporting] = useState(false);
 
   const exportPDF = async () => {
-    const el = document.querySelector(".agenda-page") as HTMLElement | null;
+    const el = document.querySelector(".agenda-paper") as HTMLElement | null;
     if (!el) return;
     setExporting(true);
     try {
       const canvas = await html2canvas(el, {
         scale: 2,
-        backgroundColor: "#ffffff",
+        backgroundColor: CREAM,
         useCORS: true,
       });
       const imgData = canvas.toDataURL("image/png");
       const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
       const pageW = pdf.internal.pageSize.getWidth();
       const pageH = pdf.internal.pageSize.getHeight();
-      const margin = 6;
+      const margin = 8;
       const maxW = pageW - margin * 2;
       const maxH = pageH - margin * 2;
       const ratio = Math.min(maxW / canvas.width, maxH / canvas.height);
