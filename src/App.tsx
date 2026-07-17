@@ -19,6 +19,8 @@ import ScheduleNew from "./pages/ScheduleNew";
 import ScheduleEditor from "./pages/ScheduleEditor";
 import SchedulePrint from "./pages/SchedulePrint";
 import SchedulePublic from "./pages/SchedulePublic";
+import HandoffTerm from "./pages/HandoffTerm";
+import HandoffPublic from "./pages/HandoffPublic";
 import BillingRequests from "./pages/BillingRequests";
 import Notes from "./pages/Notes";
 import SelectWorkspace from "./pages/SelectWorkspace";
@@ -39,6 +41,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/aceite/:id" element={<GuestAccept />} />
             <Route path="/c/:token" element={<SchedulePublic />} />
+            <Route path="/t/:token" element={<HandoffPublic />} />
             <Route path="/selecionar-base" element={<ProtectedRoute requireWorkspace={false}><SelectWorkspace /></ProtectedRoute>} />
             <Route path="/configuracoes" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
             <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
@@ -53,6 +56,7 @@ const App = () => (
             <Route path="/cronogramas/novo" element={<ProtectedRoute><ScheduleNew /></ProtectedRoute>} />
             <Route path="/cronogramas/:id" element={<ProtectedRoute><ScheduleEditor /></ProtectedRoute>} />
             <Route path="/cronogramas/:id/imprimir" element={<ProtectedRoute><SchedulePrint /></ProtectedRoute>} />
+            <Route path="/cronogramas/:id/termo" element={<ProtectedRoute><HandoffTerm /></ProtectedRoute>} />
             <Route path="/cobrar" element={<ProtectedRoute><BillingRequests /></ProtectedRoute>} />
             <Route path="/anotacoes" element={<ProtectedRoute><Notes /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />

@@ -243,6 +243,78 @@ export type Database = {
           },
         ]
       }
+      handoff_terms: {
+        Row: {
+          client_accepted_at: string | null
+          client_accepted_ip: string | null
+          client_accepted_name: string | null
+          client_name: string
+          created_at: string
+          created_by: string | null
+          id: string
+          modules: Json
+          notes: string | null
+          public_token: string | null
+          schedule_id: string
+          support_accepted_at: string | null
+          support_accepted_by: string | null
+          support_accepted_name: string | null
+          updated_at: string
+          workspace_id: string | null
+        }
+        Insert: {
+          client_accepted_at?: string | null
+          client_accepted_ip?: string | null
+          client_accepted_name?: string | null
+          client_name: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          modules?: Json
+          notes?: string | null
+          public_token?: string | null
+          schedule_id: string
+          support_accepted_at?: string | null
+          support_accepted_by?: string | null
+          support_accepted_name?: string | null
+          updated_at?: string
+          workspace_id?: string | null
+        }
+        Update: {
+          client_accepted_at?: string | null
+          client_accepted_ip?: string | null
+          client_accepted_name?: string | null
+          client_name?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          modules?: Json
+          notes?: string | null
+          public_token?: string | null
+          schedule_id?: string
+          support_accepted_at?: string | null
+          support_accepted_by?: string | null
+          support_accepted_name?: string | null
+          updated_at?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "handoff_terms_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: true
+            referencedRelation: "implementation_schedules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "handoff_terms_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       implementation_schedules: {
         Row: {
           accepted_at: string | null
@@ -906,11 +978,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_handoff_as_support: {
+        Args: { _handoff_id: string; _name: string }
+        Returns: boolean
+      }
+      accept_handoff_by_token: {
+        Args: { _ip: string; _name: string; _token: string }
+        Returns: boolean
+      }
       accept_schedule_by_token: {
         Args: { _ip: string; _name: string; _token: string }
         Returns: boolean
       }
       current_workspace: { Args: never; Returns: string }
+      get_handoff_by_token: { Args: { _token: string }; Returns: Json }
       get_public_training: {
         Args: { _id: string }
         Returns: {
