@@ -160,18 +160,39 @@ export default function HandoffTerm() {
       <style>{`
         @media print {
           .no-print { display: none !important; }
-          @page { size: A4; margin: 18mm; }
-          body { background: white !important; }
-          .print-surface { background: white !important; color: black !important; }
+          @page { size: A4; margin: 20mm 22mm; }
+          html, body { background: white !important; }
+          body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          .print-surface {
+            background: white !important;
+            color: #111 !important;
+            font-family: 'Georgia', 'Times New Roman', serif !important;
+          }
+          .print-surface h1, .print-surface h2, .print-surface h3 {
+            font-family: 'Georgia', 'Times New Roman', serif !important;
+            color: #111 !important;
+          }
+          .print-surface .card,
+          .print-surface [data-slot="card"] {
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+          }
           .avoid-break { break-inside: avoid; page-break-inside: avoid; }
+          .print-hairline { border-color: #111 !important; }
+          .print-muted { color: #555 !important; }
+          .print-body { font-size: 11.5pt; line-height: 1.65; }
+          .print-hero-rule { background: #111 !important; }
+          .print-sig-line { border-top: 1px solid #111 !important; }
         }
+        .doc-serif { font-family: 'Georgia', 'Times New Roman', serif; }
       `}</style>
 
       <div className="no-print">
         <AppHeader />
       </div>
 
-      <main className="max-w-4xl mx-auto px-4 py-6 sm:py-8 space-y-5 print-surface">
+      <main className="max-w-3xl mx-auto px-4 py-6 sm:py-10 space-y-6 print-surface">
         <div className="no-print flex items-center justify-between gap-2 flex-wrap">
           <BackButton to={`/cronogramas/${id}`} />
           <div className="flex gap-2">
@@ -184,159 +205,220 @@ export default function HandoffTerm() {
           </div>
         </div>
 
-        <header className="text-center border-b border-border pb-6">
-          <img src={logoAsset.url} alt="Use Sistemas" className="h-10 mx-auto mb-3" />
-          <p className="text-[11px] uppercase tracking-[0.3em] text-muted-foreground">Use Sistemas</p>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight mt-2 uppercase">
-            Termo de Passagem para o Suporte
-          </h1>
-          <p className="text-sm text-muted-foreground mt-2">
-            Formalização da conclusão da implantação e transferência do atendimento
-          </p>
+        <header className="pb-8 border-b-2 border-foreground/80 print-hairline">
+          <div className="flex items-center justify-between gap-4 mb-8">
+            <img src={logoAsset.url} alt="Use Sistemas" className="h-9" />
+            <div className="text-right">
+              <p className="text-[10px] uppercase tracking-[0.35em] text-muted-foreground print-muted">
+                Documento nº
+              </p>
+              <p className="text-xs font-mono tracking-wider mt-0.5">
+                {handoff.id.slice(0, 8).toUpperCase()}
+              </p>
+            </div>
+          </div>
+          <div className="text-center">
+            <p className="text-[10px] uppercase tracking-[0.4em] text-muted-foreground print-muted mb-3">
+              Use Sistemas · Departamento de Implantação
+            </p>
+            <h1 className="doc-serif text-3xl sm:text-4xl font-normal tracking-tight leading-tight">
+              Termo de Passagem
+              <span className="block text-lg sm:text-xl italic text-muted-foreground print-muted mt-1">
+                para o Suporte Técnico
+              </span>
+            </h1>
+            <div className="mx-auto mt-5 h-px w-16 bg-foreground/60 print-hero-rule" />
+          </div>
         </header>
 
-        <Card className="avoid-break">
-          <CardContent className="p-5 space-y-3 text-sm">
-            <p>
-              Declaramos que a implantação do sistema para o cliente abaixo foi concluída
-              conforme o cronograma acordado e o atendimento fica, a partir desta data,
-              transferido para a equipe de Suporte da Use Sistemas.
-            </p>
-            <div className="grid sm:grid-cols-2 gap-3 pt-2">
-              <Field label="Cliente" value={handoff.client_name} />
-              <Field label="Início da implantação" value={format(new Date(schedule.start_date + "T00:00"), "d 'de' MMMM 'de' yyyy", { locale: ptBR })} />
-              <Field label="Modalidade" value={schedule.modality} />
-              <Field label="Termo emitido em" value={format(new Date(), "d 'de' MMMM 'de' yyyy", { locale: ptBR })} />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="avoid-break">
-          <CardContent className="p-5 space-y-3">
-            <div className="flex items-center justify-between">
-              <h2 className="font-semibold">Módulos implantados / escopo entregue</h2>
-              <span className="text-xs text-muted-foreground">{handoff.modules.length} itens</span>
-            </div>
-            <ul className="space-y-1.5">
-              {handoff.modules.map((m, i) => (
-                <li key={i} className="flex items-center gap-2 text-sm border-b border-border/40 py-1.5 last:border-0">
-                  <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
-                  <span className="flex-1">{m.name}</span>
-                  <button
-                    onClick={() => removeModule(i)}
-                    className="no-print text-muted-foreground hover:text-destructive"
-                    aria-label="Remover módulo"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </li>
-              ))}
-              {handoff.modules.length === 0 && (
-                <li className="text-sm text-muted-foreground italic">Nenhum módulo adicionado.</li>
-              )}
-            </ul>
-            <div className="no-print flex gap-2 pt-1">
-              <Input
-                value={newModule}
-                onChange={(e) => setNewModule(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addModule(); } }}
-                placeholder="Adicionar módulo (ex: Fiscal / NF-e)"
-              />
-              <Button variant="outline" onClick={addModule}>
-                <Plus className="h-4 w-4" /> Adicionar
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="avoid-break">
-          <CardContent className="p-5 space-y-2">
-            <h2 className="font-semibold">Observações e pendências</h2>
-            <Textarea
-              className="no-print"
-              rows={4}
-              value={handoff.notes || ""}
-              onChange={(e) => persist({ notes: e.target.value })}
-              placeholder="Ex.: pendências em aberto, integrações a acompanhar, prazos combinados…"
+        <section className="avoid-break print-body">
+          <p className="doc-serif text-[15px] leading-relaxed text-justify indent-8">
+            Pelo presente instrumento, a <strong>Use Sistemas</strong>, por meio de sua equipe de
+            Implantação, declara ter concluído os trabalhos de implantação do sistema junto ao
+            cliente identificado abaixo, conforme cronograma acordado, e formaliza, nesta data, a
+            transferência do atendimento continuado para a equipe de <strong>Suporte Técnico</strong>.
+          </p>
+          <dl className="grid sm:grid-cols-2 gap-x-8 gap-y-4 mt-8 border-y border-foreground/20 print-hairline py-5">
+            <DocField label="Cliente" value={handoff.client_name} />
+            <DocField
+              label="Início da implantação"
+              value={format(new Date(schedule.start_date + "T00:00"), "d 'de' MMMM 'de' yyyy", { locale: ptBR })}
             />
-            {handoff.notes && (
-              <p className="hidden print:block whitespace-pre-wrap text-sm">{handoff.notes}</p>
-            )}
-          </CardContent>
-        </Card>
+            <DocField label="Modalidade" value={schedule.modality} />
+            <DocField
+              label="Termo emitido em"
+              value={format(new Date(), "d 'de' MMMM 'de' yyyy", { locale: ptBR })}
+            />
+          </dl>
+        </section>
 
-        <div className="grid sm:grid-cols-2 gap-4 avoid-break">
-          <Card>
-            <CardContent className="p-5 space-y-3">
-              <div className="flex items-center gap-2">
-                <ShieldCheck className="h-4 w-4 text-primary" />
-                <h3 className="font-semibold text-sm">Aceite do Suporte</h3>
-              </div>
-              {handoff.support_accepted_at ? (
-                <p className="text-sm text-emerald-600 dark:text-emerald-400">
-                  ✓ Recebido por <strong>{handoff.support_accepted_name}</strong>
-                  <br />em {format(new Date(handoff.support_accepted_at), "dd/MM/yyyy HH:mm")}
-                </p>
-              ) : (
-                <div className="space-y-2 no-print">
+        <section className="avoid-break">
+          <SectionTitle numeral="I" title="Módulos implantados e escopo entregue" />
+          <ol className="mt-4 grid sm:grid-cols-2 gap-x-8">
+            {handoff.modules.map((m, i) => (
+              <li
+                key={i}
+                className="doc-serif text-[14px] flex items-baseline gap-3 py-2 border-b border-foreground/10 print-hairline group"
+              >
+                <span className="text-[11px] tabular-nums text-muted-foreground print-muted w-6">
+                  {String(i + 1).padStart(2, "0")}.
+                </span>
+                <span className="flex-1">{m.name}</span>
+                <button
+                  onClick={() => removeModule(i)}
+                  className="no-print opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition"
+                  aria-label="Remover módulo"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </li>
+            ))}
+            {handoff.modules.length === 0 && (
+              <li className="doc-serif text-sm italic text-muted-foreground py-2">
+                Nenhum módulo registrado.
+              </li>
+            )}
+          </ol>
+          <div className="no-print flex gap-2 pt-4">
+            <Input
+              value={newModule}
+              onChange={(e) => setNewModule(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addModule(); } }}
+              placeholder="Adicionar módulo (ex: Fiscal / NF-e)"
+            />
+            <Button variant="outline" onClick={addModule}>
+              <Plus className="h-4 w-4" /> Adicionar
+            </Button>
+          </div>
+        </section>
+
+        <section className="avoid-break">
+          <SectionTitle numeral="II" title="Observações e pendências" />
+          <Textarea
+            className="no-print mt-4"
+            rows={4}
+            value={handoff.notes || ""}
+            onChange={(e) => persist({ notes: e.target.value })}
+            placeholder="Ex.: pendências em aberto, integrações a acompanhar, prazos combinados…"
+          />
+          {handoff.notes ? (
+            <p className="hidden print:block doc-serif text-[14px] leading-relaxed whitespace-pre-wrap mt-4 text-justify">
+              {handoff.notes}
+            </p>
+          ) : (
+            <p className="hidden print:block doc-serif text-[13px] italic text-muted-foreground mt-4">
+              Sem observações registradas.
+            </p>
+          )}
+        </section>
+
+        <section className="avoid-break pt-4">
+          <SectionTitle numeral="III" title="Aceites" />
+          <div className="grid sm:grid-cols-2 gap-10 mt-10 pt-4">
+            <SignatureBlock
+              role="Equipe de Suporte"
+              name={handoff.support_accepted_name}
+              at={handoff.support_accepted_at}
+            >
+              {!handoff.support_accepted_at && (
+                <div className="space-y-2 no-print mt-3">
                   <Input
                     placeholder="Seu nome (Suporte)"
                     value={supportName}
                     onChange={(e) => setSupportName(e.target.value)}
                   />
                   <Button size="sm" onClick={acceptAsSupport} className="w-full">
-                    Registrar recebimento
+                    <ShieldCheck className="h-4 w-4" /> Registrar recebimento
                   </Button>
                   <p className="text-[11px] text-muted-foreground">
                     Apenas membros da base <em>Suporte</em> podem aceitar.
                   </p>
                 </div>
               )}
-              <div className="hidden print:block border-t border-black/40 pt-1 mt-8 text-xs text-center">
-                Assinatura — Equipe de Suporte
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-5 space-y-3">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-primary" />
-                <h3 className="font-semibold text-sm">Aceite do Cliente</h3>
-              </div>
-              {handoff.client_accepted_at ? (
-                <p className="text-sm text-emerald-600 dark:text-emerald-400">
-                  ✓ Aceito por <strong>{handoff.client_accepted_name}</strong>
-                  <br />em {format(new Date(handoff.client_accepted_at), "dd/MM/yyyy HH:mm")}
-                </p>
-              ) : (
-                <>
-                  <p className="text-xs text-muted-foreground no-print">
+            </SignatureBlock>
+            <SignatureBlock
+              role="Cliente"
+              name={handoff.client_accepted_name}
+              at={handoff.client_accepted_at}
+            >
+              {!handoff.client_accepted_at && (
+                <div className="no-print mt-3 space-y-2">
+                  <p className="text-xs text-muted-foreground">
                     Envie o link público para o cliente confirmar o recebimento.
                   </p>
-                  <Button variant="outline" size="sm" className="w-full no-print" onClick={copyPublicLink}>
+                  <Button variant="outline" size="sm" className="w-full" onClick={copyPublicLink}>
                     <Link2 className="h-4 w-4" /> Copiar link do cliente
                   </Button>
-                </>
+                </div>
               )}
-              <div className="hidden print:block border-t border-black/40 pt-1 mt-8 text-xs text-center">
-                Assinatura — Cliente
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+            </SignatureBlock>
+          </div>
+        </section>
 
-        <footer className="text-center text-[11px] text-muted-foreground pt-4">
-          Use Sistemas · Termo de Passagem para o Suporte · gerado em {format(new Date(), "dd/MM/yyyy HH:mm")}
+        <footer className="pt-8 mt-6 border-t border-foreground/20 print-hairline">
+          <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.3em] text-muted-foreground print-muted">
+            <span>Use Sistemas</span>
+            <span>Termo de Passagem</span>
+            <span>{format(new Date(), "dd/MM/yyyy")}</span>
+          </div>
         </footer>
       </main>
     </div>
   );
 }
 
-const Field = ({ label, value }: { label: string; value: string }) => (
+const DocField = ({ label, value }: { label: string; value: string }) => (
   <div>
-    <p className="text-[11px] uppercase tracking-wider text-muted-foreground">{label}</p>
-    <p className="font-medium">{value}</p>
+    <dt className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground print-muted">
+      {label}
+    </dt>
+    <dd className="doc-serif text-[15px] mt-1">{value}</dd>
+  </div>
+);
+
+const SectionTitle = ({ numeral, title }: { numeral: string; title: string }) => (
+  <div className="flex items-baseline gap-3 border-b border-foreground/30 print-hairline pb-2">
+    <span className="doc-serif text-sm italic text-muted-foreground print-muted tabular-nums">
+      {numeral}.
+    </span>
+    <h2 className="doc-serif text-lg font-normal tracking-tight">{title}</h2>
+  </div>
+);
+
+const SignatureBlock = ({
+  role,
+  name,
+  at,
+  children,
+}: {
+  role: string;
+  name: string | null;
+  at: string | null;
+  children?: React.ReactNode;
+}) => (
+  <div className="flex flex-col">
+    <div className="min-h-[64px] flex items-end justify-center pb-1">
+      {at && name && (
+        <span
+          className="doc-serif italic text-2xl"
+          style={{ fontFamily: "'Homemade Apple', 'Segoe Script', 'Georgia', cursive" }}
+        >
+          {name}
+        </span>
+      )}
+    </div>
+    <div className="border-t border-foreground/70 print-sig-line pt-2 text-center">
+      <p className="doc-serif text-[13px] font-medium">{role}</p>
+      {at ? (
+        <p className="text-[11px] text-muted-foreground print-muted mt-0.5">
+          {name} · {format(new Date(at), "dd/MM/yyyy 'às' HH:mm")}
+        </p>
+      ) : (
+        <p className="text-[11px] italic text-muted-foreground print-muted mt-0.5">
+          Aguardando assinatura
+        </p>
+      )}
+    </div>
+    {children}
   </div>
 );
