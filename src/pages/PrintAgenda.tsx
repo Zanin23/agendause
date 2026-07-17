@@ -199,34 +199,9 @@ const PrintAgenda = () => {
         .day-head { font-family: 'Clash Display', 'Archivo', sans-serif; font-weight: 700; letter-spacing: 0.01em; }
         @media print {
           .no-print { display: none !important; }
-          @page { size: A4 landscape; margin: 0; }
+          @page { size: A4 landscape; margin: 10mm; }
           body { background: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          html, body { height: auto !important; }
-          /* Render the on-screen layout at its natural size and scale it to fit
-             a single A4 landscape sheet. Keeps identical visual to preview. */
-          body * { visibility: hidden; }
-          .agenda-page, .agenda-page * { visibility: visible; }
-          .agenda-page {
-            position: absolute !important;
-            top: 0 !important;
-            left: 0 !important;
-            padding: 8mm 10mm !important;
-            margin: 0 !important;
-            width: 1240px !important;
-            max-width: none !important;
-            height: 793px !important; /* 210mm at 96dpi */
-            overflow: hidden !important;
-            transform: scale(0.905); /* 1122.5px (297mm@96dpi) / 1240px */
-            transform-origin: top left;
-            background: white !important;
-          }
-          /* Keep 5 columns exactly like the on-screen layout */
-          .agenda-grid {
-            display: grid !important;
-            grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
-            gap: 12px !important;
-          }
-          .agenda-day { break-inside: avoid; page-break-inside: avoid; min-height: 0 !important; height: auto !important; }
+          .agenda-day { break-inside: avoid; page-break-inside: avoid; }
           .agenda-event { break-inside: avoid; page-break-inside: avoid; }
           .agenda-tip { display: none !important; }
         }
