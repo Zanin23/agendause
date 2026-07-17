@@ -199,35 +199,52 @@ const PrintAgenda = () => {
         .day-head { font-family: 'Clash Display', 'Archivo', sans-serif; font-weight: 700; letter-spacing: 0.01em; }
         @media print {
           .no-print { display: none !important; }
-          @page { size: A4 landscape; margin: 6mm; }
+          @page { size: A4 landscape; margin: 5mm; }
           body { background: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
           html, body { height: auto !important; }
+          html, body { width: 287mm !important; height: 200mm !important; overflow: hidden !important; }
           .agenda-page {
             padding: 0 !important;
             max-width: 100% !important;
             width: 100% !important;
+            height: 200mm !important;
+            overflow: hidden !important;
+            display: flex !important;
+            flex-direction: column !important;
           }
           /* Force the on-screen 5-column layout regardless of print viewport width */
           .agenda-grid {
             display: grid !important;
             grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
-            gap: 6px !important;
+            gap: 4px !important;
+            flex: 1 1 auto !important;
+            min-height: 0 !important;
+            align-items: stretch !important;
           }
           .agenda-header {
             flex-direction: row !important;
             align-items: flex-start !important;
-            gap: 16px !important;
-            margin-bottom: 10px !important;
+            gap: 12px !important;
+            margin-bottom: 6px !important;
+            flex: 0 0 auto !important;
           }
-          .agenda-title { font-size: 34px !important; line-height: 0.95 !important; }
-          .agenda-sub { font-size: 14px !important; }
-          .agenda-note-print { font-size: 9px !important; }
-          .agenda-layers-print { width: 70px !important; height: 70px !important; }
-          .day-head { font-size: 18px !important; padding: 4px 8px !important; }
+          .agenda-title { font-size: 24px !important; line-height: 0.95 !important; }
+          .agenda-sub { font-size: 11px !important; margin-top: 2px !important; }
+          .agenda-note-print { font-size: 8px !important; margin-top: 2px !important; }
+          .agenda-layers-print { width: 54px !important; height: 54px !important; }
+          .day-head { font-size: 14px !important; padding: 3px 6px !important; }
           .agenda-day {
             min-height: 0 !important;
+            height: 100% !important;
+            overflow: hidden !important;
             break-inside: avoid; page-break-inside: avoid;
           }
+          .agenda-day-body { padding: 4px !important; }
+          .agenda-day-body > * + * { margin-top: 3px !important; }
+          .agenda-period-label { font-size: 8px !important; padding: 0 2px !important; }
+          .agenda-event { break-inside: avoid; page-break-inside: avoid; font-size: 9px !important; }
+          .agenda-event * { font-size: inherit !important; line-height: 1.15 !important; }
+          .agenda-legend-print { font-size: 8px !important; }
           .agenda-event { break-inside: avoid; page-break-inside: avoid; }
           .agenda-tip { display: none !important; }
           main.agenda-page { page-break-inside: avoid; break-inside: avoid; }
