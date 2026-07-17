@@ -160,9 +160,12 @@ export default function HandoffTerm() {
       <style>{`
         @media print {
           .no-print { display: none !important; }
-          @page { size: A4; margin: 20mm 22mm; }
+          @page { size: A4; margin: 12mm 14mm; }
           html, body { background: white !important; }
           body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          main.print-surface { max-width: 100% !important; padding: 0 !important; }
+          main.print-surface > * { margin-top: 0 !important; }
+          main.print-surface > * + * { margin-top: 10px !important; }
           .print-surface {
             background: white !important;
             color: #111 !important;
@@ -181,9 +184,21 @@ export default function HandoffTerm() {
           .avoid-break { break-inside: avoid; page-break-inside: avoid; }
           .print-hairline { border-color: #111 !important; }
           .print-muted { color: #555 !important; }
-          .print-body { font-size: 11.5pt; line-height: 1.65; }
+          .print-body { font-size: 10pt; line-height: 1.45; }
           .print-hero-rule { background: #111 !important; }
           .print-sig-line { border-top: 1px solid #111 !important; }
+          .print-compact-header { padding-bottom: 10px !important; }
+          .print-compact-header .print-header-top { margin-bottom: 10px !important; }
+          .print-compact-header h1 { font-size: 22pt !important; line-height: 1.1 !important; }
+          .print-compact-header h1 span { font-size: 12pt !important; }
+          .print-compact-header .print-hero-rule { margin-top: 8px !important; }
+          .print-fields { margin-top: 10px !important; padding: 8px 0 !important; gap: 6px 24px !important; }
+          .print-fields dd { font-size: 10.5pt !important; margin-top: 2px !important; }
+          .print-modules { margin-top: 8px !important; }
+          .print-modules li { padding: 3px 0 !important; font-size: 10pt !important; }
+          .print-signatures { margin-top: 24px !important; padding-top: 0 !important; gap: 32px !important; }
+          .print-signatures .sig-space { min-height: 44px !important; }
+          .print-footer { padding-top: 10px !important; margin-top: 10px !important; }
         }
         .doc-serif { font-family: 'Georgia', 'Times New Roman', serif; }
       `}</style>
@@ -205,8 +220,8 @@ export default function HandoffTerm() {
           </div>
         </div>
 
-        <header className="pb-8 border-b-2 border-foreground/80 print-hairline">
-          <div className="flex items-center justify-between gap-4 mb-8">
+        <header className="pb-8 border-b-2 border-foreground/80 print-hairline print-compact-header">
+          <div className="flex items-center justify-between gap-4 mb-8 print-header-top">
             <img src={logoAsset.url} alt="Use Sistemas" className="h-9" />
             <div className="text-right">
               <p className="text-[10px] uppercase tracking-[0.35em] text-muted-foreground print-muted">
@@ -238,7 +253,7 @@ export default function HandoffTerm() {
             cliente identificado abaixo, conforme cronograma acordado, e formaliza, nesta data, a
             transferência do atendimento continuado para a equipe de <strong>Suporte Técnico</strong>.
           </p>
-          <dl className="grid sm:grid-cols-2 gap-x-8 gap-y-4 mt-8 border-y border-foreground/20 print-hairline py-5">
+          <dl className="grid sm:grid-cols-2 gap-x-8 gap-y-4 mt-8 border-y border-foreground/20 print-hairline py-5 print-fields">
             <DocField label="Cliente" value={handoff.client_name} />
             <DocField
               label="Início da implantação"
@@ -254,7 +269,7 @@ export default function HandoffTerm() {
 
         <section className="avoid-break">
           <SectionTitle numeral="I" title="Módulos implantados e escopo entregue" />
-          <ol className="mt-4 grid sm:grid-cols-2 gap-x-8">
+          <ol className="mt-4 grid sm:grid-cols-2 gap-x-8 print-modules">
             {handoff.modules.map((m, i) => (
               <li
                 key={i}
@@ -314,7 +329,7 @@ export default function HandoffTerm() {
 
         <section className="avoid-break pt-4">
           <SectionTitle numeral="III" title="Aceites" />
-          <div className="grid sm:grid-cols-2 gap-10 mt-10 pt-4">
+          <div className="grid sm:grid-cols-2 gap-10 mt-10 pt-4 print-signatures">
             <SignatureBlock
               role="Equipe de Suporte"
               name={handoff.support_accepted_name}
@@ -355,7 +370,7 @@ export default function HandoffTerm() {
           </div>
         </section>
 
-        <footer className="pt-8 mt-6 border-t border-foreground/20 print-hairline">
+        <footer className="pt-8 mt-6 border-t border-foreground/20 print-hairline print-footer">
           <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.3em] text-muted-foreground print-muted">
             <span>Use Sistemas</span>
             <span>Termo de Passagem</span>
@@ -397,7 +412,7 @@ const SignatureBlock = ({
   children?: React.ReactNode;
 }) => (
   <div className="flex flex-col">
-    <div className="min-h-[64px] flex items-end justify-center pb-1">
+    <div className="min-h-[64px] flex items-end justify-center pb-1 sig-space">
       {at && name && (
         <span
           className="doc-serif italic text-2xl"
