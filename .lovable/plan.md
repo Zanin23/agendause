@@ -1,45 +1,49 @@
-# Impressão da agenda idêntica à visualização
+## Múltiplos workspaces ("bases de dados")
 
-## Objetivo
-Fazer com que a impressão (papel A4 e o PDF exportado) da tela `PrintAgenda` fique **pixel-a-pixel igual** ao layout Bento assimétrico já exibido na tela, sem reformatar cores, tipografia, colunas, sombras, badges ou legenda.
+Cria duas bases lógicas — **Implantação** e **Waldemar** — isoladas em todos os módulos, com seleção obrigatória no primeiro acesso, persistência por usuário e uma aba de **Configurações** para trocar a base ativa.
 
-## Diagnóstico
-Hoje há divergências entre tela e impressão:
-- As regras `@media print` alteram o layout (removem sombras/raios, escondem elementos, mudam paddings).
-- O `.agenda-paper` tem largura de 1200px enquanto a folha A4 paisagem tem ~277mm úteis, então o navegador quebra as 5 colunas ou corta o conteúdo.
-- O export em PDF via `html2canvas` captura só um pedaço do DOM.
+### Conceito
 
-## Estratégia
-Tratar a "página impressa" como um **snapshot fiel** da tela: uma única frame com o mesmo DOM/estilo e apenas escalado para caber em uma folha A4 paisagem.
+Um único banco real continua sendo usado. A separação é feita por uma coluna `workspace_id` em cada tabela do app, combinada com RLS que filtra por workspace. Cada usuário tem uma associação `(user_id, workspace_id)` indicando a quais bases ele tem acesso, e uma preferência de "base ativa".
 
-### Passo 1 — Unificar o CSS
-- Remover todas as sobrescritas do `@media print` que mudam visual (sombras, raios, cores, bordas).
-- Manter no `@media print` apenas: esconder `.no-print`, `.agenda-tip`, controlar quebras de página e definir `@page`.
-- O `.agenda-paper` continua com sombra deslocada, cabeçalho, footer e legend idênticos à tela.
+### Backend (migração)
 
-### Passo 2 — Escalar para caber em uma folha A4 paisagem
-- Envolver o `.agenda-paper` num wrapper `.print-frame` com largura fixa de 1200px (mesma da tela) e altura calculada para proporção A4 paisagem.
-- No `@media print`:
-  - `@page { size: A4 landscape; margin: 0; }`
-  - Aplicar `transform: scale(<fator>)` ao `.print-frame` para reduzir 1200px → ~1123px (largura útil A4 landscape a 96dpi) e `transform-origin: top left`.
-  - Forçar `body { width: 297mm; height: 210mm; overflow: hidden; }` para garantir uma única página.
+1. Nova tabela `workspaces` (`id`, `slug`, `name`). Insere `implantacao` e `waldemar`.
+2. Nova tabela `workspace_members` (`workspace_id`, `user_id`, `role`) — controla acesso por base.
+3. Nova coluna `active_workspace_id` em `profiles` — preferência atual.
+4. Adiciona coluna `workspace_id uuid` (NOT NULL após backfill) em:
+   - `trainings`, `training_attachments`, `training_acceptances`, `training_reschedules`
+   - `implementation_schedules`, `implementation_templates`, `schedule_phases`, `schedule_items`, `schedule_comments`
+   - `billing_requests`, `billing_request_updates`, `billing_notification_settings`
+   - `company_notes`
+   - `guest_acceptances`
+5. **Backfill**: todos os registros existentes recebem o `workspace_id` de **Implantação**. Todos os usuários atuais ganham acesso a **Implantação** e a **Waldemar** (já que pediu para poder alternar nas configurações), com Implantação como ativa.
+6. Função `current_workspace()` `SECURITY DEFINER` que lê `profiles.active_workspace_id` do `auth.uid()`.
+7. Atualiza **todas** as policies RLS dessas tabelas para exigir `workspace_id = current_workspace()` além das regras atuais de propriedade. INSERTs passam a exigir o workspace ativo.
+8. Triggers `BEFORE INSERT` que preenchem `workspace_id` automaticamente com `current_workspace()` quando não enviado pelo cliente — evita ter de alterar cada `insert` no frontend.
+9. Ajusta as RPCs existentes (`get_schedule_by_token`, `accept_schedule_by_token`, `get_public_training*`) para continuarem públicas (links de aceite não dependem de workspace ativo).
 
-### Passo 3 — Corrigir o export em PDF
-- Trocar a captura do `html2canvas` para o nó exato `.print-frame` (ou `.agenda-paper`) com `scale: 2`, `useCORS: true`, `backgroundColor: '#F7EFE1'`.
-- Gerar o PDF em A4 paisagem e desenhar a imagem inteira em uma única página respeitando a proporção (`imgWidth = pageWidth`, `imgHeight = imgWidth * ratio`).
-- Remover a lógica atual que fatia por altura (não haverá mais múltiplas páginas).
+### Frontend
 
-### Passo 4 — Ajustes visuais menores
-- Garantir que `-webkit-print-color-adjust: exact` esteja no `body` e nas cores de fundo dos badges/legend para preservar cores.
-- Deixar as sombras deslocadas visíveis na impressão (parte da identidade Bento).
-- Manter o rodapé com "Gerado em …" também na versão impressa.
+- **Hook `useWorkspace`**: lê `profiles.active_workspace_id` + lista de workspaces do usuário, expõe `switchWorkspace(id)`.
+- **Tela "Selecionar base"** (`/selecionar-base`): aparece logo após login se nenhuma base ativa estiver definida. Mostra cards "Implantação" e "Waldemar" (apenas as que o usuário tem acesso).
+- **`ProtectedRoute`**: se usuário logado e sem `active_workspace_id`, redireciona para `/selecionar-base`.
+- **AppHeader**: badge discreto com o nome da base ativa, clicável para abrir Configurações.
+- **Página `/configuracoes`**: card "Base de dados ativa" com seletor + ação de trocar; ao trocar, invalida o cache do React Query e recarrega.
+- Adiciona card "Configurações" na Home.
+- Atualiza queries existentes para invalidar quando `workspace_id` muda (chave de query inclui workspace ativo, garantindo dados frescos ao alternar).
 
-## Arquivos a alterar
-- `src/pages/PrintAgenda.tsx`
-  - Envolver o `<main>` do papel num wrapper `.print-frame`.
-  - Reescrever o bloco `<style>{...}</style>` com as novas regras `@media print` (mínimas) e a escala.
-  - Reescrever `exportPDF` para captura de um único frame proporcional.
+### Detalhes técnicos
 
-## Fora de escopo
-- Não alterar dados, RLS, rotas, hooks ou o layout da tela (que já é o modelo aprovado).
-- Não mexer em outras telas.
+- Workspaces ficam visíveis para `authenticated` somente via `workspace_members` (membership-based RLS).
+- Coluna `workspace_id` começa como `NULL`, backfill, depois `ALTER COLUMN SET NOT NULL` no mesmo migration.
+- Policies serão **dropadas e recriadas** para incluir o filtro de workspace — não há `ALTER POLICY` ampla disponível.
+- `guest_acceptances` e tabelas com acesso anônimo continuam abertas pelas RPCs existentes; o `workspace_id` é gravado via trigger no insert anônimo, usando o workspace do schedule/training relacionado.
+- A query do dashboard de "próximos treinamentos", relatórios, etc., não muda em código — o filtro vem da RLS.
+
+### Riscos
+
+- Backfill grande de policies: revisão cuidadosa no migration. Caso uma policy nova quebre algum fluxo, ajustamos pontualmente.
+- Após a migração, qualquer novo módulo precisará incluir `workspace_id` + trigger.
+
+Aprovar para eu rodar o migration e implementar o frontend.
