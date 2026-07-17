@@ -206,38 +206,10 @@ const PrintAgenda = () => {
             padding: 0 !important;
             max-width: 100% !important;
             width: 100% !important;
-            height: 195mm !important;
-            overflow: hidden !important;
-            display: flex !important;
-            flex-direction: column !important;
           }
-          .agenda-header { margin-bottom: 4mm !important; }
-          .agenda-title-print { font-size: 36pt !important; line-height: 0.95 !important; }
-          .agenda-sub-print { font-size: 13pt !important; margin-top: 0 !important; }
-          .agenda-note-print { font-size: 7pt !important; margin-top: 1mm !important; }
-          .agenda-legend-print { font-size: 9pt !important; gap: 2px !important; }
-          .agenda-layers-print { width: 140px !important; height: 140px !important; }
-          .agenda-grid {
-            flex: 1 1 auto !important;
-            min-height: 0 !important;
-            gap: 2mm !important;
-          }
-          .agenda-day {
-            min-height: 0 !important;
-            height: 100% !important;
-            border-width: 2px !important;
-            overflow: hidden !important;
-          }
-          .agenda-day .day-head {
-            font-size: 16pt !important;
-            padding: 1mm 2mm !important;
-            border-bottom-width: 2px !important;
-          }
-          .agenda-day-body { padding: 1.5mm !important; gap: 1.5mm !important; }
-          .agenda-event { padding: 1mm 1.5mm !important; font-size: 8pt !important; line-height: 1.15 !important; border-width: 1px !important; }
-          .agenda-event .agenda-event-title { font-size: 8.5pt !important; }
-          .agenda-event .agenda-event-meta { font-size: 7pt !important; }
-          .agenda-event-extra { font-size: 7pt !important; }
+          /* Print mirrors on-screen layout: no font/size overrides. */
+          .agenda-day { break-inside: avoid; page-break-inside: avoid; }
+          .agenda-event { break-inside: avoid; page-break-inside: avoid; }
           .agenda-tip { display: none !important; }
         }
         @media (max-width: 767px) {
