@@ -990,6 +990,10 @@ export type Database = {
         Args: { _ip: string; _name: string; _token: string }
         Returns: boolean
       }
+      complete_schedule_for_handoff: {
+        Args: { _schedule_id: string }
+        Returns: boolean
+      }
       current_workspace: { Args: never; Returns: string }
       get_handoff_by_token: { Args: { _token: string }; Returns: Json }
       get_public_training: {
