@@ -189,40 +189,50 @@ const PrintAgenda = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white text-black">
+    <div className="min-h-screen" style={{ background: CREAM, color: INK }}>
       <SEO
         title="Imprimir agenda — TreinaCheck"
         description="Visualize e exporte a agenda semanal de treinamentos em PDF ou para impressão."
         path="/agenda/imprimir"
       />
       <style>{`
-        .agenda-title { font-family: 'Clash Display', 'Archivo', sans-serif; font-weight: 700; letter-spacing: -0.02em; }
-        .agenda-sub { font-family: 'Clash Display', 'Archivo', sans-serif; font-weight: 600; font-style: italic; }
-        .day-head { font-family: 'Clash Display', 'Archivo', sans-serif; font-weight: 700; letter-spacing: 0.01em; }
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
+        .agenda-page, .agenda-page * { font-family: 'DM Sans', sans-serif; }
+        .agenda-title { font-family: 'Space Grotesk', sans-serif; font-weight: 700; letter-spacing: -0.03em; }
+        .agenda-sub { font-family: 'DM Sans', sans-serif; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; }
+        .day-head { font-family: 'Space Grotesk', sans-serif; font-weight: 700; letter-spacing: -0.02em; text-transform: uppercase; }
+        .agenda-paper { background: #ffffff; border: 3px solid ${INK}; box-shadow: 12px 12px 0 ${INK}; border-top-right-radius: 60px; border-bottom-left-radius: 16px; }
+        .agenda-event { border: 2px solid ${INK} !important; box-shadow: 4px 4px 0 ${INK}; border-top-right-radius: 12px; }
+        .agenda-badge { border: 2px solid ${INK}; box-shadow: 2px 2px 0 ${INK}; font-family: 'Space Grotesk', sans-serif; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
         @media print {
           .no-print { display: none !important; }
           @page { size: A4 landscape; margin: 10mm; }
           body { background: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          .agenda-page { background: white !important; }
+          .agenda-paper { box-shadow: none !important; border-radius: 0 !important; }
+          .agenda-event { box-shadow: 3px 3px 0 ${INK} !important; }
+          .agenda-badge { box-shadow: 1.5px 1.5px 0 ${INK} !important; }
           .agenda-day { break-inside: avoid; page-break-inside: avoid; }
           .agenda-event { break-inside: avoid; page-break-inside: avoid; }
           .agenda-tip { display: none !important; }
         }
         @media (max-width: 767px) {
-          .agenda-page { padding: 16px !important; }
+          .agenda-page { padding: 12px !important; }
+          .agenda-paper { padding: 16px !important; box-shadow: 6px 6px 0 ${INK}; border-top-right-radius: 20px; }
           .agenda-header {
             flex-direction: column !important;
             gap: 12px !important;
             align-items: flex-start !important;
           }
-          .agenda-title { font-size: 36px !important; word-break: break-word; overflow-wrap: anywhere; }
-          .agenda-sub { font-size: 16px !important; word-break: break-word; }
+          .agenda-title { font-size: 32px !important; word-break: break-word; overflow-wrap: anywhere; }
+          .agenda-sub { font-size: 11px !important; word-break: break-word; }
           .agenda-layers-print { width: 80px !important; height: 80px !important; }
           .agenda-grid { grid-template-columns: 1fr !important; }
           .agenda-day { min-height: 0 !important; }
         }
       `}</style>
 
-      <div className="no-print border-b border-neutral-200">
+      <div className="no-print border-b-2" style={{ borderColor: INK, background: CREAM }}>
         <div className="max-w-[1200px] mx-auto px-4 sm:px-6 py-3 sm:py-4 flex flex-wrap items-center justify-between gap-3">
           <BackButton to="/" />
 
@@ -261,7 +271,7 @@ const PrintAgenda = () => {
             >
               <ChevronRight className="h-4 w-4" />
             </Button>
-            <span className="text-sm text-neutral-600 ml-3 capitalize">
+            <span className="text-sm ml-3 capitalize font-semibold" style={{ color: INK }}>
               {weekLabel}
             </span>
           </div>
@@ -279,39 +289,63 @@ const PrintAgenda = () => {
         </div>
       </div>
 
-      <main className="agenda-page max-w-[1200px] mx-auto px-4 sm:px-8 py-4 sm:py-8">
-        {/* Header */}
-        <header className="agenda-header flex flex-col md:flex-row md:items-start md:justify-between gap-4 md:gap-8 mb-6">
-          <div className="min-w-0">
-            <h1 className="agenda-title agenda-title-print text-[40px] sm:text-[64px] leading-[0.95] uppercase break-words">
-              Agenda Semanal
-            </h1>
-            <p
-              className="agenda-sub agenda-sub-print text-[16px] sm:text-[22px] mt-1 break-words"
-              style={{ color: ORANGE }}
-            >
-              visitas, reuniões e configurações internas
-            </p>
-            <p className="agenda-note-print text-[11px] text-neutral-600 mt-1">
-              *Algumas visitas podem ainda não terem sido confirmadas, agenda
-              pode mudar
-            </p>
-            <div className="agenda-legend-print mt-3">
-              <Legend />
+      <main className="agenda-page max-w-[1200px] mx-auto px-4 sm:px-8 py-6 sm:py-10">
+        <div className="agenda-paper p-6 sm:p-10 flex flex-col gap-6">
+          {/* Header */}
+          <header className="agenda-header flex flex-col md:flex-row md:items-end md:justify-between gap-4 md:gap-8 pb-6 border-b-[3px]" style={{ borderColor: INK }}>
+            <div className="min-w-0 flex items-center gap-4">
+              <div
+                className="shrink-0 flex items-center justify-center"
+                style={{
+                  width: 56,
+                  height: 56,
+                  background: ORANGE,
+                  border: `3px solid ${INK}`,
+                  borderTopRightRadius: 16,
+                  borderBottomLeftRadius: 16,
+                  boxShadow: `4px 4px 0 ${INK}`,
+                }}
+                aria-hidden
+              >
+                <Layers className="h-7 w-7" style={{ color: CREAM }} strokeWidth={2.5} />
+              </div>
+              <div className="min-w-0">
+                <h1 className="agenda-title text-[40px] sm:text-[64px] leading-[0.9] uppercase break-words" style={{ color: INK }}>
+                  Agenda Semanal
+                </h1>
+                <p className="agenda-sub text-[11px] sm:text-[13px] mt-2" style={{ color: INK }}>
+                  <span style={{ color: ORANGE }}>●</span>&nbsp; {weekLabel}
+                </p>
+              </div>
             </div>
+
+            <div className="flex items-start gap-6 shrink-0">
+              <div className="flex flex-col items-end gap-1 text-right">
+                <span className="text-[9px] font-bold uppercase tracking-[0.2em]" style={{ color: INK, opacity: 0.5 }}>
+                  Use Sistemas
+                </span>
+                <span className="text-[10px] font-semibold" style={{ color: INK, opacity: 0.6 }}>
+                  Documento interno
+                </span>
+              </div>
+              <img
+                src={useLogo.url}
+                alt="Use Sistemas"
+                className="agenda-layers-print h-20 w-20 sm:h-24 sm:w-24 shrink-0 object-contain"
+              />
+            </div>
+          </header>
+
+          {/* Legend + note */}
+          <div className="flex flex-col gap-2">
+            <p className="text-[10px] uppercase tracking-widest font-bold" style={{ color: INK, opacity: 0.6 }}>
+              *Algumas visitas podem ainda não terem sido confirmadas — agenda pode mudar
+            </p>
+            <Legend />
           </div>
 
-          <div className="agenda-legend-print flex items-center gap-6 pt-2 shrink-0 self-start">
-            <img
-              src={useLogo.url}
-              alt="Use Sistemas"
-              className="agenda-layers-print h-24 w-24 sm:h-60 sm:w-60 shrink-0 object-contain"
-            />
-          </div>
-        </header>
-
-        {/* Week grid */}
-        <div className="agenda-grid grid grid-cols-1 sm:grid-cols-5 gap-3">
+          {/* Week grid */}
+          <div className="agenda-grid grid grid-cols-1 sm:grid-cols-5 gap-4 sm:gap-5 mt-2">
           {weekDays.map((day, idx) => {
             const events = eventsByDay[idx];
             const isToday = isSameDay(day, new Date());
@@ -319,11 +353,12 @@ const PrintAgenda = () => {
             return (
               <div
                 key={idx}
-                className="agenda-day border-[3px] rounded-md flex flex-col transition-colors"
+                className="agenda-day flex flex-col transition-colors"
                 style={{
-                  borderColor: isOver ? BLUE : ORANGE,
-                  minHeight: 520,
+                  minHeight: 480,
                   background: isOver ? "#EEF1FB" : "transparent",
+                  borderRight: idx < 4 ? `2px solid ${INK}1A` : "none",
+                  paddingRight: idx < 4 ? 12 : 0,
                 }}
                 onDragOver={(e) => {
                   if (!dragId) return;
@@ -339,13 +374,19 @@ const PrintAgenda = () => {
                   handleDropOnDay(day);
                 }}
               >
-                <div
-                  className="day-head bg-pattern-hex-light text-[28px] px-3 pt-2 pb-2 border-b-[3px]"
-                  style={{ borderColor: ORANGE, color: isToday ? ORANGE : "#111" }}
-                >
-                  {format(day, "dd")} {DAY_LABELS[idx]}
+                <div className="pb-2 mb-2" style={{ borderBottom: `2px solid ${INK}` }}>
+                  <div
+                    className="day-head text-[22px] sm:text-[26px] leading-none"
+                    style={{ color: isToday ? ORANGE : INK }}
+                  >
+                    {DAY_LABELS[idx]}
+                  </div>
+                  <div className="text-[10px] font-bold mt-1" style={{ color: INK, opacity: isToday ? 1 : 0.55 }}>
+                    {format(day, "dd 'de' MMM", { locale: ptBR })}
+                    {isToday && <span className="ml-2" style={{ color: ORANGE }}>• HOJE</span>}
+                  </div>
                 </div>
-                <div className="agenda-day-body p-2 space-y-2 flex-1 overflow-hidden">
+                <div className="agenda-day-body space-y-3 flex-1 overflow-hidden">
                   {(() => {
                     const morning = events.filter(
                       (e) => new Date(e.scheduled_at).getHours() < 12
@@ -370,35 +411,31 @@ const PrintAgenda = () => {
                     return (
                       <>
                         <div
-                          className="agenda-period-label text-[10px] font-bold uppercase tracking-wider px-1 pt-0.5 pb-1"
-                          style={{ color: ORANGE }}
+                          className="agenda-period-label text-[9px] font-bold uppercase tracking-[0.25em] px-1 pt-0.5 pb-1"
+                          style={{ color: INK, opacity: 0.55 }}
                         >
-                          Manhã
+                          ── Manhã
                         </div>
-                        <div className="space-y-2">
+                        <div className="space-y-3">
                           {morning.length === 0 ? (
-                            <div className="text-[10px] text-neutral-400 italic px-1">
-                              —
-                            </div>
+                            <div className="text-[9px] italic px-1" style={{ color: INK, opacity: 0.3 }}>—</div>
                           ) : (
                             morning.map(renderCard)
                           )}
                         </div>
                         <div
-                          className="agenda-period-divider border-t border-dashed mt-2 pt-1"
-                          style={{ borderColor: ORANGE }}
+                          className="agenda-period-label text-[9px] font-bold uppercase tracking-[0.25em] px-1 pt-3 pb-1"
+                          style={{ color: INK, opacity: 0.55 }}
                         />
                         <div
-                          className="agenda-period-label text-[10px] font-bold uppercase tracking-wider px-1 pb-1"
-                          style={{ color: ORANGE }}
+                          className="agenda-period-label text-[9px] font-bold uppercase tracking-[0.25em] px-1 pb-1"
+                          style={{ color: INK, opacity: 0.55 }}
                         >
-                          Tarde
+                          ── Tarde
                         </div>
-                        <div className="space-y-2">
+                        <div className="space-y-3">
                           {afternoon.length === 0 ? (
-                            <div className="text-[10px] text-neutral-400 italic px-1">
-                              —
-                            </div>
+                            <div className="text-[9px] italic px-1" style={{ color: INK, opacity: 0.3 }}>—</div>
                           ) : (
                             afternoon.map(renderCard)
                           )}
@@ -410,8 +447,19 @@ const PrintAgenda = () => {
               </div>
             );
           })}
+          </div>
+
+          {/* Footer */}
+          <footer className="mt-2 flex flex-wrap justify-between items-center gap-3 pt-4 border-t-2" style={{ borderColor: INK }}>
+            <div className="text-[10px] uppercase tracking-[0.25em] font-bold" style={{ color: INK, opacity: 0.6 }}>
+              TreinaCheck · Uso operacional interno
+            </div>
+            <div className="text-[10px] uppercase tracking-[0.25em] font-bold" style={{ color: INK, opacity: 0.6 }}>
+              Gerado em {format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+            </div>
+          </footer>
         </div>
-        <p className="agenda-tip no-print text-[11px] text-neutral-500 mt-3">
+        <p className="agenda-tip no-print text-[11px] mt-3" style={{ color: INK, opacity: 0.55 }}>
           Dica: arraste uma visita para outro dia para reagendar.
         </p>
       </main>
