@@ -527,7 +527,7 @@ const EventCard = ({
   const isDone = t.status === "realizado" || t.status === "concluido";
   const isResched = t.status === "reagendado";
   const isCancelled = t.status === "cancelado";
-  const borderColor = isCancelled ? RED : isDone ? BLUE : ORANGE;
+  const accentColor = isCancelled ? RED : isDone ? BLUE : ORANGE;
   const showConfirmation = !isCancelled;
   const teamConfirmed = !!t.confirmed_at;
   return (
@@ -550,29 +550,45 @@ const EventCard = ({
       tabIndex={0}
     >
       <div
-        className="agenda-event relative border-2 rounded-sm px-2.5 py-2 pr-7 text-[13px] leading-snug bg-white hover:bg-orange-50/40 transition-colors"
+        className="agenda-event relative px-3 py-2.5 pr-8 text-[12px] leading-snug transition-colors"
         style={{
-          borderColor,
-          background: isCancelled ? "#FDECEC" : isDone ? "#EEF1FB" : "white",
+          background: isCancelled ? "#FDECEC" : isDone ? "#EEF1FB" : "#ffffff",
+          borderLeft: `6px solid ${accentColor}`,
         }}
       >
+        {/* top strip: hour + status badge */}
+        <div className="flex items-center justify-between mb-1">
+          <span
+            className="agenda-badge text-[9px] px-1.5 py-[2px]"
+            style={{
+              background: accentColor,
+              color: "#ffffff",
+            }}
+          >
+            {hour}
+          </span>
+          {(() => {
+            const vt = getVisitType(t.visit_type);
+            const Icon = vt.icon;
+            return (
+              <span
+                className="absolute -top-2 -right-2 inline-flex items-center justify-center h-6 w-6 rounded-full"
+                style={{
+                  color: isCancelled ? RED : vt.color,
+                  border: `2px solid ${INK}`,
+                  background: isCancelled ? "#ffffff" : vt.bg,
+                  boxShadow: `2px 2px 0 ${INK}`,
+                }}
+                title={vt.label}
+                aria-label={vt.label}
+              >
+                <Icon className="h-3 w-3" strokeWidth={2.5} />
+              </span>
+            );
+          })()}
+        </div>
         {(() => {
-          const vt = getVisitType(t.visit_type);
-          const Icon = vt.icon;
-          return (
-            <span
-              className="agenda-event-type absolute top-1 right-1 inline-flex items-center justify-center h-5 w-5 rounded-full border"
-              style={{
-                color: isCancelled ? RED : vt.color,
-                borderColor: isCancelled ? RED : vt.color,
-                background: isCancelled ? "transparent" : vt.bg,
-              }}
-              title={vt.label}
-              aria-label={vt.label}
-            >
-              <Icon className="h-3 w-3" strokeWidth={2.5} />
-            </span>
-          );
+          return null;
         })()}
         <div className="flex items-start gap-1.5">
           {isDone && (
@@ -601,26 +617,27 @@ const EventCard = ({
             />
           )}
           <span
-            className="agenda-event-title font-semibold"
+            className="agenda-event-title font-bold leading-tight"
             style={{
-              color: isCancelled ? RED : isDone ? BLUE : "#000",
+              color: isCancelled ? RED : isDone ? BLUE : INK,
               textDecoration: isCancelled ? "line-through" : "none",
+              fontFamily: "'Space Grotesk', sans-serif",
             }}
           >
-            {hour} - {label}
+            {label}
           </span>
         </div>
         {t.client?.trim() && t.title && t.client.trim() !== t.title && (
           <div
-            className="agenda-event-extra text-[10.5px] mt-0.5 text-neutral-700 truncate"
-            style={{ color: isCancelled ? RED : "#444" }}
+            className="agenda-event-extra text-[10px] mt-0.5 truncate"
+            style={{ color: isCancelled ? RED : INK, opacity: isCancelled ? 1 : 0.7 }}
           >
             {t.title}
           </div>
         )}
         <div
-          className="agenda-event-meta text-[10px] mt-0.5 text-neutral-600 flex flex-wrap gap-x-2"
-          style={{ color: isCancelled ? RED : "#555" }}
+          className="agenda-event-meta text-[9.5px] mt-1 flex flex-wrap gap-x-2 font-medium"
+          style={{ color: isCancelled ? RED : INK, opacity: isCancelled ? 1 : 0.6 }}
         >
           <span>{t.duration_minutes} min</span>
           {t.location && <span>• {t.location}</span>}
