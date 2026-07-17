@@ -703,61 +703,41 @@ const EventCard = ({
 };
 
 const Legend = () => (
-  <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[13px]">
+  <div className="flex flex-wrap items-center gap-2 text-[10px]">
     {VISIT_TYPES.map((vt) => {
       const Icon = vt.icon;
       return (
-        <div key={vt.id} className="flex items-center gap-2">
+        <div key={vt.id} className="flex items-center gap-1.5 px-2 py-1" style={{ background: "#ffffff", border: `2px solid ${INK}`, boxShadow: `2px 2px 0 ${INK}` }}>
           <span
-            className="inline-flex items-center justify-center h-4 w-4 rounded-full border"
+            className="inline-flex items-center justify-center h-4 w-4 rounded-full"
             style={{ color: vt.color, borderColor: vt.color, background: vt.bg }}
           >
             <Icon className="h-2.5 w-2.5" strokeWidth={2.5} />
           </span>
-          <span>{vt.short}</span>
+          <span className="font-bold uppercase tracking-wider" style={{ color: INK }}>{vt.short}</span>
         </div>
       );
     })}
-    <div className="flex items-center gap-2">
-      <span
-        className="w-4 h-4 rounded-full inline-block"
-        style={{ background: ORANGE }}
-      />
-      <span>Agendado</span>
+    <div className="flex items-center gap-1.5 px-2 py-1" style={{ background: ORANGE, border: `2px solid ${INK}`, boxShadow: `2px 2px 0 ${INK}` }}>
+      <span className="font-bold uppercase tracking-wider" style={{ color: "#ffffff" }}>Agendado</span>
     </div>
-    <div className="flex items-center gap-2">
-      <span
-        className="w-4 text-center font-bold leading-none"
-        style={{ color: BLUE }}
-      >
-        *
-      </span>
-      <span>Realizado</span>
+    <div className="flex items-center gap-1.5 px-2 py-1" style={{ background: BLUE, border: `2px solid ${INK}`, boxShadow: `2px 2px 0 ${INK}` }}>
+      <span className="font-bold uppercase tracking-wider" style={{ color: "#ffffff" }}>* Realizado</span>
     </div>
-    <div className="flex items-center gap-2">
-      <X className="w-4 h-4" style={{ color: RED }} strokeWidth={3} />
-      <span>Reagendado</span>
+    <div className="flex items-center gap-1.5 px-2 py-1" style={{ background: "#ffffff", border: `2px solid ${INK}`, boxShadow: `2px 2px 0 ${INK}` }}>
+      <X className="w-3 h-3" style={{ color: RED }} strokeWidth={3} />
+      <span className="font-bold uppercase tracking-wider" style={{ color: INK }}>Reagendado</span>
     </div>
-    <div className="flex items-center gap-2">
-      <span
-        className="w-4 h-4 rounded-sm inline-block border-2"
-        style={{ background: "#FDECEC", borderColor: RED }}
-      />
-      <span>Cancelado</span>
+    <div className="flex items-center gap-1.5 px-2 py-1" style={{ background: "#FDECEC", border: `2px solid ${INK}`, boxShadow: `2px 2px 0 ${INK}` }}>
+      <span className="font-bold uppercase tracking-wider" style={{ color: RED }}>Cancelado</span>
     </div>
-    <div className="flex items-center gap-2">
-      <span
-        className="w-2 h-2 rounded-full inline-block"
-        style={{ background: GREEN }}
-      />
-      <span>Confirmada</span>
+    <div className="flex items-center gap-1.5 px-2 py-1" style={{ background: "#EAF7EF", border: `2px solid ${INK}`, boxShadow: `2px 2px 0 ${INK}` }}>
+      <span className="inline-block w-2 h-2 rounded-full" style={{ background: GREEN }} />
+      <span className="font-bold uppercase tracking-wider" style={{ color: INK }}>Confirmada</span>
     </div>
-    <div className="flex items-center gap-2">
-      <span
-        className="w-2 h-2 rounded-full inline-block"
-        style={{ background: "#E0B84A" }}
-      />
-      <span>Pendente</span>
+    <div className="flex items-center gap-1.5 px-2 py-1" style={{ background: "#FFF7E0", border: `2px solid ${INK}`, boxShadow: `2px 2px 0 ${INK}` }}>
+      <span className="inline-block w-2 h-2 rounded-full" style={{ background: "#E0B84A" }} />
+      <span className="font-bold uppercase tracking-wider" style={{ color: INK }}>Pendente</span>
     </div>
   </div>
 );
