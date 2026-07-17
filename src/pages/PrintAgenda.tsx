@@ -207,10 +207,30 @@ const PrintAgenda = () => {
             max-width: 100% !important;
             width: 100% !important;
           }
-          /* Print mirrors on-screen layout: no font/size overrides. */
-          .agenda-day { break-inside: avoid; page-break-inside: avoid; }
+          /* Force the on-screen 5-column layout regardless of print viewport width */
+          .agenda-grid {
+            display: grid !important;
+            grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+            gap: 6px !important;
+          }
+          .agenda-header {
+            flex-direction: row !important;
+            align-items: flex-start !important;
+            gap: 16px !important;
+            margin-bottom: 10px !important;
+          }
+          .agenda-title { font-size: 34px !important; line-height: 0.95 !important; }
+          .agenda-sub { font-size: 14px !important; }
+          .agenda-note-print { font-size: 9px !important; }
+          .agenda-layers-print { width: 70px !important; height: 70px !important; }
+          .day-head { font-size: 18px !important; padding: 4px 8px !important; }
+          .agenda-day {
+            min-height: 0 !important;
+            break-inside: avoid; page-break-inside: avoid;
+          }
           .agenda-event { break-inside: avoid; page-break-inside: avoid; }
           .agenda-tip { display: none !important; }
+          main.agenda-page { page-break-inside: avoid; break-inside: avoid; }
         }
         @media (max-width: 767px) {
           .agenda-page { padding: 16px !important; }
