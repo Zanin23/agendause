@@ -197,59 +197,8 @@ const PrintAgenda = () => {
         .agenda-title { font-family: 'Clash Display', 'Archivo', sans-serif; font-weight: 700; letter-spacing: -0.02em; }
         .agenda-sub { font-family: 'Clash Display', 'Archivo', sans-serif; font-weight: 600; font-style: italic; }
         .day-head { font-family: 'Clash Display', 'Archivo', sans-serif; font-weight: 700; letter-spacing: 0.01em; }
-        @media print {
-          .no-print { display: none !important; }
-          @page { size: A4 landscape; margin: 5mm; }
-          body { background: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          html, body { height: auto !important; }
-          html, body { width: 287mm !important; height: 200mm !important; overflow: hidden !important; }
-          .agenda-page {
-            padding: 0 !important;
-            max-width: 100% !important;
-            width: 100% !important;
-            height: 200mm !important;
-            overflow: hidden !important;
-            display: flex !important;
-            flex-direction: column !important;
-          }
-          /* Force the on-screen 5-column layout regardless of print viewport width */
-          .agenda-grid {
-            display: grid !important;
-            grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
-            gap: 4px !important;
-            flex: 1 1 auto !important;
-            min-height: 0 !important;
-            align-items: stretch !important;
-          }
-          .agenda-header {
-            flex-direction: row !important;
-            align-items: flex-start !important;
-            gap: 12px !important;
-            margin-bottom: 6px !important;
-            flex: 0 0 auto !important;
-          }
-          .agenda-title { font-size: 24px !important; line-height: 0.95 !important; }
-          .agenda-sub { font-size: 11px !important; margin-top: 2px !important; }
-          .agenda-note-print { font-size: 8px !important; margin-top: 2px !important; }
-          .agenda-layers-print { width: 54px !important; height: 54px !important; }
-          .day-head { font-size: 14px !important; padding: 3px 6px !important; }
-          .agenda-day {
-            min-height: 0 !important;
-            height: 100% !important;
-            overflow: hidden !important;
-            break-inside: avoid; page-break-inside: avoid;
-          }
-          .agenda-day-body { padding: 4px !important; }
-          .agenda-day-body > * + * { margin-top: 3px !important; }
-          .agenda-period-label { font-size: 8px !important; padding: 0 2px !important; }
-          .agenda-event { break-inside: avoid; page-break-inside: avoid; font-size: 9px !important; }
-          .agenda-event * { font-size: inherit !important; line-height: 1.15 !important; }
-          .agenda-legend-print { font-size: 8px !important; }
-          .agenda-event { break-inside: avoid; page-break-inside: avoid; }
-          .agenda-tip { display: none !important; }
-          main.agenda-page { page-break-inside: avoid; break-inside: avoid; }
-        }
-        @media (max-width: 767px) {
+        /* Mobile screen styles — must NOT apply during print. */
+        @media screen and (max-width: 767px) {
           .agenda-page { padding: 16px !important; }
           .agenda-header {
             flex-direction: column !important;
@@ -261,6 +210,78 @@ const PrintAgenda = () => {
           .agenda-layers-print { width: 80px !important; height: 80px !important; }
           .agenda-grid { grid-template-columns: 1fr !important; }
           .agenda-day { min-height: 0 !important; }
+        }
+        /* Print block placed LAST so it wins the cascade over any screen rule
+           that the browser's PDF preview viewport might trigger. */
+        @media print {
+          @page { size: A4 landscape; margin: 5mm; }
+          .no-print { display: none !important; }
+          html, body {
+            background: white !important;
+            width: auto !important;
+            height: auto !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+          .agenda-page {
+            padding: 0 !important;
+            margin: 0 !important;
+            max-width: 100% !important;
+            width: 100% !important;
+            height: 200mm !important;
+            overflow: hidden !important;
+            display: flex !important;
+            flex-direction: column !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+          }
+          .agenda-header {
+            display: flex !important;
+            flex-direction: row !important;
+            align-items: flex-start !important;
+            justify-content: space-between !important;
+            gap: 12px !important;
+            margin-bottom: 4mm !important;
+            flex: 0 0 auto !important;
+          }
+          .agenda-title { font-size: 22pt !important; line-height: 0.95 !important; }
+          .agenda-sub { font-size: 10pt !important; margin-top: 1mm !important; }
+          .agenda-note-print { font-size: 7pt !important; margin-top: 1mm !important; }
+          .agenda-legend-print { font-size: 7pt !important; }
+          .agenda-layers-print {
+            width: 18mm !important; height: 18mm !important;
+            min-width: 18mm !important; min-height: 18mm !important;
+          }
+          .agenda-grid {
+            display: grid !important;
+            grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+            grid-auto-flow: column !important;
+            gap: 2mm !important;
+            flex: 1 1 auto !important;
+            min-height: 0 !important;
+            align-items: stretch !important;
+            width: 100% !important;
+          }
+          .agenda-day {
+            min-height: 0 !important;
+            height: 100% !important;
+            overflow: hidden !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+          }
+          .day-head { font-size: 11pt !important; padding: 1mm 2mm !important; }
+          .agenda-day-body { padding: 1.5mm !important; }
+          .agenda-day-body > * + * { margin-top: 1mm !important; }
+          .agenda-period-label { font-size: 6pt !important; padding: 0 1mm !important; }
+          .agenda-event {
+            font-size: 7pt !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+          }
+          .agenda-event * { line-height: 1.15 !important; }
+          .agenda-tip { display: none !important; }
         }
       `}</style>
 
