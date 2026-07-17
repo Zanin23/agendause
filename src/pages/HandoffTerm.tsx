@@ -88,7 +88,7 @@ export default function HandoffTerm() {
       if (ce) { toast.error(ce.message); setLoading(false); return; }
       h = created;
     }
-    setHandoff(h as Handoff);
+    setHandoff(h as unknown as Handoff);
     setLoading(false);
   };
 
