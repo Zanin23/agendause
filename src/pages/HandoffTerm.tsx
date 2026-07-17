@@ -163,6 +163,9 @@ export default function HandoffTerm() {
           @page { size: A4; margin: 12mm 14mm; }
           html, body { background: white !important; }
           body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          body * { visibility: hidden; }
+          main.print-surface, main.print-surface * { visibility: visible; }
+          main.print-surface { position: absolute; left: 0; top: 0; right: 0; }
           main.print-surface { max-width: 100% !important; padding: 0 !important; }
           main.print-surface > * { margin-top: 0 !important; }
           main.print-surface > * + * { margin-top: 10px !important; }
@@ -352,21 +355,10 @@ export default function HandoffTerm() {
               )}
             </SignatureBlock>
             <SignatureBlock
-              role="Cliente"
-              name={handoff.client_accepted_name}
-              at={handoff.client_accepted_at}
-            >
-              {!handoff.client_accepted_at && (
-                <div className="no-print mt-3 space-y-2">
-                  <p className="text-xs text-muted-foreground">
-                    Envie o link público para o cliente confirmar o recebimento.
-                  </p>
-                  <Button variant="outline" size="sm" className="w-full" onClick={copyPublicLink}>
-                    <Link2 className="h-4 w-4" /> Copiar link do cliente
-                  </Button>
-                </div>
-              )}
-            </SignatureBlock>
+              role="Equipe de Implantação"
+              name={null}
+              at={null}
+            />
           </div>
         </section>
 
