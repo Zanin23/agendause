@@ -330,9 +330,6 @@ const PrintAgenda = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={() => navigate("/agenda/imprimir/comparar")}>
-              Comparar layouts
-            </Button>
             <Button variant="outline" onClick={exportPDF} disabled={exporting}>
               <FileDown className="h-4 w-4" />
               {exporting ? "Gerando..." : "Exportar PDF"}
