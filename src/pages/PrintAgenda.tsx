@@ -71,20 +71,20 @@ const PrintAgenda = () => {
   const [exporting, setExporting] = useState(false);
 
   const exportPDF = async () => {
-    const el = document.querySelector(".agenda-page") as HTMLElement | null;
+    const el = document.querySelector(".agenda-paper") as HTMLElement | null;
     if (!el) return;
     setExporting(true);
     try {
       const canvas = await html2canvas(el, {
         scale: 2,
-        backgroundColor: "#ffffff",
+        backgroundColor: CREAM,
         useCORS: true,
       });
       const imgData = canvas.toDataURL("image/png");
       const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
       const pageW = pdf.internal.pageSize.getWidth();
       const pageH = pdf.internal.pageSize.getHeight();
-      const margin = 6;
+      const margin = 8;
       const maxW = pageW - margin * 2;
       const maxH = pageH - margin * 2;
       const ratio = Math.min(maxW / canvas.width, maxH / canvas.height);
@@ -205,16 +205,27 @@ const PrintAgenda = () => {
         .agenda-event { border: 2px solid ${INK} !important; box-shadow: 4px 4px 0 ${INK}; border-top-right-radius: 12px; }
         .agenda-badge { border: 2px solid ${INK}; box-shadow: 2px 2px 0 ${INK}; font-family: 'Space Grotesk', sans-serif; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
         @media print {
-          .no-print { display: none !important; }
-          @page { size: A4 landscape; margin: 10mm; }
-          body { background: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          .agenda-page { background: white !important; }
-          .agenda-paper { box-shadow: none !important; border-radius: 0 !important; }
-          .agenda-event { box-shadow: 3px 3px 0 ${INK} !important; }
-          .agenda-badge { box-shadow: 1.5px 1.5px 0 ${INK} !important; }
-          .agenda-day { break-inside: avoid; page-break-inside: avoid; }
-          .agenda-event { break-inside: avoid; page-break-inside: avoid; }
-          .agenda-tip { display: none !important; }
+          @page { size: A4 landscape; margin: 0; }
+          html, body {
+            margin: 0 !important;
+            padding: 0 !important;
+            background: ${CREAM} !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          .no-print, .agenda-tip { display: none !important; }
+          /* The screen layout is 1200px wide. A4 landscape at 96dpi ≈ 1123px.
+             We scale the whole page down so the print is a 1:1 snapshot of what
+             is on screen, guaranteed to fit a single A4 landscape sheet. */
+          .agenda-page {
+            width: 1200px !important;
+            max-width: none !important;
+            margin: 0 !important;
+            padding: 20px !important;
+            transform: scale(0.92);
+            transform-origin: top left;
+          }
+          .agenda-day, .agenda-event { break-inside: avoid; page-break-inside: avoid; }
         }
         @media (max-width: 767px) {
           .agenda-page { padding: 12px !important; }
