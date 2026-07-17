@@ -214,13 +214,19 @@ const PrintAgenda = () => {
             margin: 0 !important;
             width: 1240px !important;
             max-width: none !important;
-            height: 877px !important; /* ~210mm at 1240px/297mm ratio */
+            height: 793px !important; /* 210mm at 96dpi */
             overflow: hidden !important;
-            transform: scale(calc(297mm / 1240px));
+            transform: scale(0.905); /* 1122.5px (297mm@96dpi) / 1240px */
             transform-origin: top left;
             background: white !important;
           }
-          .agenda-day { break-inside: avoid; page-break-inside: avoid; min-height: 0 !important; }
+          /* Keep 5 columns exactly like the on-screen layout */
+          .agenda-grid {
+            display: grid !important;
+            grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+            gap: 12px !important;
+          }
+          .agenda-day { break-inside: avoid; page-break-inside: avoid; min-height: 0 !important; height: auto !important; }
           .agenda-event { break-inside: avoid; page-break-inside: avoid; }
           .agenda-tip { display: none !important; }
         }
