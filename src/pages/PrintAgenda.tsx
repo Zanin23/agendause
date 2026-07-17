@@ -199,16 +199,28 @@ const PrintAgenda = () => {
         .day-head { font-family: 'Clash Display', 'Archivo', sans-serif; font-weight: 700; letter-spacing: 0.01em; }
         @media print {
           .no-print { display: none !important; }
-          @page { size: A4 landscape; margin: 6mm; }
+          @page { size: A4 landscape; margin: 0; }
           body { background: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
           html, body { height: auto !important; }
+          /* Render the on-screen layout at its natural size and scale it to fit
+             a single A4 landscape sheet. Keeps identical visual to preview. */
+          body * { visibility: hidden; }
+          .agenda-page, .agenda-page * { visibility: visible; }
           .agenda-page {
-            padding: 0 !important;
-            max-width: 100% !important;
-            width: 100% !important;
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            padding: 8mm 10mm !important;
+            margin: 0 !important;
+            width: 1240px !important;
+            max-width: none !important;
+            height: 877px !important; /* ~210mm at 1240px/297mm ratio */
+            overflow: hidden !important;
+            transform: scale(calc(297mm / 1240px));
+            transform-origin: top left;
+            background: white !important;
           }
-          /* Print mirrors on-screen layout: no font/size overrides. */
-          .agenda-day { break-inside: avoid; page-break-inside: avoid; }
+          .agenda-day { break-inside: avoid; page-break-inside: avoid; min-height: 0 !important; }
           .agenda-event { break-inside: avoid; page-break-inside: avoid; }
           .agenda-tip { display: none !important; }
         }
