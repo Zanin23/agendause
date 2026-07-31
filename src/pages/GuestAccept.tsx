@@ -204,12 +204,12 @@ const GuestAccept = () => {
                 {training.location && <p><strong>Local:</strong> {training.location}</p>}
               </div>
 
-              {training.description && (
-                <div>
-                  <p className="font-semibold">O que foi treinado</p>
-                  <p className="whitespace-pre-wrap">{training.description}</p>
-                </div>
-              )}
+              <div className="rounded border border-border p-3">
+                <p className="font-semibold mb-1">Descrição do que foi treinado</p>
+                <p className="whitespace-pre-wrap">
+                  {training.description?.trim() || "Não informado."}
+                </p>
+              </div>
 
               <p className="pt-2">
                 Declaro que recebi o treinamento descrito acima e que as informações apresentadas
