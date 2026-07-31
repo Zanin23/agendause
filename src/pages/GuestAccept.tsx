@@ -36,8 +36,14 @@ const formatBytes = (n: number | null) => {
   return `${(n / 1024 / 1024).toFixed(1)} MB`;
 };
 
+const TermField = ({ label, value }: { label: string; value: string }) => (
+  <div className="flex gap-3 text-sm">
+    <span className="text-neutral-500 w-28 shrink-0">{label}</span>
+    <span className="font-medium">{value}</span>
+  </div>
+);
+
 const GuestAccept = () => {
-  // helper de campo do termo definido abaixo
   const { id } = useParams();
   const [training, setTraining] = useState<Training | null>(null);
   const [attachments, setAttachments] = useState<AttachmentRow[]>([]);
