@@ -207,6 +207,7 @@ export type Database = {
           email: string | null
           full_name: string
           id: string
+          signature: string | null
           training_id: string
           workspace_id: string
         }
@@ -215,6 +216,7 @@ export type Database = {
           email?: string | null
           full_name: string
           id?: string
+          signature?: string | null
           training_id: string
           workspace_id: string
         }
@@ -223,6 +225,7 @@ export type Database = {
           email?: string | null
           full_name?: string
           id?: string
+          signature?: string | null
           training_id?: string
           workspace_id?: string
         }
@@ -249,6 +252,7 @@ export type Database = {
           client_accepted_ip: string | null
           client_accepted_name: string | null
           client_name: string
+          client_signature: string | null
           created_at: string
           created_by: string | null
           id: string
@@ -267,6 +271,7 @@ export type Database = {
           client_accepted_ip?: string | null
           client_accepted_name?: string | null
           client_name: string
+          client_signature?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
@@ -285,6 +290,7 @@ export type Database = {
           client_accepted_ip?: string | null
           client_accepted_name?: string | null
           client_name?: string
+          client_signature?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
@@ -1003,10 +1009,20 @@ export type Database = {
         Args: { _handoff_id: string; _name: string }
         Returns: boolean
       }
-      accept_handoff_by_token: {
-        Args: { _ip: string; _name: string; _token: string }
-        Returns: boolean
-      }
+      accept_handoff_by_token:
+        | {
+            Args: { _ip: string; _name: string; _token: string }
+            Returns: boolean
+          }
+        | {
+            Args: {
+              _ip: string
+              _name: string
+              _signature?: string
+              _token: string
+            }
+            Returns: boolean
+          }
       accept_schedule_by_token: {
         Args: { _ip: string; _name: string; _token: string }
         Returns: boolean
