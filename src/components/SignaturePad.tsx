@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Eraser, PenLine } from "lucide-react";
+import { Eraser, PenLine, Maximize2, Minimize2, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 type Props = {
@@ -20,14 +20,16 @@ export const SignaturePad = ({
   const drawing = useRef(false);
   const last = useRef<{ x: number; y: number } | null>(null);
   const [hasInk, setHasInk] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const snapshot = useRef<string | null>(null);
 
-  const setupCanvas = () => {
+  const setupCanvas = (restore = false) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ratio = window.devicePixelRatio || 1;
     const rect = canvas.getBoundingClientRect();
     canvas.width = Math.max(1, Math.floor(rect.width * ratio));
-    canvas.height = Math.max(1, Math.floor(height * ratio));
+    canvas.height = Math.max(1, Math.floor(rect.height * ratio));
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     ctx.scale(ratio, ratio);
@@ -35,19 +37,35 @@ export const SignaturePad = ({
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
     ctx.strokeStyle = "#111827";
+    if (restore && snapshot.current) {
+      const img = new Image();
+      const src = snapshot.current;
+      img.onload = () => {
+        ctx.drawImage(img, 0, 0, rect.width, rect.height);
+      };
+      img.src = src;
+    }
   };
 
   useEffect(() => {
     setupCanvas();
     const onResize = () => {
-      setupCanvas();
-      setHasInk(false);
-      onChange(null);
+      snapshot.current = hasInk ? canvasRef.current?.toDataURL("image/png") ?? null : null;
+      setupCanvas(true);
     };
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Reajusta o canvas ao entrar/sair do modo expandido, preservando o traço.
+  useEffect(() => {
+    requestAnimationFrame(() => {
+      setupCanvas(true);
+      if (snapshot.current) onChange(snapshot.current);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [expanded]);
 
   const pointFromEvent = (e: React.PointerEvent<HTMLCanvasElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -79,7 +97,11 @@ export const SignaturePad = ({
     drawing.current = false;
     last.current = null;
     const canvas = canvasRef.current;
-    if (canvas && hasInk) onChange(canvas.toDataURL("image/png"));
+    if (canvas && hasInk) {
+      const data = canvas.toDataURL("image/png");
+      snapshot.current = data;
+      onChange(data);
+    }
   };
 
   const clear = () => {
@@ -87,25 +109,49 @@ export const SignaturePad = ({
     const ctx = canvas?.getContext("2d");
     if (!canvas || !ctx) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    snapshot.current = null;
     setHasInk(false);
     onChange(null);
   };
 
-  return (
-    <div className="space-y-2">
+  const toggleExpanded = () => {
+    snapshot.current = hasInk ? canvasRef.current?.toDataURL("image/png") ?? null : snapshot.current;
+    setExpanded((v) => !v);
+  };
+
+  const body = (
+    <div className={expanded ? "flex h-full flex-col gap-2 p-3" : "space-y-2"}>
       <div className="flex items-center justify-between gap-2">
         <span className="text-sm font-medium flex items-center gap-1.5">
           <PenLine className="h-3.5 w-3.5 text-primary" /> {label}
         </span>
-        <Button type="button" variant="ghost" size="sm" onClick={clear} disabled={!hasInk}>
-          <Eraser className="h-3.5 w-3.5" /> Limpar
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button type="button" variant="ghost" size="sm" onClick={clear} disabled={!hasInk}>
+            <Eraser className="h-3.5 w-3.5" /> Limpar
+          </Button>
+          <Button type="button" variant="ghost" size="sm" onClick={toggleExpanded}>
+            {expanded ? (
+              <>
+                <Minimize2 className="h-3.5 w-3.5" /> Reduzir
+              </>
+            ) : (
+              <>
+                <Maximize2 className="h-3.5 w-3.5" /> Expandir
+              </>
+            )}
+          </Button>
+        </div>
       </div>
-      <div className="relative rounded-xl border border-dashed border-border bg-white overflow-hidden">
+      <div
+        className={`relative rounded-xl border border-dashed border-border bg-white overflow-hidden ${
+          expanded ? "flex-1" : ""
+        }`}
+        style={expanded ? undefined : { height }}
+      >
         <canvas
           ref={canvasRef}
-          style={{ height, touchAction: "none" }}
-          className="w-full block cursor-crosshair"
+          style={{ touchAction: "none" }}
+          className="w-full h-full block cursor-crosshair"
           onPointerDown={start}
           onPointerMove={move}
           onPointerUp={end}
@@ -119,7 +165,21 @@ export const SignaturePad = ({
         )}
         <span className="pointer-events-none absolute inset-x-8 bottom-5 border-b border-neutral-300" />
       </div>
-      <p className="text-xs text-muted-foreground">{hint}</p>
+      {expanded ? (
+        <Button type="button" onClick={toggleExpanded} className="w-full">
+          <Check className="h-4 w-4" /> Concluir assinatura
+        </Button>
+      ) : (
+        <p className="text-xs text-muted-foreground">{hint}</p>
+      )}
     </div>
   );
+
+  if (expanded) {
+    return (
+      <div className="fixed inset-0 z-50 bg-background animate-in fade-in">{body}</div>
+    );
+  }
+
+  return body;
 };
