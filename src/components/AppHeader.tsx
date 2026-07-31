@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { LogOut, Moon, Sun, Database, Settings as SettingsIcon } from "lucide-react";
+import { Moon, Sun, Database, Settings as SettingsIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
@@ -8,7 +8,7 @@ import { useWorkspace } from "@/hooks/useWorkspace";
 import logoAsset from "@/assets/logo-use-sistemas.png.asset.json";
 
 export const AppHeader = () => {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
   const { active } = useWorkspace();
@@ -19,11 +19,6 @@ export const AppHeader = () => {
     .slice(0, 2)
     .join("")
     .toUpperCase();
-
-  const handleSignOut = async () => {
-    await signOut();
-    navigate("/auth");
-  };
 
   return (
     <header className="border-b border-border bg-card/40 backdrop-blur sticky top-0 z-30">
@@ -78,10 +73,6 @@ export const AppHeader = () => {
             <Avatar className="h-8 w-8 sm:h-9 sm:w-9">
               <AvatarFallback className="bg-primary/15 text-primary text-xs font-semibold">{initials}</AvatarFallback>
             </Avatar>
-            <Button variant="ghost" size="sm" onClick={handleSignOut} className="text-muted-foreground px-2 sm:px-3" aria-label="Sair">
-              <LogOut className="h-4 w-4" />
-              <span className="hidden sm:inline">Sair</span>
-            </Button>
           </div>
         )}
         {!user && (
