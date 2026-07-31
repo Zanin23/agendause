@@ -80,7 +80,11 @@ const Reports = () => {
   useEffect(() => {
     (async () => {
       const [{ data: trainings }, { data: ua }, { data: ga }] = await Promise.all([
-        supabase.from("trainings").select("id, title, client, scheduled_at, location, status").order("scheduled_at", { ascending: false }),
+        supabase
+          .from("trainings")
+          .select("id, title, client, scheduled_at, location, status, requires_acceptance")
+          .eq("requires_acceptance", true)
+          .order("scheduled_at", { ascending: false }),
         supabase.from("training_acceptances").select("training_id"),
         supabase.from("guest_acceptances").select("training_id"),
       ]);
