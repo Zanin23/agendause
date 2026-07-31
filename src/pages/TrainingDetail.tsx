@@ -99,6 +99,9 @@ const TrainingDetail = () => {
   const [editingNotes, setEditingNotes] = useState(false);
   const [notesDraft, setNotesDraft] = useState("");
   const [savingNotes, setSavingNotes] = useState(false);
+  const [editingDesc, setEditingDesc] = useState(false);
+  const [descDraft, setDescDraft] = useState("");
+  const [savingDesc, setSavingDesc] = useState(false);
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [schedDate, setSchedDate] = useState("");
   const [schedTime, setSchedTime] = useState("");
@@ -231,6 +234,25 @@ const TrainingDetail = () => {
   const startEditNotes = () => {
     setNotesDraft(training?.internal_notes || "");
     setEditingNotes(true);
+  };
+
+  const startEditDesc = () => {
+    setDescDraft(training?.description || "");
+    setEditingDesc(true);
+  };
+
+  const saveDesc = async () => {
+    if (!id) return;
+    setSavingDesc(true);
+    const { error } = await supabase
+      .from("trainings")
+      .update({ description: descDraft.trim() || null })
+      .eq("id", id);
+    setSavingDesc(false);
+    if (error) return toast.error(error.message);
+    toast.success("Conteúdo treinado atualizado");
+    setEditingDesc(false);
+    load();
   };
 
   const saveNotes = async () => {
@@ -483,12 +505,37 @@ const TrainingDetail = () => {
             }}
           />
 
-          {training.description && (
-            <div>
-              <h2 className="text-sm uppercase tracking-wider text-muted-foreground mb-2">O que foi treinado</h2>
-              <p className="text-foreground/90 whitespace-pre-wrap leading-relaxed">{training.description}</p>
+          <div>
+            <div className="flex items-center justify-between gap-2 flex-wrap mb-2">
+              <h2 className="text-sm uppercase tracking-wider text-muted-foreground">O que foi treinado</h2>
+              {!editingDesc ? (
+                <Button variant="ghost" size="sm" onClick={startEditDesc}>
+                  <Pencil className="h-3.5 w-3.5" /> Editar
+                </Button>
+              ) : (
+                <div className="flex items-center gap-1">
+                  <Button variant="ghost" size="sm" onClick={() => setEditingDesc(false)} disabled={savingDesc}>
+                    <X className="h-3.5 w-3.5" /> Cancelar
+                  </Button>
+                  <Button size="sm" onClick={saveDesc} disabled={savingDesc}>
+                    <Save className="h-3.5 w-3.5" /> {savingDesc ? "Salvando..." : "Salvar"}
+                  </Button>
+                </div>
+              )}
             </div>
-          )}
+            {editingDesc ? (
+              <Textarea
+                value={descDraft}
+                onChange={(e) => setDescDraft(e.target.value)}
+                rows={5}
+                placeholder="Descreva os tópicos / conteúdos treinados"
+              />
+            ) : training.description ? (
+              <p className="text-foreground/90 whitespace-pre-wrap leading-relaxed">{training.description}</p>
+            ) : (
+              <p className="text-sm text-muted-foreground italic">Nenhum conteúdo registrado ainda.</p>
+            )}
+          </div>
 
           {training.status === "cancelado" && training.cancellation_reason && (
             <div className="rounded-md border border-destructive/40 bg-destructive/10 p-4">
