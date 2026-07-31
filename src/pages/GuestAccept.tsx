@@ -37,6 +37,7 @@ const formatBytes = (n: number | null) => {
 };
 
 const GuestAccept = () => {
+  // helper de campo do termo definido abaixo
   const { id } = useParams();
   const [training, setTraining] = useState<Training | null>(null);
   const [attachments, setAttachments] = useState<AttachmentRow[]>([]);
