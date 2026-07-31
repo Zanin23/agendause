@@ -222,9 +222,35 @@ export const CreateTrainingDialog = ({ open, onOpenChange, onCreated }: Props) =
               </div>
             </section>
 
+            <section className="space-y-2">
+              <Label className={labelCls}>Necessita aceite?</Label>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { v: true, label: "Sim, exigir aceite" },
+                  { v: false, label: "Não é necessário" },
+                ].map((opt) => (
+                  <button
+                    key={String(opt.v)}
+                    type="button"
+                    onClick={() => setRequiresAcceptance(opt.v)}
+                    aria-pressed={requiresAcceptance === opt.v}
+                    className={`p-3 rounded-xl border text-xs font-medium transition-colors ${
+                      requiresAcceptance === opt.v
+                        ? "border-primary/60 bg-primary/[0.08] text-foreground"
+                        : "border-border/60 text-muted-foreground hover:border-primary/40 hover:text-foreground"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+              <p className="text-[11px] italic text-muted-foreground">
+                Sem aceite, o treinamento não aparece nos relatórios de aceite.
+              </p>
+            </section>
+
             <section className="space-y-1.5">
               <Label htmlFor="desc" className={labelCls}>O que será treinado</Label>
-              {null}
               <Textarea
                 id="desc"
                 value={description}
