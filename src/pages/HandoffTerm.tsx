@@ -1,3 +1,4 @@
+import { publicUrl } from "@/lib/publicUrl";
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { format } from "date-fns";
@@ -125,7 +126,7 @@ export default function HandoffTerm() {
 
   const copyPublicLink = async () => {
     if (!handoff?.public_token) return;
-    const url = `${window.location.origin}/t/${handoff.public_token}`;
+    const url = publicUrl(`/t/${handoff.public_token}`);
     await navigator.clipboard.writeText(url);
     toast.success("Link do termo copiado");
   };

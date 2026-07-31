@@ -1,3 +1,4 @@
+import { publicUrl } from "@/lib/publicUrl";
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { format } from "date-fns";
@@ -379,7 +380,7 @@ const TrainingDetail = () => {
     load();
   };
 
-  const publicLink = `${window.location.origin}/aceite/${id}`;
+  const publicLink = publicUrl(`/aceite/${id}`);
 
   const copyLink = async () => {
     try {
