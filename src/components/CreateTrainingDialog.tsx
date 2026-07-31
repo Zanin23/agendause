@@ -224,6 +224,7 @@ export const CreateTrainingDialog = ({ open, onOpenChange, onCreated }: Props) =
 
             <section className="space-y-1.5">
               <Label htmlFor="desc" className={labelCls}>O que será treinado</Label>
+              {null}
               <Textarea
                 id="desc"
                 value={description}
