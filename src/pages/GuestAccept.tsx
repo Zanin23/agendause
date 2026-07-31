@@ -229,6 +229,18 @@ const GuestAccept = () => {
                 </div>
               </div>
             </div>
+            <style>{`
+              @media print {
+                body * { visibility: hidden !important; }
+                .print-term, .print-term * { visibility: visible !important; }
+                .print-term {
+                  position: absolute; left: 0; top: 0; width: 100%;
+                  border: none !important; box-shadow: none !important;
+                  color: #000 !important; background: #fff !important;
+                }
+                @page { size: A4 portrait; margin: 14mm; }
+              }
+            `}</style>
           </>
         ) : (
           <form onSubmit={submit} className="space-y-3">
