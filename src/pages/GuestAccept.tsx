@@ -20,6 +20,7 @@ type Training = {
   scheduled_at: string;
   duration_minutes: number;
   location: string | null;
+  requires_acceptance?: boolean;
 };
 
 type AttachmentRow = {
@@ -119,6 +120,18 @@ const GuestAccept = () => {
   }
   if (!training) {
     return <div className="min-h-screen grid place-items-center text-muted-foreground">Link inválido ou treinamento removido.</div>;
+  }
+  if (training.requires_acceptance === false) {
+    return (
+      <div className="min-h-screen grid place-items-center px-6 text-center">
+        <div className="max-w-md space-y-2">
+          <h1 className="text-xl font-semibold">Este treinamento não exige aceite</h1>
+          <p className="text-sm text-muted-foreground">
+            Não é necessário confirmar o recebimento de “{training.title}”.
+          </p>
+        </div>
+      </div>
+    );
   }
 
   const date = new Date(training.scheduled_at);

@@ -27,6 +27,7 @@ export const CreateTrainingDialog = ({ open, onOpenChange, onCreated }: Props) =
   const [location, setLocation] = useState("");
   const [internalNotes, setInternalNotes] = useState("");
   const [visitType, setVisitType] = useState<VisitType>("presencial");
+  const [requiresAcceptance, setRequiresAcceptance] = useState(true);
   const [loading, setLoading] = useState(false);
   const [companies, setCompanies] = useState<string[]>([]);
 
@@ -54,6 +55,7 @@ export const CreateTrainingDialog = ({ open, onOpenChange, onCreated }: Props) =
   const reset = () => {
     setTitle(""); setClient(""); setDescription(""); setDate(""); setTime("09:00");
     setDuration(60); setLocation(""); setInternalNotes(""); setVisitType("presencial");
+    setRequiresAcceptance(true);
   };
 
   const submit = async (e: React.FormEvent) => {
@@ -70,6 +72,7 @@ export const CreateTrainingDialog = ({ open, onOpenChange, onCreated }: Props) =
       location: location || null,
       internal_notes: internalNotes.trim() || null,
       visit_type: visitType,
+      requires_acceptance: requiresAcceptance,
       created_by: user.id,
     } as any);
     setLoading(false);
@@ -217,6 +220,33 @@ export const CreateTrainingDialog = ({ open, onOpenChange, onCreated }: Props) =
                   );
                 })}
               </div>
+            </section>
+
+            <section className="space-y-2">
+              <Label className={labelCls}>Necessita aceite?</Label>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { v: true, label: "Sim, exigir aceite" },
+                  { v: false, label: "Não é necessário" },
+                ].map((opt) => (
+                  <button
+                    key={String(opt.v)}
+                    type="button"
+                    onClick={() => setRequiresAcceptance(opt.v)}
+                    aria-pressed={requiresAcceptance === opt.v}
+                    className={`p-3 rounded-xl border text-xs font-medium transition-colors ${
+                      requiresAcceptance === opt.v
+                        ? "border-primary/60 bg-primary/[0.08] text-foreground"
+                        : "border-border/60 text-muted-foreground hover:border-primary/40 hover:text-foreground"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+              <p className="text-[11px] italic text-muted-foreground">
+                Sem aceite, o treinamento não aparece nos relatórios de aceite.
+              </p>
             </section>
 
             <section className="space-y-1.5">

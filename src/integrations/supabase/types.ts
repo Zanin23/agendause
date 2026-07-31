@@ -872,6 +872,7 @@ export type Database = {
           id: string
           internal_notes: string | null
           location: string | null
+          requires_acceptance: boolean
           scheduled_at: string
           status: string
           title: string
@@ -892,6 +893,7 @@ export type Database = {
           id?: string
           internal_notes?: string | null
           location?: string | null
+          requires_acceptance?: boolean
           scheduled_at: string
           status?: string
           title: string
@@ -912,6 +914,7 @@ export type Database = {
           id?: string
           internal_notes?: string | null
           location?: string | null
+          requires_acceptance?: boolean
           scheduled_at?: string
           status?: string
           title?: string
@@ -1036,6 +1039,7 @@ export type Database = {
           duration_minutes: number
           id: string
           location: string
+          requires_acceptance: boolean
           scheduled_at: string
           title: string
         }[]

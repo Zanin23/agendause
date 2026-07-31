@@ -40,6 +40,7 @@ type Training = {
   cancelled_at: string | null;
   internal_notes: string | null;
   visit_type: string | null;
+  requires_acceptance: boolean;
 };
 
 type Acceptance = {
@@ -560,6 +561,37 @@ const TrainingDetail = () => {
             }}
           />
 
+          <div className="flex items-center justify-between gap-3 rounded-xl border border-border/70 bg-muted/30 p-4">
+            <div>
+              <p className="text-sm font-medium">Exige aceite do cliente</p>
+              <p className="text-xs text-muted-foreground">
+                {training.requires_acceptance
+                  ? "Este treinamento precisa de confirmação de recebimento e aparece nos relatórios de aceite."
+                  : "Sem aceite: o link público fica desativado e não aparece nos relatórios de aceite."}
+              </p>
+            </div>
+            <Button
+              variant={training.requires_acceptance ? "default" : "outline"}
+              size="sm"
+              onClick={async () => {
+                const next = !training.requires_acceptance;
+                setTraining({ ...training, requires_acceptance: next });
+                const { error } = await supabase
+                  .from("trainings")
+                  .update({ requires_acceptance: next } as any)
+                  .eq("id", training.id);
+                if (error) {
+                  setTraining({ ...training, requires_acceptance: !next });
+                  toast.error(error.message);
+                } else {
+                  toast.success(next ? "Aceite obrigatório" : "Aceite não necessário");
+                }
+              }}
+            >
+              {training.requires_acceptance ? "Sim" : "Não"}
+            </Button>
+          </div>
+
           <div>
             <div className="flex items-center justify-between gap-2 flex-wrap mb-2">
               <h2 className="text-sm uppercase tracking-wider text-muted-foreground">O que foi treinado</h2>
@@ -711,6 +743,8 @@ const TrainingDetail = () => {
           </CardContent>
         </Card>
 
+        {training.requires_acceptance && (
+        <>
         <Card className="border-primary/40">
           <CardContent className="p-6 flex items-center justify-between gap-4 flex-wrap">
             <div>
@@ -812,6 +846,8 @@ const TrainingDetail = () => {
             </div>
           )}
         </section>
+        </>
+        )}
 
         {reschedules.length > 0 && (
           <section>
