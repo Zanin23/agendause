@@ -105,12 +105,15 @@ const TrainingTerm = () => {
             <Field label="Data" value={format(date, "EEEE, d 'de' MMMM 'de' yyyy", { locale: ptBR })} />
             <Field label="Horário" value={`${format(date, "HH:mm")} • ${training.duration_minutes} minutos`} />
             {training.location && <Field label="Local" value={training.location} />}
-            {training.description && (
-              <div className="pt-2">
-                <p className="text-xs uppercase tracking-wider text-neutral-500 mb-1">O que foi treinado</p>
-                <p className="whitespace-pre-wrap">{training.description}</p>
-              </div>
-            )}
+          </div>
+
+          <div className="border border-neutral-300 rounded p-5 avoid-break">
+            <p className="text-xs uppercase tracking-wider text-neutral-500 mb-2">
+              Descrição do que foi treinado
+            </p>
+            <p className="whitespace-pre-wrap text-[15px] leading-relaxed">
+              {training.description?.trim() || "Não informado."}
+            </p>
           </div>
         </section>
 
