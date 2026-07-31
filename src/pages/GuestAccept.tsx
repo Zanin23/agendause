@@ -175,16 +175,61 @@ const GuestAccept = () => {
         )}
 
         {done ? (
-          <Card className="border-primary/40">
-            <CardContent className="p-6 text-center space-y-2">
-              <CheckCircle2 className="h-10 w-10 text-primary mx-auto" />
-              <h2 className="font-semibold">Recebimento confirmado</h2>
-              <p className="text-sm text-muted-foreground">
-                Obrigado, <strong>{done.name}</strong>. Registramos seu aceite em{" "}
-                {format(new Date(done.at), "d MMM yyyy 'às' HH:mm", { locale: ptBR })}.
+          <>
+            <Card className="border-primary/40 no-print">
+              <CardContent className="p-6 text-center space-y-3">
+                <CheckCircle2 className="h-10 w-10 text-primary mx-auto" />
+                <h2 className="font-semibold">Recebimento confirmado</h2>
+                <p className="text-sm text-muted-foreground">
+                  Obrigado, <strong>{done.name}</strong>. Registramos seu aceite em{" "}
+                  {format(new Date(done.at), "d MMM yyyy 'às' HH:mm", { locale: ptBR })}.
+                </p>
+                <Button onClick={() => window.print()} className="w-full sm:w-auto">
+                  <Printer className="h-4 w-4 mr-2" /> Imprimir / salvar termo em PDF
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Termo imprimível */}
+            <div className="print-term rounded-lg border border-border bg-card p-6 text-sm space-y-4">
+              <div className="text-center space-y-1">
+                <h2 className="text-lg font-bold uppercase tracking-wide">Termo de Aceite de Treinamento</h2>
+                {training.client && <p className="text-muted-foreground">{training.client}</p>}
+              </div>
+
+              <div className="space-y-1">
+                <p><strong>Treinamento:</strong> {training.title}</p>
+                <p><strong>Data:</strong> {format(date, "d 'de' MMMM 'de' yyyy 'às' HH:mm", { locale: ptBR })}</p>
+                <p><strong>Duração:</strong> {training.duration_minutes} min</p>
+                {training.location && <p><strong>Local:</strong> {training.location}</p>}
+              </div>
+
+              {training.description && (
+                <div>
+                  <p className="font-semibold">O que foi treinado</p>
+                  <p className="whitespace-pre-wrap">{training.description}</p>
+                </div>
+              )}
+
+              <p className="pt-2">
+                Declaro que recebi o treinamento descrito acima e que as informações apresentadas
+                foram suficientes para a utilização das rotinas abordadas.
               </p>
-            </CardContent>
-          </Card>
+
+              <div className="pt-4 space-y-1">
+                {done.signature && (
+                  <img src={done.signature} alt="Assinatura do participante" className="h-20 object-contain" />
+                )}
+                <div className="border-t border-border pt-1">
+                  <p className="font-semibold">{done.name}</p>
+                  <p className="text-muted-foreground">{done.email}</p>
+                  <p className="text-muted-foreground">
+                    Aceite registrado em {format(new Date(done.at), "d/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </>
         ) : (
           <form onSubmit={submit} className="space-y-3">
             <p className="text-sm text-muted-foreground">
