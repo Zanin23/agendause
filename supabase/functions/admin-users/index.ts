@@ -77,7 +77,15 @@ Deno.serve(async (req) => {
         return json({ error: 'A senha deve ter entre 6 e 72 caracteres' }, 400);
       }
       const { error } = await admin.auth.admin.updateUserById(userId, { password });
-      if (error) throw error;
+      if (error) {
+        const msg = String(error.message || '');
+        const friendly = /weak|easy to guess|pwned/i.test(msg)
+          ? 'Esta senha é muito comum e foi bloqueada por segurança. Use uma senha mais forte (letras, números e símbolos).'
+          : /at least|should be/i.test(msg)
+            ? 'A senha não atende aos requisitos mínimos de segurança.'
+            : msg || 'Não foi possível atualizar a senha';
+        return json({ error: friendly }, 400);
+      }
       return json({ success: true });
     }
 

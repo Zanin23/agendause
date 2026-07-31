@@ -46,7 +46,19 @@ const Admin = () => {
 
   const call = useCallback(async (payload: Record<string, unknown>) => {
     const { data, error } = await supabase.functions.invoke("admin-users", { body: payload });
-    if (error) throw new Error((data as any)?.error || error.message);
+    if (error) {
+      let serverMsg: string | null = (data as any)?.error ?? null;
+      const ctx = (error as any)?.context;
+      if (!serverMsg && ctx && typeof ctx.json === "function") {
+        try {
+          const body = await ctx.json();
+          serverMsg = body?.error ?? null;
+        } catch {
+          /* corpo não é JSON */
+        }
+      }
+      throw new Error(serverMsg || error.message);
+    }
     if ((data as any)?.error) throw new Error((data as any).error);
     return data as any;
   }, []);
