@@ -25,6 +25,7 @@ import BillingRequests from "./pages/BillingRequests";
 import Notes from "./pages/Notes";
 import SelectWorkspace from "./pages/SelectWorkspace";
 import Settings from "./pages/Settings";
+import Admin from "./pages/Admin";
 import Index from "./pages/Index";
 import Article from "./pages/Article";
 
@@ -44,6 +45,7 @@ const App = () => (
             <Route path="/t/:token" element={<HandoffPublic />} />
             <Route path="/selecionar-base" element={<ProtectedRoute requireWorkspace={false}><SelectWorkspace /></ProtectedRoute>} />
             <Route path="/configuracoes" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+            <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
             <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
             <Route path="/blog" element={<Index />} />
             <Route path="/blog/:slug" element={<Article />} />
