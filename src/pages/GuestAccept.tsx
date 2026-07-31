@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CheckCircle2, Building2, Calendar as CalIcon, Clock, MapPin, Paperclip, Download, File as FileIcon } from "lucide-react";
+import { CheckCircle2, Building2, Calendar as CalIcon, Clock, MapPin, Paperclip, Download, File as FileIcon, Printer } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,7 +45,7 @@ const GuestAccept = () => {
   const [email, setEmail] = useState("");
   const [signature, setSignature] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [done, setDone] = useState<{ name: string; at: string } | null>(null);
+  const [done, setDone] = useState<{ name: string; email: string; at: string; signature: string | null } | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -104,7 +104,7 @@ const GuestAccept = () => {
       toast.error(error.message);
       return;
     }
-    setDone({ name: fullName.trim(), at: acceptedAt });
+    setDone({ name: fullName.trim(), email: mail, at: acceptedAt, signature });
   };
 
   if (loading) {
