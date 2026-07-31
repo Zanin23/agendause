@@ -1009,20 +1009,15 @@ export type Database = {
         Args: { _handoff_id: string; _name: string }
         Returns: boolean
       }
-      accept_handoff_by_token:
-        | {
-            Args: { _ip: string; _name: string; _token: string }
-            Returns: boolean
-          }
-        | {
-            Args: {
-              _ip: string
-              _name: string
-              _signature?: string
-              _token: string
-            }
-            Returns: boolean
-          }
+      accept_handoff_by_token: {
+        Args: {
+          _ip: string
+          _name: string
+          _signature?: string
+          _token: string
+        }
+        Returns: boolean
+      }
       accept_schedule_by_token: {
         Args: { _ip: string; _name: string; _token: string }
         Returns: boolean
