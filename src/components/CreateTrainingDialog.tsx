@@ -89,11 +89,20 @@ export const CreateTrainingDialog = ({ open, onOpenChange, onCreated }: Props) =
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[92vh] overflow-y-auto w-[calc(100vw-2rem)] sm:max-w-2xl p-0 border-border/70 bg-transparent shadow-2xl">
-        <div className="composer-card paper-surface relative overflow-hidden rounded-2xl border border-border/70 p-6 sm:p-8">
+      <DialogContent
+        className="
+          p-0 shadow-2xl overflow-y-auto overscroll-contain
+          left-0 top-0 translate-x-0 translate-y-0
+          w-screen max-w-none h-[100dvh] max-h-none rounded-none border-0 bg-card
+          sm:left-1/2 sm:top-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2
+          sm:w-[calc(100vw-2rem)] sm:max-w-2xl sm:h-auto sm:max-h-[92vh]
+          sm:rounded-2xl sm:border sm:border-border/70 sm:bg-transparent
+        "
+      >
+        <div className="composer-card paper-surface relative min-h-full overflow-hidden rounded-none border-0 px-4 py-6 sm:min-h-0 sm:rounded-2xl sm:border sm:border-border/70 sm:p-8">
           <span className="composer-sheen" aria-hidden="true" />
 
-          <DialogHeader className="relative space-y-3 mb-6">
+          <DialogHeader className="relative space-y-3 mb-6 pr-10">
             <div className="flex items-center gap-2 text-[11px] tracking-[0.28em] uppercase text-primary/80">
               <Feather className="h-3.5 w-3.5 feather-float" />
               <span className="relative">
@@ -102,7 +111,7 @@ export const CreateTrainingDialog = ({ open, onOpenChange, onCreated }: Props) =
               </span>
             </div>
             <DialogTitle asChild>
-              <h2 className="font-display text-3xl sm:text-4xl leading-none text-left">
+              <h2 className="font-display text-2xl sm:text-4xl leading-none text-left">
                 Marque uma nova visita
               </h2>
             </DialogTitle>
@@ -126,7 +135,7 @@ export const CreateTrainingDialog = ({ open, onOpenChange, onCreated }: Props) =
               />
             </section>
 
-            <section className="grid sm:grid-cols-[1fr_220px] gap-5">
+            <section className="grid gap-5 sm:grid-cols-[1fr_220px]">
               <div className="space-y-1.5">
                 <Label htmlFor="client" className={labelCls}>
                   <Building2 className="h-3 w-3" /> Cliente
@@ -159,8 +168,8 @@ export const CreateTrainingDialog = ({ open, onOpenChange, onCreated }: Props) =
               </div>
             </section>
 
-            <section className="rounded-xl border border-border/60 bg-background/40 p-4 sm:p-5">
-              <div className="flex items-center justify-between mb-4">
+            <section className="rounded-xl border border-border/60 bg-muted/30 p-4 sm:p-5">
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
                 <Label className={labelCls}>
                   <CalendarClock className="h-3 w-3" /> Quando
                 </Label>
@@ -168,7 +177,7 @@ export const CreateTrainingDialog = ({ open, onOpenChange, onCreated }: Props) =
                   {prettyDate} {date && `· ${time}`}
                 </span>
               </div>
-              <div className="grid grid-cols-3 gap-4 items-end">
+              <div className="grid grid-cols-2 gap-4 items-end sm:grid-cols-3">
                 <div className="space-y-1.5">
                   <Label htmlFor="date" className="text-[10px] tracking-[0.22em] uppercase text-muted-foreground">Data</Label>
                   <Input id="date" type="date" value={date} onChange={(e) => setDate(e.target.value)} required className={`${underline} font-display text-base h-10`} />
@@ -177,7 +186,7 @@ export const CreateTrainingDialog = ({ open, onOpenChange, onCreated }: Props) =
                   <Label htmlFor="time" className="text-[10px] tracking-[0.22em] uppercase text-muted-foreground">Hora</Label>
                   <Input id="time" type="time" value={time} onChange={(e) => setTime(e.target.value)} required className={`${underline} font-display text-base h-10`} />
                 </div>
-                <div className="space-y-1.5">
+                <div className="space-y-1.5 col-span-2 sm:col-span-1">
                   <Label htmlFor="dur" className="text-[10px] tracking-[0.22em] uppercase text-muted-foreground">Duração (min)</Label>
                   <Input id="dur" type="number" min={5} value={duration} onChange={(e) => setDuration(Number(e.target.value))} className={`${underline} font-display text-base h-10`} />
                 </div>
@@ -218,7 +227,7 @@ export const CreateTrainingDialog = ({ open, onOpenChange, onCreated }: Props) =
                 onChange={(e) => setDescription(e.target.value)}
                 rows={3}
                 placeholder="Descreva os tópicos / conteúdos treinados"
-                className="bg-background/40 border-border/70 rounded-lg text-[15px] leading-relaxed resize-none focus-visible:border-primary"
+                className="bg-muted/30 border-border/70 rounded-lg text-[15px] leading-relaxed resize-none focus-visible:border-primary"
               />
             </section>
 
@@ -230,20 +239,20 @@ export const CreateTrainingDialog = ({ open, onOpenChange, onCreated }: Props) =
                 onChange={(e) => setInternalNotes(e.target.value)}
                 rows={2}
                 placeholder="Visível apenas para a equipe — não aparece para o cliente"
-                className="bg-background/40 border-dashed border-border/70 rounded-lg text-[14px] leading-relaxed resize-none focus-visible:border-primary"
+                className="bg-muted/30 border-dashed border-border/70 rounded-lg text-[14px] leading-relaxed resize-none focus-visible:border-primary"
               />
               <p className="text-[11px] italic text-muted-foreground">Visível apenas internamente. Não aparece para o cliente no aceite.</p>
             </section>
 
-            <div className="flex items-center justify-between pt-2 border-t border-border/60">
-              <span className="text-[11px] italic text-muted-foreground">
+            <div className="flex flex-col-reverse gap-3 pt-3 border-t border-border/60 sm:flex-row sm:items-center sm:justify-between sm:gap-2 sm:pt-2">
+              <span className="text-[11px] italic text-muted-foreground truncate">
                 {title ? `“${title.slice(0, 32)}${title.length > 32 ? "…" : ""}”` : "Sem título ainda"}
               </span>
-              <div className="flex items-center gap-2">
-                <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
+              <div className="flex items-center gap-2 justify-end">
+                <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="flex-1 sm:flex-none">
                   Cancelar
                 </Button>
-                <Button type="submit" disabled={loading} className="rounded-full px-5">
+                <Button type="submit" disabled={loading} className="rounded-full px-5 flex-1 sm:flex-none">
                   <Feather className="h-4 w-4" />
                   {loading ? "Salvando…" : "Registrar visita"}
                 </Button>
