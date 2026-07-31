@@ -195,8 +195,8 @@ const GuestAccept = () => {
               <Input id="name" required value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Seu nome completo" />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="email">E-mail (opcional)</Label>
-              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="voce@empresa.com" />
+              <Label htmlFor="email">E-mail *</Label>
+              <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="voce@empresa.com" />
             </div>
             <SignaturePad
               label="Assinatura do participante *"
