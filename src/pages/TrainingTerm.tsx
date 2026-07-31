@@ -18,7 +18,7 @@ type Training = {
   location: string | null;
 };
 
-type Row = { name: string; email: string | null; accepted_at: string; kind: "user" | "guest" };
+type Row = { name: string; email: string | null; accepted_at: string; kind: "user" | "guest"; signature?: string | null };
 
 const TrainingTerm = () => {
   const { id } = useParams();
@@ -34,7 +34,7 @@ const TrainingTerm = () => {
         supabase.rpc("get_training_user_acceptances", { _training_id: id }),
         supabase
           .from("guest_acceptances")
-          .select("full_name, email, accepted_at")
+          .select("full_name, email, accepted_at, signature")
           .eq("training_id", id),
       ]);
       setTraining(t as Training | null);
@@ -49,6 +49,7 @@ const TrainingTerm = () => {
         email: a.email,
         accepted_at: a.accepted_at,
         kind: "guest",
+        signature: a.signature ?? null,
       }));
       setRows([...userRows, ...guestRows].sort((a, b) => a.accepted_at.localeCompare(b.accepted_at)));
       setLoading(false);
@@ -126,7 +127,8 @@ const TrainingTerm = () => {
                   <th className="py-2 pr-3">#</th>
                   <th className="py-2 pr-3">Nome</th>
                   <th className="py-2 pr-3">E-mail</th>
-                  <th className="py-2">Data do aceite</th>
+                  <th className="py-2 pr-3">Data do aceite</th>
+                  <th className="py-2">Assinatura</th>
                 </tr>
               </thead>
               <tbody>
@@ -135,8 +137,15 @@ const TrainingTerm = () => {
                     <td className="py-2 pr-3 text-neutral-500">{i + 1}</td>
                     <td className="py-2 pr-3 font-medium">{r.name}</td>
                     <td className="py-2 pr-3 text-neutral-700">{r.email || "—"}</td>
-                    <td className="py-2 text-neutral-700">
+                    <td className="py-2 pr-3 text-neutral-700">
                       {format(new Date(r.accepted_at), "d MMM yyyy 'às' HH:mm", { locale: ptBR })}
+                    </td>
+                    <td className="py-2">
+                      {r.signature ? (
+                        <img src={r.signature} alt={`Assinatura de ${r.name}`} className="h-12 w-auto max-w-[180px] object-contain" />
+                      ) : (
+                        <span className="text-neutral-400 italic text-xs">sem assinatura</span>
+                      )}
                     </td>
                   </tr>
                 ))}
