@@ -743,6 +743,8 @@ const TrainingDetail = () => {
           </CardContent>
         </Card>
 
+        {training.requires_acceptance && (
+        <>
         <Card className="border-primary/40">
           <CardContent className="p-6 flex items-center justify-between gap-4 flex-wrap">
             <div>
@@ -844,6 +846,8 @@ const TrainingDetail = () => {
             </div>
           )}
         </section>
+        </>
+        )}
 
         {reschedules.length > 0 && (
           <section>
