@@ -203,6 +203,27 @@ const Settings = () => {
             </Link>
           </section>
         )}
+
+        <section className="rounded-2xl border border-border bg-card/60 p-6">
+          <header className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-lg bg-destructive/10 text-destructive flex items-center justify-center">
+              <LogOut className="h-5 w-5" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold">Conta</h2>
+              <p className="text-sm text-muted-foreground">
+                Sua sessão fica salva neste dispositivo. A desconexão acontece somente aqui.
+              </p>
+            </div>
+          </header>
+          <div className="flex flex-col gap-3 p-4 rounded-xl border border-border sm:flex-row sm:items-center sm:justify-between">
+            <span className="text-sm text-muted-foreground truncate">{user?.email ?? "—"}</span>
+            <Button variant="destructive" onClick={handleSignOut} disabled={signingOut} className="sm:w-auto">
+              {signingOut ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogOut className="h-4 w-4" />}
+              Sair da conta
+            </Button>
+          </div>
+        </section>
       </main>
     </div>
   );
