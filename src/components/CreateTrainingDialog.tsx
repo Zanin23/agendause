@@ -27,6 +27,7 @@ export const CreateTrainingDialog = ({ open, onOpenChange, onCreated }: Props) =
   const [location, setLocation] = useState("");
   const [internalNotes, setInternalNotes] = useState("");
   const [visitType, setVisitType] = useState<VisitType>("presencial");
+  const [requiresAcceptance, setRequiresAcceptance] = useState(true);
   const [loading, setLoading] = useState(false);
   const [companies, setCompanies] = useState<string[]>([]);
 
@@ -54,6 +55,7 @@ export const CreateTrainingDialog = ({ open, onOpenChange, onCreated }: Props) =
   const reset = () => {
     setTitle(""); setClient(""); setDescription(""); setDate(""); setTime("09:00");
     setDuration(60); setLocation(""); setInternalNotes(""); setVisitType("presencial");
+    setRequiresAcceptance(true);
   };
 
   const submit = async (e: React.FormEvent) => {
@@ -70,6 +72,7 @@ export const CreateTrainingDialog = ({ open, onOpenChange, onCreated }: Props) =
       location: location || null,
       internal_notes: internalNotes.trim() || null,
       visit_type: visitType,
+      requires_acceptance: requiresAcceptance,
       created_by: user.id,
     } as any);
     setLoading(false);
