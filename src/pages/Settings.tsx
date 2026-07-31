@@ -1,10 +1,12 @@
 import { useState } from "react";
-import { Database, Loader2, Check, Accessibility, Type } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Database, Loader2, Check, Accessibility, Type, ShieldCheck, ChevronRight } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
 import { BackButton } from "@/components/BackButton";
 import { SEO } from "@/components/SEO";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { useA11y, type FontScale } from "@/hooks/useA11y";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { toast } from "sonner";
 
 function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label: string }) {
@@ -32,6 +34,7 @@ const Settings = () => {
   const { workspaces, activeId, setActive, loading } = useWorkspace();
   const [pendingId, setPendingId] = useState<string | null>(null);
   const { scale, setScale, bold, setBold, contrast, setContrast } = useA11y();
+  const { isAdmin } = useIsAdmin();
 
   const scaleOptions: { id: FontScale; label: string; sample: string }[] = [
     { id: "normal", label: "Padrão", sample: "Aa" },
@@ -168,6 +171,27 @@ const Settings = () => {
             </label>
           </div>
         </section>
+
+        {isAdmin && (
+          <section className="rounded-2xl border border-border bg-card/60 p-6">
+            <header className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+                <ShieldCheck className="h-5 w-5" />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold">Administração</h2>
+                <p className="text-sm text-muted-foreground">Visualize as contas cadastradas e ajuste senhas.</p>
+              </div>
+            </header>
+            <Link
+              to="/admin"
+              className="flex items-center justify-between gap-4 p-4 rounded-xl border border-border hover:border-primary/40 transition-colors"
+            >
+              <span className="font-medium">Contas do sistema</span>
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            </Link>
+          </section>
+        )}
       </main>
     </div>
   );
