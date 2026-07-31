@@ -1,3 +1,4 @@
+import { publicUrl } from "@/lib/publicUrl";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { format } from "date-fns";
@@ -194,7 +195,7 @@ export default function ScheduleEditor() {
 
   const copyPublicLink = async () => {
     if (!schedule?.public_token) return;
-    const url = `${window.location.origin}/c/${schedule.public_token}`;
+    const url = publicUrl(`/c/${schedule.public_token}`);
     await navigator.clipboard.writeText(url);
     toast.success("Link copiado");
   };
