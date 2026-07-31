@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CheckCircle2, Building2, Calendar as CalIcon, Clock, MapPin, Paperclip, Download, File as FileIcon } from "lucide-react";
+import { CheckCircle2, Building2, Calendar as CalIcon, Clock, MapPin, Paperclip, Download, File as FileIcon, Printer } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,7 +45,7 @@ const GuestAccept = () => {
   const [email, setEmail] = useState("");
   const [signature, setSignature] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [done, setDone] = useState<{ name: string; at: string } | null>(null);
+  const [done, setDone] = useState<{ name: string; email: string; at: string; signature: string | null } | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -104,7 +104,7 @@ const GuestAccept = () => {
       toast.error(error.message);
       return;
     }
-    setDone({ name: fullName.trim(), at: acceptedAt });
+    setDone({ name: fullName.trim(), email: mail, at: acceptedAt, signature });
   };
 
   if (loading) {
@@ -175,16 +175,73 @@ const GuestAccept = () => {
         )}
 
         {done ? (
-          <Card className="border-primary/40">
-            <CardContent className="p-6 text-center space-y-2">
-              <CheckCircle2 className="h-10 w-10 text-primary mx-auto" />
-              <h2 className="font-semibold">Recebimento confirmado</h2>
-              <p className="text-sm text-muted-foreground">
-                Obrigado, <strong>{done.name}</strong>. Registramos seu aceite em{" "}
-                {format(new Date(done.at), "d MMM yyyy 'às' HH:mm", { locale: ptBR })}.
+          <>
+            <Card className="border-primary/40 no-print">
+              <CardContent className="p-6 text-center space-y-3">
+                <CheckCircle2 className="h-10 w-10 text-primary mx-auto" />
+                <h2 className="font-semibold">Recebimento confirmado</h2>
+                <p className="text-sm text-muted-foreground">
+                  Obrigado, <strong>{done.name}</strong>. Registramos seu aceite em{" "}
+                  {format(new Date(done.at), "d MMM yyyy 'às' HH:mm", { locale: ptBR })}.
+                </p>
+                <Button onClick={() => window.print()} className="w-full sm:w-auto">
+                  <Printer className="h-4 w-4 mr-2" /> Imprimir / salvar termo em PDF
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Termo imprimível */}
+            <div className="print-term rounded-lg border border-border bg-card p-6 text-sm space-y-4">
+              <div className="text-center space-y-1">
+                <h2 className="text-lg font-bold uppercase tracking-wide">Termo de Aceite de Treinamento</h2>
+                {training.client && <p className="text-muted-foreground">{training.client}</p>}
+              </div>
+
+              <div className="space-y-1">
+                <p><strong>Treinamento:</strong> {training.title}</p>
+                <p><strong>Data:</strong> {format(date, "d 'de' MMMM 'de' yyyy 'às' HH:mm", { locale: ptBR })}</p>
+                <p><strong>Duração:</strong> {training.duration_minutes} min</p>
+                {training.location && <p><strong>Local:</strong> {training.location}</p>}
+              </div>
+
+              {training.description && (
+                <div>
+                  <p className="font-semibold">O que foi treinado</p>
+                  <p className="whitespace-pre-wrap">{training.description}</p>
+                </div>
+              )}
+
+              <p className="pt-2">
+                Declaro que recebi o treinamento descrito acima e que as informações apresentadas
+                foram suficientes para a utilização das rotinas abordadas.
               </p>
-            </CardContent>
-          </Card>
+
+              <div className="pt-4 space-y-1">
+                {done.signature && (
+                  <img src={done.signature} alt="Assinatura do participante" className="h-20 object-contain" />
+                )}
+                <div className="border-t border-border pt-1">
+                  <p className="font-semibold">{done.name}</p>
+                  <p className="text-muted-foreground">{done.email}</p>
+                  <p className="text-muted-foreground">
+                    Aceite registrado em {format(new Date(done.at), "d/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                  </p>
+                </div>
+              </div>
+            </div>
+            <style>{`
+              @media print {
+                body * { visibility: hidden !important; }
+                .print-term, .print-term * { visibility: visible !important; }
+                .print-term {
+                  position: absolute; left: 0; top: 0; width: 100%;
+                  border: none !important; box-shadow: none !important;
+                  color: #000 !important; background: #fff !important;
+                }
+                @page { size: A4 portrait; margin: 14mm; }
+              }
+            `}</style>
+          </>
         ) : (
           <form onSubmit={submit} className="space-y-3">
             <p className="text-sm text-muted-foreground">
