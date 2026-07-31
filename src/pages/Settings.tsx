@@ -1,12 +1,14 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
-import { Database, Loader2, Check, Accessibility, Type, ShieldCheck, ChevronRight } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { Database, Loader2, Check, Accessibility, Type, ShieldCheck, ChevronRight, LogOut } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
 import { BackButton } from "@/components/BackButton";
 import { SEO } from "@/components/SEO";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { useA11y, type FontScale } from "@/hooks/useA11y";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
+import { useAuth } from "@/hooks/useAuth";
+import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
 function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label: string }) {
@@ -35,6 +37,15 @@ const Settings = () => {
   const [pendingId, setPendingId] = useState<string | null>(null);
   const { scale, setScale, bold, setBold, contrast, setContrast } = useA11y();
   const { isAdmin } = useIsAdmin();
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+  const [signingOut, setSigningOut] = useState(false);
+
+  const handleSignOut = async () => {
+    setSigningOut(true);
+    await signOut();
+    navigate("/auth");
+  };
 
   const scaleOptions: { id: FontScale; label: string; sample: string }[] = [
     { id: "normal", label: "Padrão", sample: "Aa" },
