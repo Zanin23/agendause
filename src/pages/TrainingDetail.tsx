@@ -103,6 +103,9 @@ const TrainingDetail = () => {
   const [editingDesc, setEditingDesc] = useState(false);
   const [descDraft, setDescDraft] = useState("");
   const [savingDesc, setSavingDesc] = useState(false);
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [titleDraft, setTitleDraft] = useState("");
+  const [savingTitle, setSavingTitle] = useState(false);
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [schedDate, setSchedDate] = useState("");
   const [schedTime, setSchedTime] = useState("");
@@ -243,6 +246,26 @@ const TrainingDetail = () => {
   };
 
   const saveDesc = async () => {
+    return saveDescInner();
+  };
+
+  const saveTitle = async () => {
+    if (!id) return;
+    const value = titleDraft.trim();
+    if (!value) return toast.error("Informe o título do treinamento");
+    setSavingTitle(true);
+    const { error } = await supabase
+      .from("trainings")
+      .update({ title: value })
+      .eq("id", id);
+    setSavingTitle(false);
+    if (error) return toast.error(error.message);
+    toast.success("Título atualizado");
+    setEditingTitle(false);
+    load();
+  };
+
+  const saveDescInner = async () => {
     if (!id) return;
     setSavingDesc(true);
     const { error } = await supabase
