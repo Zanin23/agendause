@@ -431,7 +431,7 @@ const TrainingDetail = () => {
       />
       <AppHeader />
       <main className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-6 sm:space-y-8">
-        <BackButton to="/agenda" />
+        <BackButton to="/agenda/imprimir" />
 
         <div className="space-y-4">
           <div className="flex items-start justify-between gap-3 flex-wrap">
