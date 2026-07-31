@@ -1,0 +1,1 @@
+DROP FUNCTION IF EXISTS public.accept_handoff_by_token(text, text, text);

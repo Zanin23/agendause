@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
 import { SEO } from "@/components/SEO";
+import { SignaturePad } from "@/components/SignaturePad";
 
 type Training = {
   id: string;
@@ -42,6 +43,7 @@ const GuestAccept = () => {
   const [loading, setLoading] = useState(true);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
+  const [signature, setSignature] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState<{ name: string; at: string } | null>(null);
 
@@ -73,11 +75,21 @@ const GuestAccept = () => {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!id || !fullName.trim()) return;
+    if (!signature) {
+      toast.error("Assine no campo de assinatura para confirmar.");
+      return;
+    }
     const acceptedAt = new Date().toISOString();
     setSubmitting(true);
     const { error } = await supabase
       .from("guest_acceptances")
-      .insert(({ training_id: id, full_name: fullName.trim(), email: email.trim() || null, accepted_at: acceptedAt }) as any);
+      .insert(({
+        training_id: id,
+        full_name: fullName.trim(),
+        email: email.trim() || null,
+        accepted_at: acceptedAt,
+        signature,
+      }) as any);
     setSubmitting(false);
     if (error) {
       toast.error(error.message);
@@ -177,6 +189,10 @@ const GuestAccept = () => {
               <Label htmlFor="email">E-mail (opcional)</Label>
               <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="voce@empresa.com" />
             </div>
+            <SignaturePad
+              label="Assinatura do participante *"
+              onChange={setSignature}
+            />
             <Button type="submit" disabled={submitting} className="w-full">
               <CheckCircle2 className="h-4 w-4" />
               {submitting ? "Confirmando..." : "Confirmo o recebimento"}

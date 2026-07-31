@@ -9,6 +9,7 @@ import { SEO } from "@/components/SEO";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { SignaturePad } from "@/components/SignaturePad";
 import logoAsset from "@/assets/logo-use-sistemas.png.asset.json";
 
 export default function HandoffPublic() {
@@ -16,6 +17,7 @@ export default function HandoffPublic() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
+  const [signature, setSignature] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   const load = async () => {
@@ -31,9 +33,15 @@ export default function HandoffPublic() {
 
   const accept = async () => {
     if (!name.trim()) return toast.error("Informe seu nome");
+    if (!signature) return toast.error("Assine no campo de assinatura");
     setBusy(true);
     const ip = await fetch("https://api.ipify.org?format=json").then((r) => r.json()).then((d) => d.ip).catch(() => null);
-    const { error } = await supabase.rpc("accept_handoff_by_token", { _token: token, _name: name.trim(), _ip: ip });
+    const { error } = await supabase.rpc("accept_handoff_by_token", {
+      _token: token,
+      _name: name.trim(),
+      _ip: ip,
+      _signature: signature,
+    } as any);
     if (error) { toast.error(error.message); setBusy(false); return; }
     toast.success("Termo aceito. Obrigado!");
     await load();
@@ -89,18 +97,29 @@ export default function HandoffPublic() {
         <Card>
           <CardContent className="p-5 space-y-3">
             {data.client_accepted_at ? (
-              <div className="text-emerald-600 dark:text-emerald-400 text-sm">
-                ✓ Termo aceito por <strong>{data.client_accepted_name}</strong> em{" "}
-                {format(new Date(data.client_accepted_at), "dd/MM/yyyy HH:mm")}
+              <div className="space-y-3">
+                <div className="text-emerald-600 dark:text-emerald-400 text-sm">
+                  ✓ Termo aceito por <strong>{data.client_accepted_name}</strong> em{" "}
+                  {format(new Date(data.client_accepted_at), "dd/MM/yyyy HH:mm")}
+                </div>
+                {data.client_signature && (
+                  <div className="rounded-xl border border-border bg-white p-3 max-w-sm">
+                    <img src={data.client_signature} alt={`Assinatura de ${data.client_accepted_name}`} className="w-full h-auto" />
+                    <p className="mt-1 border-t border-neutral-300 pt-1 text-[11px] text-neutral-500 text-center">
+                      {data.client_accepted_name}
+                    </p>
+                  </div>
+                )}
               </div>
             ) : (
               <>
                 <h3 className="font-semibold">Aceite do cliente</h3>
                 <p className="text-sm text-muted-foreground">Confirme o recebimento e a passagem para a equipe de Suporte.</p>
-                <div className="flex flex-col sm:flex-row gap-2">
-                  <Input placeholder="Seu nome completo" value={name} onChange={(e) => setName(e.target.value)} />
-                  <Button onClick={accept} disabled={busy}>{busy ? "Confirmando…" : "Aceitar termo"}</Button>
-                </div>
+                <Input placeholder="Seu nome completo" value={name} onChange={(e) => setName(e.target.value)} />
+                <SignaturePad label="Assinatura do cliente *" onChange={setSignature} />
+                <Button onClick={accept} disabled={busy} className="w-full sm:w-auto">
+                  {busy ? "Confirmando…" : "Assinar e aceitar termo"}
+                </Button>
               </>
             )}
           </CardContent>
