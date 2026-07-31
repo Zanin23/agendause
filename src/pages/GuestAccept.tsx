@@ -190,44 +190,82 @@ const GuestAccept = () => {
               </CardContent>
             </Card>
 
-            {/* Termo imprimível */}
-            <div className="print-term rounded-lg border border-border bg-card p-6 text-sm space-y-4">
-              <div className="text-center space-y-1">
-                <h2 className="text-lg font-bold uppercase tracking-wide">Termo de Aceite de Treinamento</h2>
-                {training.client && <p className="text-muted-foreground">{training.client}</p>}
-              </div>
+            {/* Termo imprimível — mesmo layout do termo interno */}
+            <div className="print-term bg-white text-black px-8 py-10 rounded-lg border border-neutral-200">
+              <header className="text-center mb-10 pb-6 border-b-2 border-black">
+                <p className="text-xs uppercase tracking-[0.3em] text-neutral-600">Use Sistemas</p>
+                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight mt-2 uppercase">
+                  Termo de Recebimento de Treinamento
+                </h1>
+              </header>
 
-              <div className="space-y-1">
-                <p><strong>Treinamento:</strong> {training.title}</p>
-                <p><strong>Data:</strong> {format(date, "d 'de' MMMM 'de' yyyy 'às' HH:mm", { locale: ptBR })}</p>
-                <p><strong>Duração:</strong> {training.duration_minutes} min</p>
-                {training.location && <p><strong>Local:</strong> {training.location}</p>}
-              </div>
-
-              <div className="rounded border border-border p-3">
-                <p className="font-semibold mb-1">Descrição do que foi treinado</p>
-                <p className="whitespace-pre-wrap">
-                  {training.description?.trim() || "Não informado."}
+              <section className="space-y-4 text-[15px] leading-relaxed">
+                <p>
+                  Declaro, para os devidos fins, que recebi o treinamento descrito abaixo e estou
+                  ciente do seu conteúdo, comprometendo-me a aplicar as orientações recebidas no
+                  exercício de minhas atividades.
                 </p>
-              </div>
 
-              <p className="pt-2">
-                Declaro que recebi o treinamento descrito acima e que as informações apresentadas
-                foram suficientes para a utilização das rotinas abordadas.
-              </p>
+                <div className="border border-neutral-300 rounded p-5 space-y-2 avoid-break">
+                  <TermField label="Treinamento" value={training.title} />
+                  {training.client && <TermField label="Cliente" value={training.client} />}
+                  <TermField label="Data" value={format(date, "EEEE, d 'de' MMMM 'de' yyyy", { locale: ptBR })} />
+                  <TermField label="Horário" value={`${format(date, "HH:mm")} • ${training.duration_minutes} minutos`} />
+                  {training.location && <TermField label="Local" value={training.location} />}
+                </div>
 
-              <div className="pt-4 space-y-1">
-                {done.signature && (
-                  <img src={done.signature} alt="Assinatura do participante" className="h-20 object-contain" />
-                )}
-                <div className="border-t border-border pt-1">
-                  <p className="font-semibold">{done.name}</p>
-                  <p className="text-muted-foreground">{done.email}</p>
-                  <p className="text-muted-foreground">
-                    Aceite registrado em {format(new Date(done.at), "d/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                <div className="border border-neutral-300 rounded p-5 avoid-break">
+                  <p className="text-xs uppercase tracking-wider text-neutral-500 mb-2">
+                    Descrição do que foi treinado
+                  </p>
+                  <p className="whitespace-pre-wrap text-[15px] leading-relaxed">
+                    {training.description?.trim() || "Não informado."}
                   </p>
                 </div>
-              </div>
+              </section>
+
+              <section className="mt-10 avoid-break">
+                <h2 className="text-sm uppercase tracking-wider text-neutral-600 mb-3">
+                  Participantes que confirmaram o recebimento (1)
+                </h2>
+                <table className="w-full text-sm border-collapse">
+                  <thead>
+                    <tr className="text-left text-xs uppercase tracking-wider text-neutral-600 border-b border-neutral-300">
+                      <th className="py-2 pr-3">#</th>
+                      <th className="py-2 pr-3">Nome</th>
+                      <th className="py-2 pr-3">E-mail</th>
+                      <th className="py-2 pr-3">Data do aceite</th>
+                      <th className="py-2">Assinatura</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr className="border-b border-neutral-200 avoid-break">
+                      <td className="py-2 pr-3 text-neutral-500">1</td>
+                      <td className="py-2 pr-3 font-medium">{done.name}</td>
+                      <td className="py-2 pr-3 text-neutral-700">{done.email}</td>
+                      <td className="py-2 pr-3 text-neutral-700">
+                        {format(new Date(done.at), "d MMM yyyy 'às' HH:mm", { locale: ptBR })}
+                      </td>
+                      <td className="py-2">
+                        {done.signature ? (
+                          <img
+                            src={done.signature}
+                            alt={`Assinatura de ${done.name}`}
+                            className="h-12 w-auto max-w-[180px] object-contain"
+                          />
+                        ) : (
+                          <span className="text-neutral-400 italic text-xs">sem assinatura</span>
+                        )}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </section>
+
+              <footer className="mt-16 pt-4 border-t border-neutral-300 text-xs text-neutral-500 flex justify-between">
+                <span>Use Sistemas — Termo de Recebimento</span>
+                <span>Gerado em {format(new Date(), "d MMM yyyy 'às' HH:mm", { locale: ptBR })}</span>
+              </footer>
             </div>
             <style>{`
               @media print {
@@ -238,7 +276,9 @@ const GuestAccept = () => {
                   border: none !important; box-shadow: none !important;
                   color: #000 !important; background: #fff !important;
                 }
-                @page { size: A4 portrait; margin: 14mm; }
+                @page { size: A4 portrait; margin: 18mm; }
+                .print-term { padding: 0 !important; }
+                .avoid-break { break-inside: avoid; page-break-inside: avoid; }
               }
             `}</style>
           </>
