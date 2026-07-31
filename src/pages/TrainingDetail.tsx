@@ -459,7 +459,38 @@ const TrainingDetail = () => {
         <div className="space-y-4">
           <div className="flex items-start justify-between gap-3 flex-wrap">
             <div className="flex items-center gap-3 flex-wrap min-w-0">
-              <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight break-words">{training.title}</h1>
+              {editingTitle ? (
+                <div className="flex items-center gap-2 flex-wrap w-full">
+                  <Input
+                    value={titleDraft}
+                    onChange={(e) => setTitleDraft(e.target.value)}
+                    className="text-lg font-semibold h-11 max-w-md"
+                    placeholder="Título do treinamento"
+                    autoFocus
+                  />
+                  <Button size="sm" onClick={saveTitle} disabled={savingTitle}>
+                    <Save className="h-3.5 w-3.5" /> {savingTitle ? "Salvando..." : "Salvar"}
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => setEditingTitle(false)} disabled={savingTitle}>
+                    Cancelar
+                  </Button>
+                </div>
+              ) : (
+                <>
+                  <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight break-words">{training.title}</h1>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="gap-1"
+                    onClick={() => {
+                      setTitleDraft(training.title);
+                      setEditingTitle(true);
+                    }}
+                  >
+                    <Pencil className="h-3.5 w-3.5" /> Editar título
+                  </Button>
+                </>
+              )}
               {training.status === "cancelado" && (
                 <Badge variant="destructive" className="gap-1">
                   <XCircle className="h-3 w-3" /> Cancelado
