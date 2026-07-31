@@ -1039,6 +1039,7 @@ export type Database = {
           duration_minutes: number
           id: string
           location: string
+          requires_acceptance: boolean
           scheduled_at: string
           title: string
         }[]
