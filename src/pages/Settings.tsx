@@ -1,12 +1,14 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
-import { Database, Loader2, Check, Accessibility, Type, ShieldCheck, ChevronRight } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { Database, Loader2, Check, Accessibility, Type, ShieldCheck, ChevronRight, LogOut } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
 import { BackButton } from "@/components/BackButton";
 import { SEO } from "@/components/SEO";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { useA11y, type FontScale } from "@/hooks/useA11y";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
+import { useAuth } from "@/hooks/useAuth";
+import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
 function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label: string }) {
@@ -35,6 +37,15 @@ const Settings = () => {
   const [pendingId, setPendingId] = useState<string | null>(null);
   const { scale, setScale, bold, setBold, contrast, setContrast } = useA11y();
   const { isAdmin } = useIsAdmin();
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+  const [signingOut, setSigningOut] = useState(false);
+
+  const handleSignOut = async () => {
+    setSigningOut(true);
+    await signOut();
+    navigate("/auth");
+  };
 
   const scaleOptions: { id: FontScale; label: string; sample: string }[] = [
     { id: "normal", label: "Padrão", sample: "Aa" },
@@ -192,6 +203,27 @@ const Settings = () => {
             </Link>
           </section>
         )}
+
+        <section className="rounded-2xl border border-border bg-card/60 p-6">
+          <header className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-lg bg-destructive/10 text-destructive flex items-center justify-center">
+              <LogOut className="h-5 w-5" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold">Conta</h2>
+              <p className="text-sm text-muted-foreground">
+                Sua sessão fica salva neste dispositivo. A desconexão acontece somente aqui.
+              </p>
+            </div>
+          </header>
+          <div className="flex flex-col gap-3 p-4 rounded-xl border border-border sm:flex-row sm:items-center sm:justify-between">
+            <span className="text-sm text-muted-foreground truncate">{user?.email ?? "—"}</span>
+            <Button variant="destructive" onClick={handleSignOut} disabled={signingOut} className="sm:w-auto">
+              {signingOut ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogOut className="h-4 w-4" />}
+              Sair da conta
+            </Button>
+          </div>
+        </section>
       </main>
     </div>
   );
