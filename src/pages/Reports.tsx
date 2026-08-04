@@ -46,6 +46,7 @@ type TrainingRow = {
   status: string;
   user_count: number;
   guest_count: number;
+  requires_acceptance: boolean;
 };
 
 const Reports = () => {
@@ -122,8 +123,6 @@ const Reports = () => {
     (filterTo ? 1 : 0);
 
   const filtered = rows.filter((r) => {
-    // Only show trainings with acceptances
-    if (r.user_count + r.guest_count === 0) return false;
 
     const q = query.toLowerCase().trim();
     if (q) {
