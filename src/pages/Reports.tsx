@@ -46,6 +46,7 @@ type TrainingRow = {
   status: string;
   user_count: number;
   guest_count: number;
+  requires_acceptance: boolean;
 };
 
 const Reports = () => {
