@@ -429,7 +429,10 @@ export default function ScheduleEditor() {
           <aside className="hidden lg:block space-y-2 lg:sticky lg:top-4 lg:self-start">
             <div className="flex items-center justify-between px-1">
               <h2 className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Fases</h2>
-              <span className="text-xs text-muted-foreground">{phases.length}</span>
+              <div className="flex items-center gap-1">
+                <PhaseReorderDialog phases={phases} onReorder={handlePhasesReorder} />
+                <span className="text-xs text-muted-foreground">{phases.length}</span>
+              </div>
             </div>
             <nav className="space-y-1">
               {phases.map((phase, pi) => {
