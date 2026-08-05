@@ -74,7 +74,9 @@ export default function SchedulePrint() {
                       <div>{it.title}</div>
                       <div className="text-[11px] text-black/60">
                         Status: {STATUS_LABELS[it.status] || it.status}
-                        {it.planned_date && <> · Previsto: {format(new Date(it.planned_date), "dd/MM/yyyy")}</>}
+                        {it.trainings?.scheduled_at && (
+                          <> · Visita agendada: {format(new Date(it.trainings.scheduled_at), "dd/MM/yyyy")}</>
+                        )}
                         {it.done_date && <> · Concluído: {format(new Date(it.done_date), "dd/MM/yyyy")}</>}
                         {it.assignee && <> · Resp.: {it.assignee}</>}
                       </div>
