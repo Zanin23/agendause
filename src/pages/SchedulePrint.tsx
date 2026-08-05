@@ -21,7 +21,10 @@ export default function SchedulePrint() {
       const { data: ps } = await supabase.from("schedule_phases").select("*").eq("schedule_id", id).order("position");
       const phaseIds = (ps || []).map((p: any) => p.id);
       const { data: its } = phaseIds.length
-        ? await supabase.from("schedule_items").select("*").in("phase_id", phaseIds).order("position")
+        ? await supabase.from("schedule_items")
+            .select("*, trainings(scheduled_at)")
+            .in("phase_id", phaseIds)
+            .order("position")
         : { data: [] };
       const byPhase: Record<string, any[]> = {};
       (its || []).forEach((it: any) => { (byPhase[it.phase_id] ||= []).push(it); });
