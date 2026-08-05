@@ -40,6 +40,7 @@ export function PhaseReorderDialog({ phases, onReorder }: PhaseReorderDialogProp
       position: index,
     }));
 
+    // Local state is enough for visual dragging, parent onReorder will persist
     setItems(updatedItems);
     onReorder(updatedItems);
   };

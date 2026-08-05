@@ -162,15 +162,20 @@ export default function ScheduleEditor() {
   };
 
   const handlePhasesReorder = async (updatedPhases: Phase[]) => {
-    setPhases(updatedPhases);
+    // Sort the phases by their new position to ensure we save them in the correct sequence
+    const sortedPhases = [...updatedPhases].sort((a, b) => a.position - b.position);
+    setPhases(sortedPhases);
     
     // Persist all positions in a single batch
-    const updates = updatedPhases.map((p) => 
+    const updates = sortedPhases.map((p) => 
       supabase.from("schedule_phases").update({ position: p.position }).eq("id", p.id)
     );
     const results = await Promise.all(updates);
     const firstError = results.find(r => r.error)?.error;
-    if (firstError) toast.error("Erro ao salvar nova ordem das fases: " + firstError.message);
+    if (firstError) {
+      toast.error("Erro ao salvar nova ordem das fases: " + firstError.message);
+      load(); // Reload to original state on error
+    }
   };
 
   // --- Items ---
