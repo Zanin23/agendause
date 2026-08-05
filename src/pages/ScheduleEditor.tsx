@@ -169,6 +169,18 @@ export default function ScheduleEditor() {
     if (firstError) toast.error("Erro ao salvar ordem das fases: " + firstError.message);
   };
 
+  const handlePhasesReorder = async (updatedPhases: Phase[]) => {
+    setPhases(updatedPhases);
+    
+    // Persist all positions in a single batch
+    const updates = updatedPhases.map((p) => 
+      supabase.from("schedule_phases").update({ position: p.position }).eq("id", p.id)
+    );
+    const results = await Promise.all(updates);
+    const firstError = results.find(r => r.error)?.error;
+    if (firstError) toast.error("Erro ao salvar nova ordem das fases: " + firstError.message);
+  };
+
   // --- Items ---
   const addItem = async (phase: Phase) => {
     const maxPos = phase.items.length > 0 ? Math.max(...phase.items.map(i => i.position)) + 1 : 0;
