@@ -53,13 +53,22 @@ export default function ScheduleEditor() {
     const { data: s, error: e1 } = await supabase.from("implementation_schedules").select("*").eq("id", id).single();
     if (e1) { toast.error(e1.message); return; }
     setSchedule(s as Schedule);
-    const { data: ps } = await supabase.from("schedule_phases").select("*").eq("schedule_id", id).order("position");
+    const { data: ps } = await supabase.from("schedule_phases").select("*").eq("schedule_id", id).order("position", { ascending: true });
     const phaseIds = (ps || []).map((p: any) => p.id);
     const { data: its } = phaseIds.length
-      ? await supabase.from("schedule_items").select("*").in("phase_id", phaseIds).order("position")
+      ? await supabase.from("schedule_items").select("*").in("phase_id", phaseIds).order("position", { ascending: true })
       : { data: [] as any };
+    
     const byPhase: Record<string, Item[]> = {};
-    (its || []).forEach((it: Item) => { (byPhase[it.phase_id] ||= []).push(it); });
+    (its || []).forEach((it: Item) => { 
+      (byPhase[it.phase_id] ||= []).push(it); 
+    });
+    
+    // Sort items by position within each phase as a safety measure
+    Object.keys(byPhase).forEach(phaseId => {
+      byPhase[phaseId].sort((a, b) => (a.position || 0) - (b.position || 0));
+    });
+
     setPhases((ps || []).map((p: any) => ({ ...p, items: byPhase[p.id] || [] })));
     setLoading(false);
     if (ps && ps.length && !activePhaseId) setActivePhaseId(ps[0].id);
