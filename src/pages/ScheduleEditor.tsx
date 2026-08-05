@@ -382,7 +382,10 @@ export default function ScheduleEditor() {
         {/* Mobile phase tabs (horizontal scroll) */}
         <div className="lg:hidden -mx-3 px-3">
           <div className="flex items-center justify-between mb-2">
-            <h2 className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Fases</h2>
+            <div className="flex items-center gap-2">
+              <h2 className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Fases</h2>
+              <PhaseReorderDialog phases={phases} onReorder={handlePhasesReorder} />
+            </div>
             <Button onClick={addPhase} variant="ghost" size="sm" className="h-7 px-2 text-xs">
               <Plus className="h-3.5 w-3.5" /> Nova
             </Button>
