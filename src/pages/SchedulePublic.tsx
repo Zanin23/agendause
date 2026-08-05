@@ -77,10 +77,14 @@ export default function SchedulePublic() {
                       <span className="text-muted-foreground">›</span>
                       <div>
                         <div>{it.title}</div>
-                        {it.planned_date && (
+                        {it.scheduled_date && (
+                          <div className="text-xs text-muted-foreground">
+                            Visita agendada: {format(new Date(it.scheduled_date), "dd/MM/yyyy")}
+                          </div>
+                        )}
+                        {it.planned_date && !it.scheduled_date && (
                           <div className="text-xs text-muted-foreground">
                             Previsto: {format(new Date(it.planned_date), "dd/MM/yyyy")}
-                            {it.assignee && <> · {it.assignee}</>}
                           </div>
                         )}
                       </div>
