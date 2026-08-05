@@ -37,9 +37,11 @@ export default function SchedulePrint() {
         byPhase[phaseId].sort((a, b) => (a.position || 0) - (b.position || 0));
       });
 
+      const sortedPhases = (ps || []).sort((a: any, b: any) => (a.position || 0) - (b.position || 0));
+
       setData({ 
         schedule: s, 
-        phases: (ps || []).map((p: any) => ({ 
+        phases: sortedPhases.map((p: any) => ({ 
           ...p, 
           items: byPhase[p.id] || [] 
         })) 
