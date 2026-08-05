@@ -158,15 +158,7 @@ export default function ScheduleEditor() {
     
     // Update local state first for immediate UI feedback
     const updatedPhases = next.map((p, i) => ({ ...p, position: i }));
-    setPhases(updatedPhases);
-    
-    // Persist all positions in a single transaction-like batch
-    const updates = updatedPhases.map((p) => 
-      supabase.from("schedule_phases").update({ position: p.position }).eq("id", p.id)
-    );
-    const results = await Promise.all(updates);
-    const firstError = results.find(r => r.error)?.error;
-    if (firstError) toast.error("Erro ao salvar ordem das fases: " + firstError.message);
+    handlePhasesReorder(updatedPhases);
   };
 
   const handlePhasesReorder = async (updatedPhases: Phase[]) => {
