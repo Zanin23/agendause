@@ -121,8 +121,9 @@ export default function ScheduleEditor() {
   // --- Phases ---
   const addPhase = async () => {
     if (!schedule) return;
+    const maxPos = phases.length > 0 ? Math.max(...phases.map(p => p.position)) + 1 : 0;
     const { data, error } = await supabase.from("schedule_phases")
-      .insert(({ schedule_id: schedule.id, title: "Nova fase", position: phases.length }) as any)
+      .insert(({ schedule_id: schedule.id, title: "Nova fase", position: maxPos }) as any)
       .select("*").single();
     if (error) return toast.error(error.message);
     setPhases([...phases, { ...(data as any), items: [] }]);
@@ -160,8 +161,9 @@ export default function ScheduleEditor() {
 
   // --- Items ---
   const addItem = async (phase: Phase) => {
+    const maxPos = phase.items.length > 0 ? Math.max(...phase.items.map(i => i.position)) + 1 : 0;
     const { data, error } = await supabase.from("schedule_items")
-      .insert(({ phase_id: phase.id, title: "Novo item", position: phase.items.length }) as any)
+      .insert(({ phase_id: phase.id, title: "Novo item", position: maxPos }) as any)
       .select("*").single();
     if (error) return toast.error(error.message);
     setPhases((prev) => prev.map((p) => p.id === phase.id ? { ...p, items: [...p.items, data as Item] } : p));
