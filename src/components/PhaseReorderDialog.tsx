@@ -70,6 +70,7 @@ export function PhaseReorderDialog({ phases, onReorder }: PhaseReorderDialogProp
                         <div
                           ref={provided.innerRef}
                           {...provided.draggableProps}
+                          style={provided.draggableProps.style as React.CSSProperties}
                           className={`flex items-center gap-3 p-3 rounded-lg border bg-card transition-shadow ${
                             snapshot.isDragging ? "shadow-lg border-primary" : "border-border"
                           }`}
