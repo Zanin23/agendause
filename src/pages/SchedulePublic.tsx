@@ -24,6 +24,15 @@ export default function SchedulePublic() {
     setLoading(true);
     const { data: res, error } = await supabase.rpc("get_schedule_by_token", { _token: token });
     if (error) toast.error(error.message);
+    
+    if (res && res.phases) {
+      // Ensure items within each phase are strictly sorted by position
+      res.phases.forEach((p: any) => {
+        if (p.items) {
+          p.items.sort((a: any, b: any) => (a.position || 0) - (b.position || 0));
+        }
+      });
+    }
     setData(res);
     setLoading(false);
   };
