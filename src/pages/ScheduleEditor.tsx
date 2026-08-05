@@ -144,10 +144,17 @@ export default function ScheduleEditor() {
     if (j < 0 || j >= phases.length) return;
     const next = [...phases];
     [next[idx], next[j]] = [next[j], next[idx]];
+    
+    // Update local state first for immediate UI feedback
     setPhases(next);
-    await Promise.all(next.map((p, i) =>
+    
+    // Persist all positions in a single transaction-like batch
+    const updates = next.map((p, i) => 
       supabase.from("schedule_phases").update({ position: i }).eq("id", p.id)
-    ));
+    );
+    const results = await Promise.all(updates);
+    const firstError = results.find(r => r.error)?.error;
+    if (firstError) toast.error("Erro ao salvar ordem das fases: " + firstError.message);
   };
 
   // --- Items ---
@@ -187,10 +194,17 @@ export default function ScheduleEditor() {
     if (j < 0 || j >= phase.items.length) return;
     const next = [...phase.items];
     [next[idx], next[j]] = [next[j], next[idx]];
+    
+    // Update local state first for immediate UI feedback
     setPhases((prev) => prev.map((p) => p.id === phase.id ? { ...p, items: next } : p));
-    await Promise.all(next.map((it, i) =>
+    
+    // Persist all item positions for this phase
+    const updates = next.map((it, i) =>
       supabase.from("schedule_items").update({ position: i }).eq("id", it.id)
-    ));
+    );
+    const results = await Promise.all(updates);
+    const firstError = results.find(r => r.error)?.error;
+    if (firstError) toast.error("Erro ao salvar ordem dos itens: " + firstError.message);
   };
 
   const copyPublicLink = async () => {
