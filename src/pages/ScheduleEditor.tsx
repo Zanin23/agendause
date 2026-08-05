@@ -9,6 +9,7 @@ import {
   CalendarDays, Flag, Unlink, Handshake,
 } from "lucide-react";
 import { toast } from "sonner";
+import { PhaseReorderDialog } from "@/components/PhaseReorderDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { AppHeader } from "@/components/AppHeader";
 import { SEO } from "@/components/SEO";
@@ -157,15 +158,19 @@ export default function ScheduleEditor() {
     
     // Update local state first for immediate UI feedback
     const updatedPhases = next.map((p, i) => ({ ...p, position: i }));
+    handlePhasesReorder(updatedPhases);
+  };
+
+  const handlePhasesReorder = async (updatedPhases: Phase[]) => {
     setPhases(updatedPhases);
     
-    // Persist all positions in a single transaction-like batch
+    // Persist all positions in a single batch
     const updates = updatedPhases.map((p) => 
       supabase.from("schedule_phases").update({ position: p.position }).eq("id", p.id)
     );
     const results = await Promise.all(updates);
     const firstError = results.find(r => r.error)?.error;
-    if (firstError) toast.error("Erro ao salvar ordem das fases: " + firstError.message);
+    if (firstError) toast.error("Erro ao salvar nova ordem das fases: " + firstError.message);
   };
 
   // --- Items ---
@@ -369,7 +374,10 @@ export default function ScheduleEditor() {
         {/* Mobile phase tabs (horizontal scroll) */}
         <div className="lg:hidden -mx-3 px-3">
           <div className="flex items-center justify-between mb-2">
-            <h2 className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Fases</h2>
+            <div className="flex items-center gap-2">
+              <h2 className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Fases</h2>
+              <PhaseReorderDialog phases={phases} onReorder={handlePhasesReorder} />
+            </div>
             <Button onClick={addPhase} variant="ghost" size="sm" className="h-7 px-2 text-xs">
               <Plus className="h-3.5 w-3.5" /> Nova
             </Button>
@@ -416,7 +424,10 @@ export default function ScheduleEditor() {
           <aside className="hidden lg:block space-y-2 lg:sticky lg:top-4 lg:self-start">
             <div className="flex items-center justify-between px-1">
               <h2 className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Fases</h2>
-              <span className="text-xs text-muted-foreground">{phases.length}</span>
+              <div className="flex items-center gap-1">
+                <PhaseReorderDialog phases={phases} onReorder={handlePhasesReorder} />
+                <span className="text-xs text-muted-foreground">{phases.length}</span>
+              </div>
             </div>
             <nav className="space-y-1">
               {phases.map((phase, pi) => {
