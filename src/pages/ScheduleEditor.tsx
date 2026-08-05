@@ -53,13 +53,22 @@ export default function ScheduleEditor() {
     const { data: s, error: e1 } = await supabase.from("implementation_schedules").select("*").eq("id", id).single();
     if (e1) { toast.error(e1.message); return; }
     setSchedule(s as Schedule);
-    const { data: ps } = await supabase.from("schedule_phases").select("*").eq("schedule_id", id).order("position");
+    const { data: ps } = await supabase.from("schedule_phases").select("*").eq("schedule_id", id).order("position", { ascending: true });
     const phaseIds = (ps || []).map((p: any) => p.id);
     const { data: its } = phaseIds.length
-      ? await supabase.from("schedule_items").select("*").in("phase_id", phaseIds).order("position")
+      ? await supabase.from("schedule_items").select("*").in("phase_id", phaseIds).order("position", { ascending: true })
       : { data: [] as any };
+    
     const byPhase: Record<string, Item[]> = {};
-    (its || []).forEach((it: Item) => { (byPhase[it.phase_id] ||= []).push(it); });
+    (its || []).forEach((it: Item) => { 
+      (byPhase[it.phase_id] ||= []).push(it); 
+    });
+    
+    // Sort items by position within each phase as a safety measure
+    Object.keys(byPhase).forEach(phaseId => {
+      byPhase[phaseId].sort((a, b) => (a.position || 0) - (b.position || 0));
+    });
+
     setPhases((ps || []).map((p: any) => ({ ...p, items: byPhase[p.id] || [] })));
     setLoading(false);
     if (ps && ps.length && !activePhaseId) setActivePhaseId(ps[0].id);
@@ -121,8 +130,9 @@ export default function ScheduleEditor() {
   // --- Phases ---
   const addPhase = async () => {
     if (!schedule) return;
+    const maxPos = phases.length > 0 ? Math.max(...phases.map(p => p.position)) + 1 : 0;
     const { data, error } = await supabase.from("schedule_phases")
-      .insert(({ schedule_id: schedule.id, title: "Nova fase", position: phases.length }) as any)
+      .insert(({ schedule_id: schedule.id, title: "Nova fase", position: maxPos }) as any)
       .select("*").single();
     if (error) return toast.error(error.message);
     setPhases([...phases, { ...(data as any), items: [] }]);
@@ -146,11 +156,12 @@ export default function ScheduleEditor() {
     [next[idx], next[j]] = [next[j], next[idx]];
     
     // Update local state first for immediate UI feedback
-    setPhases(next);
+    const updatedPhases = next.map((p, i) => ({ ...p, position: i }));
+    setPhases(updatedPhases);
     
     // Persist all positions in a single transaction-like batch
-    const updates = next.map((p, i) => 
-      supabase.from("schedule_phases").update({ position: i }).eq("id", p.id)
+    const updates = updatedPhases.map((p) => 
+      supabase.from("schedule_phases").update({ position: p.position }).eq("id", p.id)
     );
     const results = await Promise.all(updates);
     const firstError = results.find(r => r.error)?.error;
@@ -159,8 +170,9 @@ export default function ScheduleEditor() {
 
   // --- Items ---
   const addItem = async (phase: Phase) => {
+    const maxPos = phase.items.length > 0 ? Math.max(...phase.items.map(i => i.position)) + 1 : 0;
     const { data, error } = await supabase.from("schedule_items")
-      .insert(({ phase_id: phase.id, title: "Novo item", position: phase.items.length }) as any)
+      .insert(({ phase_id: phase.id, title: "Novo item", position: maxPos }) as any)
       .select("*").single();
     if (error) return toast.error(error.message);
     setPhases((prev) => prev.map((p) => p.id === phase.id ? { ...p, items: [...p.items, data as Item] } : p));
@@ -192,15 +204,18 @@ export default function ScheduleEditor() {
   const moveItem = async (phase: Phase, idx: number, dir: -1 | 1) => {
     const j = idx + dir;
     if (j < 0 || j >= phase.items.length) return;
-    const next = [...phase.items];
-    [next[idx], next[j]] = [next[j], next[idx]];
+    const nextItems = [...phase.items];
+    [nextItems[idx], nextItems[j]] = [nextItems[j], nextItems[idx]];
+    
+    // Update items with their new positions
+    const updatedItems = nextItems.map((it, i) => ({ ...it, position: i }));
     
     // Update local state first for immediate UI feedback
-    setPhases((prev) => prev.map((p) => p.id === phase.id ? { ...p, items: next } : p));
+    setPhases((prev) => prev.map((p) => p.id === phase.id ? { ...p, items: updatedItems } : p));
     
     // Persist all item positions for this phase
-    const updates = next.map((it, i) =>
-      supabase.from("schedule_items").update({ position: i }).eq("id", it.id)
+    const updates = updatedItems.map((it) =>
+      supabase.from("schedule_items").update({ position: it.position }).eq("id", it.id)
     );
     const results = await Promise.all(updates);
     const firstError = results.find(r => r.error)?.error;

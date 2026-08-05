@@ -18,17 +18,34 @@ export default function SchedulePrint() {
   useEffect(() => {
     (async () => {
       const { data: s } = await supabase.from("implementation_schedules").select("*").eq("id", id).single();
-      const { data: ps } = await supabase.from("schedule_phases").select("*").eq("schedule_id", id).order("position");
+      const { data: ps } = await supabase.from("schedule_phases").select("*").eq("schedule_id", id).order("position", { ascending: true });
       const phaseIds = (ps || []).map((p: any) => p.id);
       const { data: its } = phaseIds.length
         ? await supabase.from("schedule_items")
             .select("*, trainings(scheduled_at)")
             .in("phase_id", phaseIds)
-            .order("position")
+            .order("position", { ascending: true })
         : { data: [] };
+      
       const byPhase: Record<string, any[]> = {};
-      (its || []).forEach((it: any) => { (byPhase[it.phase_id] ||= []).push(it); });
-      setData({ schedule: s, phases: (ps || []).map((p: any) => ({ ...p, items: byPhase[p.id] || [] })) });
+      (its || []).forEach((it: any) => { 
+        (byPhase[it.phase_id] ||= []).push(it); 
+      });
+      
+      // Secondary sort in JS to ensure items are perfectly ordered within each phase
+      Object.keys(byPhase).forEach(phaseId => {
+        byPhase[phaseId].sort((a, b) => (a.position || 0) - (b.position || 0));
+      });
+
+      const sortedPhases = (ps || []).sort((a: any, b: any) => (a.position || 0) - (b.position || 0));
+
+      setData({ 
+        schedule: s, 
+        phases: sortedPhases.map((p: any) => ({ 
+          ...p, 
+          items: byPhase[p.id] || [] 
+        })) 
+      });
     })();
   }, [id]);
 
