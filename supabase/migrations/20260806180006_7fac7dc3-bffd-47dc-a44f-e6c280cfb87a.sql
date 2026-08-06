@@ -1,0 +1,1 @@
+UPDATE public.workspaces SET name = 'PDV' WHERE slug = 'waldemar';
