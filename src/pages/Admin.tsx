@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Shield, ShieldCheck, Search, KeyRound, Loader2, Mail, RefreshCw, UserCog } from "lucide-react";
+import { Shield, ShieldCheck, Search, KeyRound, Loader2, Mail, RefreshCw, UserCog, UserPlus, Eye, EyeOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
@@ -43,6 +43,8 @@ const Admin = () => {
   const [confirm, setConfirm] = useState("");
   const [saving, setSaving] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
+  const [newUser, setNewUser] = useState({ email: "", fullName: "", password: "", role: "member" as "admin" | "member" });
 
   const call = useCallback(async (payload: Record<string, unknown>) => {
     const { data, error } = await supabase.functions.invoke("admin-users", { body: payload });
@@ -141,6 +143,33 @@ const Admin = () => {
     }
   };
 
+  const createUser = async () => {
+    if (!newUser.email || !newUser.password || !newUser.fullName) {
+      return toast.error("Preencha todos os campos obrigatórios");
+    }
+    if (newUser.password.length < 6) {
+      return toast.error("A senha deve ter pelo menos 6 caracteres");
+    }
+    try {
+      setSaving(true);
+      await call({ 
+        action: "create_user", 
+        email: newUser.email, 
+        password: newUser.password, 
+        full_name: newUser.fullName,
+        role: newUser.role
+      });
+      toast.success(`Usuário ${newUser.email} criado com sucesso`);
+      setIsCreating(false);
+      setNewUser({ email: "", fullName: "", password: "", role: "member" });
+      load();
+    } catch (e: any) {
+      toast.error(e.message || "Erro ao criar usuário");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (roleLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center text-muted-foreground">
@@ -182,10 +211,16 @@ const Admin = () => {
                 Gerencie os usuários e permissões administrativas do sistema.
               </p>
             </div>
-            <Button variant="outline" onClick={load} disabled={loading}>
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-              <span className="ml-2">Atualizar</span>
-            </Button>
+            <div className="flex gap-2">
+              <Button onClick={() => setIsCreating(true)}>
+                <UserPlus className="h-4 w-4 mr-2" />
+                Novo Usuário
+              </Button>
+              <Button variant="outline" onClick={load} disabled={loading}>
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                <span className="ml-2">Atualizar</span>
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -312,6 +347,83 @@ const Admin = () => {
             <Button onClick={savePassword} disabled={saving}>
               {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <KeyRound className="h-4 w-4 mr-2" />}
               Salvar senha
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={isCreating} onOpenChange={setIsCreating}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Criar novo usuário</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="new-name">Nome Completo</Label>
+              <Input
+                id="new-name"
+                value={newUser.fullName}
+                onChange={(e) => setNewUser({ ...newUser, fullName: e.target.value })}
+                placeholder="Ex: João Silva"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="new-email">E-mail</Label>
+              <Input
+                id="new-email"
+                type="email"
+                value={newUser.email}
+                onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                placeholder="usuario@exemplo.com"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="new-pass-user">Senha Inicial</Label>
+              <Input
+                id="new-pass-user"
+                type="password"
+                value={newUser.password}
+                onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+                placeholder="Mínimo 6 caracteres"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Cargo / Permissão</Label>
+              <div className="flex gap-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="role"
+                    checked={newUser.role === "member"}
+                    onChange={() => setNewUser({ ...newUser, role: "member" })}
+                    className="w-4 h-4"
+                  />
+                  <span className="text-sm">Usuário Padrão</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer text-primary">
+                  <input
+                    type="radio"
+                    name="role"
+                    checked={newUser.role === "admin"}
+                    onChange={() => setNewUser({ ...newUser, role: "admin" })}
+                    className="w-4 h-4"
+                  />
+                  <span className="text-sm font-medium flex items-center gap-1">
+                    <ShieldCheck className="h-3 w-3" /> Administrador
+                  </span>
+                </label>
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-1">
+                Administradores podem gerenciar usuários, visualizar relatórios e alterar configurações globais.
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setIsCreating(false)} disabled={saving}>
+              Cancelar
+            </Button>
+            <Button onClick={createUser} disabled={saving}>
+              {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <UserPlus className="h-4 w-4 mr-2" />}
+              Criar Usuário
             </Button>
           </DialogFooter>
         </DialogContent>

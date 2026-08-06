@@ -125,6 +125,44 @@ Deno.serve(async (req) => {
       return json({ success: true });
     }
 
+    if (action === 'create_user') {
+      const email = String(body?.email || '').trim();
+      const password = String(body?.password || '');
+      const fullName = String(body?.full_name || '').trim();
+      const role = String(body?.role || 'member').trim();
+
+      if (!email || !password) return json({ error: 'E-mail e senha são obrigatórios' }, 400);
+
+      // 1. Criar usuário no Auth
+      const { data: authData, error: authError } = await admin.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+        user_metadata: { full_name: fullName },
+      });
+
+      if (authError) throw authError;
+      const newUser = authData.user;
+
+      // 2. Garantir perfil (geralmente via trigger, mas reforçamos)
+      const { error: profileError } = await admin.from('profiles').upsert({
+        id: newUser.id,
+        email: newUser.email,
+        full_name: fullName,
+      });
+      if (profileError) console.error('Profile creation error:', profileError);
+
+      // 3. Atribuir role se for admin
+      if (role === 'admin') {
+        const { error: roleError } = await admin
+          .from('user_roles')
+          .insert({ user_id: newUser.id, role: 'admin' });
+        if (roleError) throw roleError;
+      }
+
+      return json({ success: true, user_id: newUser.id });
+    }
+
     return json({ error: 'Ação inválida' }, 400);
   } catch (e) {
     return json({ error: (e as Error).message }, 500);
