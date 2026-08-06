@@ -91,9 +91,17 @@ export default function SchedulePrint() {
                   <li key={it.id} className="flex items-start gap-2">
                     <span className="text-black/40 mt-0.5">›</span>
                     <div className="flex-1">
-                      <div>{it.title}</div>
+                      <div className="flex items-center gap-2">
+                        {it.title}
+                        <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium uppercase tracking-wider ${
+                          it.status === 'done' ? 'bg-emerald-100 text-emerald-700' : 
+                          it.status === 'pending' ? 'bg-red-100 text-red-700' : 
+                          'bg-gray-100 text-gray-600'
+                        }`}>
+                          {STATUS_LABELS[it.status] || it.status}
+                        </span>
+                      </div>
                       <div className="text-[11px] text-black/60">
-                        Status: {STATUS_LABELS[it.status] || it.status}
                         {showDates && it.trainings?.scheduled_at && (
                           <> · Visita agendada: {format(new Date(it.trainings.scheduled_at), "dd/MM/yyyy")}</>
                         )}
