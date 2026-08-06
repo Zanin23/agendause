@@ -22,8 +22,8 @@ import { ptBR } from "date-fns/locale";
 const ScheduleNode = ({ data }: NodeProps) => {
   return (
     <div className={`px-4 py-3 shadow-md rounded-md bg-white border-2 ${data.isPhase ? 'border-primary w-64' : 'border-border w-56'}`}>
-      {data.isPhase && <Handle type="target" position={Position.Top} className="w-3 !bg-primary" />}
-      {!data.isPhase && <Handle type="target" position={Position.Left} className="w-3 !bg-border" />}
+      {data.isPhase && <Handle type="target" position={Position.Left} className="w-3 !bg-primary" />}
+      {!data.isPhase && <Handle type="target" position={Position.Top} className="w-3 !bg-border" />}
       
       <div className="flex flex-col">
         <div className={`text-xs font-bold uppercase tracking-wider mb-1 ${data.isPhase ? 'text-primary' : 'text-muted-foreground'}`}>
