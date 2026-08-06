@@ -319,9 +319,11 @@ export default function ScheduleEditor() {
             <Button variant="ghost" size="sm" className="px-2 sm:px-3" onClick={() => navigate(`/cronogramas/${schedule.id}/visualizar`)}>
               <Network className="h-4 w-4" /> <span className="hidden sm:inline">Organograma</span>
             </Button>
-            <Button variant="ghost" size="sm" className="px-2 sm:px-3" onClick={() => setShowSettings((s) => !s)}>
-              <Settings2 className="h-4 w-4" /> <span className="hidden sm:inline">Detalhes</span>
-            </Button>
+            {canEdit && (
+              <Button variant="ghost" size="sm" className="px-2 sm:px-3" onClick={() => setShowSettings((s) => !s)}>
+                <Settings2 className="h-4 w-4" /> <span className="hidden sm:inline">Detalhes</span>
+              </Button>
+            )}
             <Button variant="ghost" size="sm" className="px-2 sm:px-3" onClick={copyPublicLink}>
               <Link2 className="h-4 w-4" /> <span className="hidden sm:inline">Link</span>
             </Button>
