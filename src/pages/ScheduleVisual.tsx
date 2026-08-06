@@ -106,8 +106,8 @@ export default function ScheduleVisual() {
             source: `phase-${phases[pIdx - 1].id}`,
             target: phaseNodeId,
             animated: true,
-            sourceHandle: null,
             style: { stroke: '#F97316', strokeWidth: 2 },
+          });
         }
 
         let itemYOffset = 0;
