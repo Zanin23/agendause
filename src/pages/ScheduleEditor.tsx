@@ -6,7 +6,7 @@ import { ptBR } from "date-fns/locale";
 import {
   ArrowUp, ArrowDown, Plus, Trash2, Copy, Printer, Link2, Download, Save,
   ChevronDown, ChevronRight, CheckCircle2, Circle, Clock, Ban, CalendarClock, Settings2,
-  CalendarDays, Flag, Unlink, Handshake, FileText,
+  CalendarDays, Flag, Unlink, Handshake, FileText, Network
 } from "lucide-react";
 import { toast } from "sonner";
 import { PhaseReorderDialog } from "@/components/PhaseReorderDialog";
@@ -289,6 +289,9 @@ export default function ScheduleEditor() {
             </div>
           </div>
           <div className="flex flex-wrap gap-1 sm:gap-1.5">
+            <Button variant="ghost" size="sm" className="px-2 sm:px-3" onClick={() => navigate(`/cronogramas/${schedule.id}/visualizar`)}>
+              <Network className="h-4 w-4" /> <span className="hidden sm:inline">Organograma</span>
+            </Button>
             <Button variant="ghost" size="sm" className="px-2 sm:px-3" onClick={() => setShowSettings((s) => !s)}>
               <Settings2 className="h-4 w-4" /> <span className="hidden sm:inline">Detalhes</span>
             </Button>
