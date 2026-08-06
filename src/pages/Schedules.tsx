@@ -169,7 +169,7 @@ export default function Schedules() {
           </Card>
         ) : (
           <div className="grid gap-3">
-            {rows.map((r) => (
+            {rows.filter(r => hasSchedulePermission(r.id)).map((r) => (
               <Card key={r.id} className="hover:border-primary/50 transition-colors">
                 <CardContent className="p-4 sm:p-5 space-y-3">
                   <div className="flex items-center justify-between gap-4 flex-wrap">
