@@ -305,7 +305,7 @@ const Admin = () => {
                       size="sm"
                       variant="outline"
                       onClick={() => setEditPermsTarget(u)}
-                      disabled={admin}
+                      disabled={admin && u.id !== user?.id}
                       title={admin ? "Administradores têm acesso total" : "Editar permissões"}
                     >
                       <Lock className="h-4 w-4 mr-2" /> Permissões
