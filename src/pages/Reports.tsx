@@ -26,6 +26,7 @@ import {
   FileCheck2,
 } from "lucide-react";
 import { BackButton } from "@/components/BackButton";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { supabase } from "@/integrations/supabase/client";
 import { AppHeader } from "@/components/AppHeader";
 import { SEO } from "@/components/SEO";
@@ -50,6 +51,7 @@ type TrainingRow = {
 };
 
 const Reports = () => {
+  const { isAdmin, loading: roleLoading } = useIsAdmin();
   const [rows, setRows] = useState<TrainingRow[]>([]);
   const [query, setQuery] = useState("");
   const [filterClient, setFilterClient] = useState<string>("__all__");
@@ -218,6 +220,23 @@ const Reports = () => {
       setGenerating(false);
     }
   };
+
+  if (roleLoading) return <div className="p-8 text-center text-muted-foreground">Carregando permissões...</div>;
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen bg-background">
+        <SEO title="Acesso Negado — TreinaCheck" description="Você não tem permissão para acessar esta página." path="/relatorios" />
+        <AppHeader />
+        <main className="max-w-3xl mx-auto px-4 py-20 text-center">
+          <BackButton to="/" />
+          <div className="mt-6 p-8 rounded-2xl border border-border bg-card/60">
+            <h1 className="text-2xl font-semibold">Acesso Restrito</h1>
+            <p className="text-muted-foreground mt-2">Apenas administradores podem visualizar os relatórios de aceite.</p>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">

@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { PhaseReorderDialog } from "@/components/PhaseReorderDialog";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { supabase } from "@/integrations/supabase/client";
 import { AppHeader } from "@/components/AppHeader";
 import { SEO } from "@/components/SEO";
@@ -46,6 +47,7 @@ type TrainingLite = {
 export default function ScheduleEditor() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { isAdmin, loading: roleLoading } = useIsAdmin();
   const [schedule, setSchedule] = useState<Schedule | null>(null);
   const [phases, setPhases] = useState<Phase[]>([]);
   const [loading, setLoading] = useState(true);
@@ -258,6 +260,22 @@ export default function ScheduleEditor() {
     a.href = url; a.download = `cronograma-${schedule.client_name}.csv`; a.click();
     URL.revokeObjectURL(url);
   };
+
+  if (roleLoading) return <div className="p-8 text-center text-muted-foreground">Carregando permissões...</div>;
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen bg-background">
+        <AppHeader />
+        <main className="max-w-3xl mx-auto px-4 py-20 text-center">
+          <BackButton to="/cronogramas" />
+          <div className="mt-6 p-8 rounded-2xl border border-border bg-card/60">
+            <h1 className="text-2xl font-semibold">Acesso Restrito</h1>
+            <p className="text-muted-foreground mt-2">Apenas administradores podem editar cronogramas.</p>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   if (loading || !schedule) {
     return (

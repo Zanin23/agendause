@@ -6,6 +6,7 @@ import { Plus, ClipboardList, ExternalLink, Trash2, Send, CheckCircle2, Network 
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { AppHeader } from "@/components/AppHeader";
 import { SEO } from "@/components/SEO";
 import { Button } from "@/components/ui/button";
@@ -49,6 +50,7 @@ type Row = {
 
 export default function Schedules() {
   const { user } = useAuth();
+  const { isAdmin, loading: roleLoading } = useIsAdmin();
   const navigate = useNavigate();
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
@@ -106,6 +108,22 @@ export default function Schedules() {
     toast.success(msg);
     load();
   };
+
+  if (roleLoading) return <div className="p-8 text-center text-muted-foreground">Carregando permissões...</div>;
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen bg-background">
+        <AppHeader />
+        <main className="max-w-3xl mx-auto px-4 py-20 text-center">
+          <BackButton to="/" />
+          <div className="mt-6 p-8 rounded-2xl border border-border bg-card/60">
+            <h1 className="text-2xl font-semibold">Acesso Restrito</h1>
+            <p className="text-muted-foreground mt-2">Apenas administradores podem gerenciar cronogramas.</p>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
