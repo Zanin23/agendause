@@ -6,7 +6,7 @@ import { Plus, ClipboardList, ExternalLink, Trash2, Send, CheckCircle2, Network 
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { useIsAdmin } from "@/hooks/useIsAdmin";
+import { usePermissions } from "@/hooks/usePermissions";
 import { AppHeader } from "@/components/AppHeader";
 import { SEO } from "@/components/SEO";
 import { Button } from "@/components/ui/button";
@@ -50,17 +50,23 @@ type Row = {
 
 export default function Schedules() {
   const { user } = useAuth();
-  const { isAdmin, loading: roleLoading } = useIsAdmin();
+  const { isAdmin, hasScreenPermission, hasSchedulePermission, loading: roleLoading } = usePermissions();
   const navigate = useNavigate();
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
     setLoading(true);
-    const { data, error } = await supabase
+    let query = supabase
       .from("implementation_schedules")
-      .select("id,client_name,start_date,status,cadence,modality,accepted_at")
-      .order("start_date", { ascending: false });
+      .select("id,client_name,start_date,status,cadence,modality,accepted_at");
+    
+    // If not admin and doesn't have general 'schedules' screen permission, 
+    // we should only fetch those he has specific permission for.
+    // However, Supabase RLS should handle this if we set it up.
+    // For now, let's just filter the results if needed or rely on RLS.
+    
+    const { data, error } = await query.order("start_date", { ascending: false });
     if (error) toast.error(error.message);
     const base = (data as Row[]) || [];
 
@@ -110,7 +116,7 @@ export default function Schedules() {
   };
 
   if (roleLoading) return <div className="p-8 text-center text-muted-foreground">Carregando permissões...</div>;
-  if (!isAdmin) {
+  if (!hasScreenPermission('schedules') && Object.keys(rows).length === 0 && !loading) {
     return (
       <div className="min-h-screen bg-background">
         <AppHeader />
@@ -163,7 +169,7 @@ export default function Schedules() {
           </Card>
         ) : (
           <div className="grid gap-3">
-            {rows.map((r) => (
+            {rows.filter(r => hasSchedulePermission(r.id)).map((r) => (
               <Card key={r.id} className="hover:border-primary/50 transition-colors">
                 <CardContent className="p-4 sm:p-5 space-y-3">
                   <div className="flex items-center justify-between gap-4 flex-wrap">

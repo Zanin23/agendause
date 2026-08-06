@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Shield, ShieldCheck, Search, KeyRound, Loader2, Mail, RefreshCw, UserCog, UserPlus, Eye, EyeOff } from "lucide-react";
+import { Shield, ShieldCheck, Search, KeyRound, Loader2, Mail, RefreshCw, UserCog, UserPlus, Eye, EyeOff, LayoutGrid, ClipboardList, CheckCircle2, Lock, Unlock, Save } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
@@ -9,6 +9,7 @@ import { SEO } from "@/components/SEO";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -27,6 +28,13 @@ type AdminUser = {
   email_confirmed: boolean;
   workspace: string | null;
   roles: string[];
+  screen_permissions: { screen: string; actions: string[] }[];
+  schedule_permissions: Record<string, string>;
+};
+
+type LiteSchedule = {
+  id: string;
+  client_name: string;
 };
 
 const formatDate = (v?: string | null) =>
@@ -36,15 +44,24 @@ const Admin = () => {
   const { user } = useAuth();
   const { isAdmin, loading: roleLoading } = useIsAdmin();
   const [users, setUsers] = useState<AdminUser[]>([]);
+  const [allSchedules, setAllSchedules] = useState<LiteSchedule[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
   const [target, setTarget] = useState<AdminUser | null>(null);
+  const [editPermsTarget, setEditPermsTarget] = useState<AdminUser | null>(null);
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [saving, setSaving] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
-  const [newUser, setNewUser] = useState({ email: "", fullName: "", password: "", role: "member" as "admin" | "member" });
+  const [newUser, setNewUser] = useState({ 
+    email: "", 
+    fullName: "", 
+    password: "", 
+    role: "member" as "admin" | "member",
+    screen_permissions: [] as { screen: string; actions: string[] }[],
+    schedule_permissions: {} as Record<string, string>
+  });
 
   const call = useCallback(async (payload: Record<string, unknown>) => {
     const { data, error } = await supabase.functions.invoke("admin-users", { body: payload });
@@ -70,6 +87,7 @@ const Admin = () => {
       setLoading(true);
       const data = await call({ action: "list" });
       setUsers(data.users ?? []);
+      setAllSchedules(data.all_schedules ?? []);
     } catch (e: any) {
       toast.error(e.message || "Erro ao carregar contas");
     } finally {
@@ -157,11 +175,20 @@ const Admin = () => {
         email: newUser.email, 
         password: newUser.password, 
         full_name: newUser.fullName,
-        role: newUser.role
+        role: newUser.role,
+        screen_permissions: newUser.screen_permissions,
+        schedule_permissions: newUser.schedule_permissions
       });
       toast.success(`Usuário ${newUser.email} criado com sucesso`);
       setIsCreating(false);
-      setNewUser({ email: "", fullName: "", password: "", role: "member" });
+      setNewUser({ 
+        email: "", 
+        fullName: "", 
+        password: "", 
+        role: "member",
+        screen_permissions: [],
+        schedule_permissions: {}
+      });
       load();
     } catch (e: any) {
       toast.error(e.message || "Erro ao criar usuário");
@@ -276,6 +303,15 @@ const Admin = () => {
                   <div className="flex flex-wrap gap-2 shrink-0">
                     <Button
                       size="sm"
+                      variant="outline"
+                      onClick={() => setEditPermsTarget(u)}
+                      disabled={admin}
+                      title={admin ? "Administradores têm acesso total" : "Editar permissões"}
+                    >
+                      <Lock className="h-4 w-4 mr-2" /> Permissões
+                    </Button>
+                    <Button
+                      size="sm"
                       onClick={() => {
                         setTarget(u);
                         setPassword("");
@@ -386,35 +422,126 @@ const Admin = () => {
                 placeholder="Mínimo 6 caracteres"
               />
             </div>
-            <div className="space-y-2">
-              <Label>Cargo / Permissão</Label>
-              <div className="flex gap-4">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="role"
-                    checked={newUser.role === "member"}
-                    onChange={() => setNewUser({ ...newUser, role: "member" })}
-                    className="w-4 h-4"
-                  />
-                  <span className="text-sm">Usuário Padrão</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer text-primary">
-                  <input
-                    type="radio"
-                    name="role"
-                    checked={newUser.role === "admin"}
-                    onChange={() => setNewUser({ ...newUser, role: "admin" })}
-                    className="w-4 h-4"
-                  />
-                  <span className="text-sm font-medium flex items-center gap-1">
-                    <ShieldCheck className="h-3 w-3" /> Administrador
-                  </span>
-                </label>
+            <div className="space-y-4">
+              <Label>Permissões</Label>
+              
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground flex items-center gap-2">
+                  <LayoutGrid className="h-3 w-3" /> Telas acessíveis
+                </Label>
+                <div className="grid grid-cols-2 gap-3 p-3 rounded-lg border bg-muted/30">
+                  {[
+                    { id: 'schedules', label: 'Cronogramas' },
+                    { id: 'reports', label: 'Relatórios' },
+                    { id: 'notes', label: 'Notas' }
+                  ].map((screen) => (
+                    <div key={screen.id} className="flex items-center space-x-2">
+                      <Checkbox 
+                        id={`new-screen-${screen.id}`}
+                        disabled={newUser.role === 'admin'}
+                        checked={newUser.role === 'admin' || newUser.screen_permissions.some(p => (p as any).screen === screen.id)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setNewUser(prev => ({
+                              ...prev,
+                              screen_permissions: [...prev.screen_permissions, { screen: screen.id, actions: ['read', 'write'] }]
+                            }));
+                          } else {
+                            setNewUser(prev => ({
+                              ...prev,
+                              screen_permissions: prev.screen_permissions.filter(p => p.screen !== screen.id)
+                            }));
+                          }
+                        }}
+                      />
+                      <label htmlFor={`new-screen-${screen.id}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                        {screen.label}
+                      </label>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <p className="text-[10px] text-muted-foreground mt-1">
-                Administradores podem gerenciar usuários, visualizar relatórios e alterar configurações globais.
-              </p>
+
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground flex items-center gap-2">
+                  <ClipboardList className="h-3 w-3" /> Acesso a Cronogramas específicos
+                </Label>
+                <div className="max-h-[200px] overflow-y-auto space-y-2 p-3 rounded-lg border bg-muted/30">
+                  {allSchedules.length === 0 ? (
+                    <div className="text-xs text-muted-foreground text-center py-2 italic">Nenhum cronograma cadastrado.</div>
+                  ) : allSchedules.map((s) => {
+                    const currentMode = newUser.schedule_permissions[s.id];
+                    return (
+                      <div key={s.id} className="flex items-center justify-between gap-2 p-1.5 rounded border bg-card/50">
+                        <span className="text-xs font-medium truncate flex-1">{s.client_name}</span>
+                        <div className="flex gap-1 shrink-0">
+                          <Button 
+                            variant={currentMode === 'read' ? 'default' : 'outline'} 
+                            size="icon" 
+                            className="h-6 w-6" 
+                            disabled={newUser.role === 'admin'}
+                            onClick={() => {
+                              const next = { ...newUser.schedule_permissions };
+                              if (currentMode === 'read') delete next[s.id];
+                              else next[s.id] = 'read';
+                              setNewUser(prev => ({ ...prev, schedule_permissions: next }));
+                            }}
+                            title="Somente visualizar"
+                          >
+                            <Eye className="h-3 w-3" />
+                          </Button>
+                          <Button 
+                            variant={currentMode === 'write' ? 'default' : 'outline'} 
+                            size="icon" 
+                            className="h-6 w-6" 
+                            disabled={newUser.role === 'admin'}
+                            onClick={() => {
+                              const next = { ...newUser.schedule_permissions };
+                              if (currentMode === 'write') delete next[s.id];
+                              else next[s.id] = 'write';
+                              setNewUser(prev => ({ ...prev, schedule_permissions: next }));
+                            }}
+                            title="Visualizar e Alterar"
+                          >
+                            <UserCog className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <p className="text-[10px] text-muted-foreground italic">
+                  * Se o usuário tiver permissão na tela "Cronogramas", ele verá todos da base. Use esta seção para restringir a cronogramas específicos se ele NÃO tiver a tela de Cronogramas habilitada.
+                </p>
+              </div>
+
+              <div className="space-y-2 mt-4 pt-4 border-t">
+                <Label>Cargo</Label>
+                <div className="flex gap-4">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="role"
+                      checked={newUser.role === "member"}
+                      onChange={() => setNewUser({ ...newUser, role: "member" })}
+                      className="w-4 h-4"
+                    />
+                    <span className="text-sm">Usuário Padrão</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer text-primary">
+                    <input
+                      type="radio"
+                      name="role"
+                      checked={newUser.role === "admin"}
+                      onChange={() => setNewUser({ ...newUser, role: "admin" })}
+                      className="w-4 h-4"
+                    />
+                    <span className="text-sm font-medium flex items-center gap-1">
+                      <ShieldCheck className="h-3 w-3" /> Administrador
+                    </span>
+                  </label>
+                </div>
+              </div>
             </div>
           </div>
           <DialogFooter>
@@ -424,6 +551,128 @@ const Admin = () => {
             <Button onClick={createUser} disabled={saving}>
               {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <UserPlus className="h-4 w-4 mr-2" />}
               Criar Usuário
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!editPermsTarget} onOpenChange={(o) => !o && setEditPermsTarget(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Permissões de {editPermsTarget?.full_name || editPermsTarget?.email}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6 py-4">
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground flex items-center gap-2">
+                <LayoutGrid className="h-3 w-3" /> Telas acessíveis
+              </Label>
+              <div className="grid grid-cols-2 gap-3 p-3 rounded-lg border bg-muted/30">
+                {[
+                  { id: 'schedules', label: 'Cronogramas' },
+                  { id: 'reports', label: 'Relatórios' },
+                  { id: 'notes', label: 'Notas' }
+                ].map((screen) => (
+                  <div key={screen.id} className="flex items-center space-x-2">
+                    <Checkbox 
+                      id={`edit-screen-${screen.id}`}
+                      checked={editPermsTarget?.screen_permissions?.some(p => (p as any).screen === screen.id)}
+                      onCheckedChange={(checked) => {
+                        if (!editPermsTarget) return;
+                        let nextScreens = [...(editPermsTarget.screen_permissions || [])];
+                        if (checked) {
+                          nextScreens.push({ screen: screen.id, actions: ['read', 'write'] });
+                        } else {
+                          nextScreens = nextScreens.filter(p => p.screen !== screen.id);
+                        }
+                        setEditPermsTarget({ ...editPermsTarget, screen_permissions: nextScreens });
+                      }}
+                    />
+                    <label htmlFor={`edit-screen-${screen.id}`} className="text-sm font-medium leading-none">
+                      {screen.label}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground flex items-center gap-2">
+                <ClipboardList className="h-3 w-3" /> Acesso a Cronogramas específicos
+              </Label>
+              <div className="max-h-[250px] overflow-y-auto space-y-2 p-3 rounded-lg border bg-muted/30">
+                {allSchedules.length === 0 ? (
+                  <div className="text-xs text-muted-foreground text-center py-2 italic">Nenhum cronograma cadastrado.</div>
+                ) : allSchedules.map((s) => {
+                  const currentMode = editPermsTarget?.schedule_permissions?.[s.id];
+                  return (
+                    <div key={s.id} className="flex items-center justify-between gap-2 p-1.5 rounded border bg-card/50">
+                      <span className="text-xs font-medium truncate flex-1">{s.client_name}</span>
+                      <div className="flex gap-1 shrink-0">
+                        <Button 
+                          variant={currentMode === 'read' ? 'default' : 'outline'} 
+                          size="icon" 
+                          className="h-6 w-6" 
+                          onClick={() => {
+                            if (!editPermsTarget) return;
+                            const next = { ...(editPermsTarget.schedule_permissions || {}) };
+                            if (currentMode === 'read') delete next[s.id];
+                            else next[s.id] = 'read';
+                            setEditPermsTarget({ ...editPermsTarget, schedule_permissions: next });
+                          }}
+                          title="Somente visualizar"
+                        >
+                          <Eye className="h-3 w-3" />
+                        </Button>
+                        <Button 
+                          variant={currentMode === 'write' ? 'default' : 'outline'} 
+                          size="icon" 
+                          className="h-6 w-6" 
+                          onClick={() => {
+                            if (!editPermsTarget) return;
+                            const next = { ...(editPermsTarget.schedule_permissions || {}) };
+                            if (currentMode === 'write') delete next[s.id];
+                            else next[s.id] = 'write';
+                            setEditPermsTarget({ ...editPermsTarget, schedule_permissions: next });
+                          }}
+                          title="Visualizar e Alterar"
+                        >
+                          <UserCog className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setEditPermsTarget(null)} disabled={saving}>
+              Cancelar
+            </Button>
+            <Button 
+              onClick={async () => {
+                if (!editPermsTarget) return;
+                try {
+                  setSaving(true);
+                  await call({
+                    action: 'set_permissions',
+                    user_id: editPermsTarget.id,
+                    screen_permissions: editPermsTarget.screen_permissions,
+                    schedule_permissions: editPermsTarget.schedule_permissions
+                  });
+                  toast.success("Permissões atualizadas");
+                  setEditPermsTarget(null);
+                  load();
+                } catch (e: any) {
+                  toast.error(e.message || "Erro ao salvar permissões");
+                } finally {
+                  setSaving(false);
+                }
+              }} 
+              disabled={saving}
+            >
+              {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+              Salvar Permissões
             </Button>
           </DialogFooter>
         </DialogContent>

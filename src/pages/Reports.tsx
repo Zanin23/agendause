@@ -26,7 +26,7 @@ import {
   FileCheck2,
 } from "lucide-react";
 import { BackButton } from "@/components/BackButton";
-import { useIsAdmin } from "@/hooks/useIsAdmin";
+import { usePermissions } from "@/hooks/usePermissions";
 import { supabase } from "@/integrations/supabase/client";
 import { AppHeader } from "@/components/AppHeader";
 import { SEO } from "@/components/SEO";
@@ -51,7 +51,7 @@ type TrainingRow = {
 };
 
 const Reports = () => {
-  const { isAdmin, loading: roleLoading } = useIsAdmin();
+  const { isAdmin, hasScreenPermission, loading: roleLoading } = usePermissions();
   const [rows, setRows] = useState<TrainingRow[]>([]);
   const [query, setQuery] = useState("");
   const [filterClient, setFilterClient] = useState<string>("__all__");
@@ -222,7 +222,7 @@ const Reports = () => {
   };
 
   if (roleLoading) return <div className="p-8 text-center text-muted-foreground">Carregando permissões...</div>;
-  if (!isAdmin) {
+  if (!hasScreenPermission('reports')) {
     return (
       <div className="min-h-screen bg-background">
         <SEO title="Acesso Negado — TreinaCheck" description="Você não tem permissão para acessar esta página." path="/relatorios" />

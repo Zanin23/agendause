@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { PhaseReorderDialog } from "@/components/PhaseReorderDialog";
-import { useIsAdmin } from "@/hooks/useIsAdmin";
+import { usePermissions } from "@/hooks/usePermissions";
 import { supabase } from "@/integrations/supabase/client";
 import { AppHeader } from "@/components/AppHeader";
 import { SEO } from "@/components/SEO";
@@ -47,7 +47,7 @@ type TrainingLite = {
 export default function ScheduleEditor() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { isAdmin, loading: roleLoading } = useIsAdmin();
+  const { isAdmin, hasSchedulePermission, loading: roleLoading } = usePermissions();
   const [schedule, setSchedule] = useState<Schedule | null>(null);
   const [phases, setPhases] = useState<Phase[]>([]);
   const [loading, setLoading] = useState(true);
@@ -128,7 +128,10 @@ export default function ScheduleEditor() {
   }, [phases]);
 
   // --- Schedule meta ---
+  const canEdit = id ? hasSchedulePermission(id, 'write') : isAdmin;
+
   const updateSchedule = async (patch: Partial<Schedule>) => {
+    if (!canEdit) return toast.error("Sem permissão para alterar este cronograma");
     if (!schedule) return;
     const next = { ...schedule, ...patch };
     setSchedule(next);
@@ -138,6 +141,7 @@ export default function ScheduleEditor() {
 
   // --- Phases ---
   const addPhase = async () => {
+    if (!canEdit) return toast.error("Sem permissão para alterar este cronograma");
     if (!schedule) return;
     const maxPos = phases.length > 0 ? Math.max(...phases.map(p => p.position)) + 1 : 0;
     const { data, error } = await supabase.from("schedule_phases")
@@ -149,10 +153,12 @@ export default function ScheduleEditor() {
   const updatePhase = async (phaseId: string, patch: Partial<Phase>) => {
     setPhases((prev) => prev.map((p) => p.id === phaseId ? { ...p, ...patch } : p));
     const { items, ...dbPatch } = patch as any;
+    if (!canEdit) return toast.error("Sem permissão para alterar este cronograma");
     const { error } = await supabase.from("schedule_phases").update(dbPatch).eq("id", phaseId);
     if (error) toast.error(error.message);
   };
   const removePhase = async (phaseId: string) => {
+    if (!canEdit) return toast.error("Sem permissão para alterar este cronograma");
     if (!confirm("Remover esta fase e todos os itens?")) return;
     const { error } = await supabase.from("schedule_phases").delete().eq("id", phaseId);
     if (error) return toast.error(error.message);
@@ -188,6 +194,7 @@ export default function ScheduleEditor() {
 
   // --- Items ---
   const addItem = async (phase: Phase) => {
+    if (!canEdit) return toast.error("Sem permissão para alterar este cronograma");
     const maxPos = phase.items.length > 0 ? Math.max(...phase.items.map(i => i.position)) + 1 : 0;
     const { data, error } = await supabase.from("schedule_items")
       .insert(({ phase_id: phase.id, title: "Novo item", position: maxPos }) as any)
@@ -199,10 +206,12 @@ export default function ScheduleEditor() {
     setPhases((prev) => prev.map((p) => p.id === phaseId
       ? { ...p, items: p.items.map((i) => i.id === itemId ? { ...i, ...patch } : i) }
       : p));
+    if (!canEdit) return toast.error("Sem permissão para alterar este cronograma");
     const { error } = await supabase.from("schedule_items").update(patch as any).eq("id", itemId);
     if (error) toast.error(error.message);
   };
   const removeItem = async (phaseId: string, itemId: string) => {
+    if (!canEdit) return toast.error("Sem permissão para alterar este cronograma");
     const { error } = await supabase.from("schedule_items").delete().eq("id", itemId);
     if (error) return toast.error(error.message);
     setPhases((prev) => prev.map((p) => p.id === phaseId
@@ -262,7 +271,7 @@ export default function ScheduleEditor() {
   };
 
   if (roleLoading) return <div className="p-8 text-center text-muted-foreground">Carregando permissões...</div>;
-  if (!isAdmin) {
+  if (id && !hasSchedulePermission(id)) {
     return (
       <div className="min-h-screen bg-background">
         <AppHeader />
@@ -310,9 +319,11 @@ export default function ScheduleEditor() {
             <Button variant="ghost" size="sm" className="px-2 sm:px-3" onClick={() => navigate(`/cronogramas/${schedule.id}/visualizar`)}>
               <Network className="h-4 w-4" /> <span className="hidden sm:inline">Organograma</span>
             </Button>
-            <Button variant="ghost" size="sm" className="px-2 sm:px-3" onClick={() => setShowSettings((s) => !s)}>
-              <Settings2 className="h-4 w-4" /> <span className="hidden sm:inline">Detalhes</span>
-            </Button>
+            {canEdit && (
+              <Button variant="ghost" size="sm" className="px-2 sm:px-3" onClick={() => setShowSettings((s) => !s)}>
+                <Settings2 className="h-4 w-4" /> <span className="hidden sm:inline">Detalhes</span>
+              </Button>
+            )}
             <Button variant="ghost" size="sm" className="px-2 sm:px-3" onClick={copyPublicLink}>
               <Link2 className="h-4 w-4" /> <span className="hidden sm:inline">Link</span>
             </Button>
@@ -508,9 +519,11 @@ export default function ScheduleEditor() {
                 );
               })}
             </nav>
-            <Button onClick={addPhase} variant="outline" size="sm" className="w-full">
-              <Plus className="h-4 w-4" /> Nova fase
-            </Button>
+            {canEdit && (
+              <Button onClick={addPhase} variant="outline" size="sm" className="w-full">
+                <Plus className="h-4 w-4" /> Nova fase
+              </Button>
+            )}
           </aside>
 
           {/* Active phase panel */}
@@ -530,16 +543,21 @@ export default function ScheduleEditor() {
                     <div className="flex items-center gap-1 sm:gap-2 pb-3 border-b border-border">
                       <span className="text-xs font-mono text-muted-foreground shrink-0">{String(pi + 1).padStart(2, "0")}</span>
                       <Input value={phase.title} onChange={(e) => updatePhase(phase.id, { title: e.target.value })}
+                        disabled={!canEdit}
                         className="font-semibold text-sm sm:text-base border-0 shadow-none px-2 focus-visible:ring-1 -ml-2 min-w-0 flex-1" />
-                      <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => movePhase(pi, -1)} disabled={pi === 0}>
-                        <ArrowUp className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => movePhase(pi, 1)} disabled={pi === phases.length - 1}>
-                        <ArrowDown className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive shrink-0" onClick={() => removePhase(phase.id)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      {canEdit && (
+                        <>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => movePhase(pi, -1)} disabled={pi === 0}>
+                            <ArrowUp className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => movePhase(pi, 1)} disabled={pi === phases.length - 1}>
+                            <ArrowDown className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive shrink-0" onClick={() => removePhase(phase.id)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </>
+                      )}
                     </div>
 
                     {/* Items list */}
@@ -603,29 +621,32 @@ export default function ScheduleEditor() {
                             {open && (
                               <div className="mt-3 sm:ml-8 space-y-3 pb-2">
                                 <Input value={item.title} onChange={(e) => updateItem(phase.id, item.id, { title: e.target.value })}
+                                  disabled={!canEdit}
                                   placeholder="Título do item" />
                                 <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-2">
                                   <div className="space-y-1">
                                     <label className="text-[10px] uppercase text-muted-foreground">Prevista</label>
-                                    <Input type="date" value={item.planned_date || ""} onChange={(e) => updateItem(phase.id, item.id, { planned_date: e.target.value || null })} />
+                                    <Input type="date" value={item.planned_date || ""} onChange={(e) => updateItem(phase.id, item.id, { planned_date: e.target.value || null })} disabled={!canEdit} />
                                   </div>
                                   <div className="space-y-1">
                                     <label className="text-[10px] uppercase text-muted-foreground">Conclusão</label>
-                                    <Input type="date" value={item.done_date || ""} onChange={(e) => updateItem(phase.id, item.id, { done_date: e.target.value || null })} />
+                                    <Input type="date" value={item.done_date || ""} onChange={(e) => updateItem(phase.id, item.id, { done_date: e.target.value || null })} disabled={!canEdit} />
                                   </div>
                                   <div className="space-y-1">
                                     <label className="text-[10px] uppercase text-muted-foreground">Status</label>
                                     <select value={item.status} onChange={(e) => updateItem(phase.id, item.id, { status: e.target.value, done_date: e.target.value === "done" ? (item.done_date || format(new Date(), "yyyy-MM-dd")) : item.done_date })}
+                                      disabled={!canEdit}
                                       className="w-full h-10 rounded-md border border-input bg-background px-2 text-sm">
                                       {Object.entries(STATUS_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
                                     </select>
                                   </div>
                                   <div className="space-y-1">
                                     <label className="text-[10px] uppercase text-muted-foreground">Responsável</label>
-                                    <Input value={item.assignee || ""} onChange={(e) => updateItem(phase.id, item.id, { assignee: e.target.value || null })} />
+                                    <Input value={item.assignee || ""} onChange={(e) => updateItem(phase.id, item.id, { assignee: e.target.value || null })} disabled={!canEdit} />
                                   </div>
                                 </div>
                                 <Textarea placeholder="Observações…" value={item.notes || ""} rows={2}
+                                  disabled={!canEdit}
                                   onChange={(e) => updateItem(phase.id, item.id, { notes: e.target.value || null })} />
 
                                 {/* Visita vinculada */}
@@ -638,6 +659,7 @@ export default function ScheduleEditor() {
                                     <select
                                       value={item.training_id || ""}
                                       onChange={(e) => updateItem(phase.id, item.id, { training_id: e.target.value || null } as any)}
+                                      disabled={!canEdit}
                                       className="flex-1 min-w-[200px] h-10 rounded-md border border-input bg-background px-2 text-sm"
                                     >
                                       <option value="">— Nenhuma visita vinculada —</option>
@@ -656,12 +678,12 @@ export default function ScheduleEditor() {
                                           </Button>
                                         </Link>
                                         <Button variant="outline" size="sm" type="button"
-                                          onClick={() => updateItem(phase.id, item.id, { training_id: null } as any)}>
+                                          onClick={() => updateItem(phase.id, item.id, { training_id: null } as any)} disabled={!canEdit}>
                                           <Unlink className="h-3.5 w-3.5" /> Desvincular
                                         </Button>
                                         {item.status !== "done" && (
                                           <Button size="sm" type="button"
-                                            onClick={() => finalizeLinkedTraining(item)}>
+                                            onClick={() => finalizeLinkedTraining(item)} disabled={!canEdit}>
                                             <Flag className="h-3.5 w-3.5" /> Finalizar visita e etapa
                                           </Button>
                                         )}
@@ -675,24 +697,26 @@ export default function ScheduleEditor() {
                                   )}
                                 </div>
 
-                                <div className="flex items-center justify-between">
-                                  <div className="flex gap-1">
-                                    <Button variant="ghost" size="sm" onClick={() => moveItem(phase, ii, -1)} disabled={ii === 0}>
-                                      <ArrowUp className="h-3 w-3" />
-                                    </Button>
-                                    <Button variant="ghost" size="sm" onClick={() => moveItem(phase, ii, 1)} disabled={ii === phase.items.length - 1}>
-                                      <ArrowDown className="h-3 w-3" />
-                                    </Button>
+                                {canEdit && (
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex gap-1">
+                                      <Button variant="ghost" size="sm" onClick={() => moveItem(phase, ii, -1)} disabled={ii === 0}>
+                                        <ArrowUp className="h-3 w-3" />
+                                      </Button>
+                                      <Button variant="ghost" size="sm" onClick={() => moveItem(phase, ii, 1)} disabled={ii === phase.items.length - 1}>
+                                        <ArrowDown className="h-3 w-3" />
+                                      </Button>
+                                    </div>
+                                    <div className="flex gap-1">
+                                      <Button variant="ghost" size="sm" onClick={() => duplicateItem(phase, item)}>
+                                        <Copy className="h-3 w-3" /> Duplicar
+                                      </Button>
+                                      <Button variant="ghost" size="sm" onClick={() => removeItem(phase.id, item.id)} className="text-destructive">
+                                        <Trash2 className="h-3 w-3" /> Remover
+                                      </Button>
+                                    </div>
                                   </div>
-                                  <div className="flex gap-1">
-                                    <Button variant="ghost" size="sm" onClick={() => duplicateItem(phase, item)}>
-                                      <Copy className="h-3 w-3" /> Duplicar
-                                    </Button>
-                                    <Button variant="ghost" size="sm" onClick={() => removeItem(phase.id, item.id)} className="text-destructive">
-                                      <Trash2 className="h-3 w-3" /> Remover
-                                    </Button>
-                                  </div>
-                                </div>
+                                )}
                               </div>
                             )}
                           </li>
@@ -700,9 +724,11 @@ export default function ScheduleEditor() {
                       })}
                     </ul>
 
-                    <Button variant="outline" size="sm" onClick={() => addItem(phase)} className="w-full">
-                      <Plus className="h-4 w-4" /> Adicionar item
-                    </Button>
+                    {canEdit && (
+                      <Button variant="outline" size="sm" onClick={() => addItem(phase)} className="w-full">
+                        <Plus className="h-4 w-4" /> Adicionar item
+                      </Button>
+                    )}
 
                     <p className="text-[11px] text-muted-foreground flex items-center gap-1 pt-2 border-t border-border">
                       <Save className="h-3 w-3" /> Salvamento automático ativo.
