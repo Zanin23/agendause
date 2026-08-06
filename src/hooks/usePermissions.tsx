@@ -16,7 +16,7 @@ export const usePermissions = () => {
     if (!user) {
       setIsAdmin(false);
       setScreenPermissions([]);
-      setSchedulePermissions([]);
+      setSchedulePermissions({});
       setLoading(false);
       return;
     }
