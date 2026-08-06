@@ -151,7 +151,11 @@ export default function ScheduleVisual() {
 
   return (
     <div className="flex flex-col h-screen bg-background">
-      <SEO title={`Organograma — ${clientName}`} />
+      <SEO 
+        title={`Organograma — ${clientName}`} 
+        description={`Visualização gráfica do cronograma de implantação para ${clientName}`}
+        path={`/cronogramas/${id}/visualizar`}
+      />
       <AppHeader />
       
       <div className="flex items-center justify-between px-6 py-4 border-b">
