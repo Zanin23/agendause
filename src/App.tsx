@@ -48,8 +48,8 @@ const App = () => (
             <Route path="/configuracoes" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
             <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
             <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
-            <Route path="/blog" element={<Index />} />
-            <Route path="/blog/:slug" element={<Article />} />
+            <Route path="/blog" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+            <Route path="/blog/:slug" element={<ProtectedRoute><Article /></ProtectedRoute>} />
             <Route path="/agenda" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/relatorios" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
             <Route path="/treinamento/:id" element={<ProtectedRoute><TrainingDetail /></ProtectedRoute>} />
