@@ -84,11 +84,12 @@ export default function ScheduleVisual() {
       let currentY = 0;
       const PHASE_X = 50;
       const ITEM_X_START = 350;
-      const Y_GAP = 150;
-      const ITEM_Y_GAP = 100;
+      const ITEM_Y_GAP = 85;
+      const MIN_PHASE_SPACING = 180;
 
       (phases || []).forEach((phase, pIdx) => {
         const phaseNodeId = `phase-${phase.id}`;
+        const phaseItems = (items || []).filter(it => it.phase_id === phase.id);
         
         // Phase Node
         newNodes.push({
@@ -109,9 +110,7 @@ export default function ScheduleVisual() {
           });
         }
 
-        const phaseItems = (items || []).filter(it => it.phase_id === phase.id);
-        let itemY = currentY;
-
+        let itemYOffset = 0;
         phaseItems.forEach((item, iIdx) => {
           const itemNodeId = `item-${item.id}`;
           
@@ -124,7 +123,7 @@ export default function ScheduleVisual() {
               date: item.done_date || item.planned_date,
               isPhase: false 
             },
-            position: { x: ITEM_X_START, y: itemY },
+            position: { x: ITEM_X_START, y: currentY + itemYOffset },
           });
 
           newEdges.push({
@@ -135,10 +134,12 @@ export default function ScheduleVisual() {
             style: { stroke: '#94a3b8' },
           });
 
-          itemY += ITEM_Y_GAP;
+          itemYOffset += ITEM_Y_GAP;
         });
 
-        currentY += Math.max(Y_GAP, phaseItems.length * ITEM_Y_GAP);
+        // Calculate next phase Y position
+        const phaseHeight = Math.max(MIN_PHASE_SPACING, phaseItems.length * ITEM_Y_GAP + 60);
+        currentY += phaseHeight;
       });
 
       setNodes(newNodes);
