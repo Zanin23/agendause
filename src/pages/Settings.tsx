@@ -190,15 +190,15 @@ const Settings = () => {
                 <ShieldCheck className="h-5 w-5" />
               </div>
               <div>
-                <h2 className="text-lg font-semibold">Administração</h2>
-                <p className="text-sm text-muted-foreground">Visualize as contas cadastradas e ajuste senhas.</p>
+                <h2 className="text-lg font-semibold">Controle de Acessos</h2>
+                <p className="text-sm text-muted-foreground">Gerencie permissões administrativas e usuários.</p>
               </div>
             </header>
             <Link
               to="/admin"
               className="flex items-center justify-between gap-4 p-4 rounded-xl border border-border hover:border-primary/40 transition-colors"
             >
-              <span className="font-medium">Contas do sistema</span>
+              <span className="font-medium">Gerenciar permissões</span>
               <ChevronRight className="h-4 w-4 text-muted-foreground" />
             </Link>
           </section>

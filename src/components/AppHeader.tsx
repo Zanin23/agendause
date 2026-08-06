@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { Moon, Sun, Database, Settings as SettingsIcon } from "lucide-react";
+import { Moon, Sun, Database, Settings as SettingsIcon, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
@@ -12,6 +12,7 @@ export const AppHeader = () => {
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
   const { active } = useWorkspace();
+  const { isAdmin } = useIsAdmin();
 
   const initials = (user?.user_metadata?.full_name || user?.email || "?")
     .split(" ")
@@ -49,6 +50,18 @@ export const AppHeader = () => {
                 <Database className="h-3 w-3 text-primary" />
                 {active.name}
               </Link>
+            )}
+            {isAdmin && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate("/admin")}
+                className="text-primary hover:text-primary hover:bg-primary/10 px-2"
+                aria-label="Controle de Acessos"
+                title="Controle de Acessos"
+              >
+                <ShieldCheck className="h-4 w-4" />
+              </Button>
             )}
             <Button
               variant="ghost"

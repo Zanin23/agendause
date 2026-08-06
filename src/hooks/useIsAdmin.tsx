@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -31,5 +31,6 @@ export const useIsAdmin = () => {
     };
   }, [user]);
 
-  return { isAdmin, loading };
+  const value = useMemo(() => ({ isAdmin, loading }), [isAdmin, loading]);
+  return value;
 };
