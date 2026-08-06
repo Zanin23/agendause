@@ -59,7 +59,7 @@ const Admin = () => {
     fullName: "", 
     password: "", 
     role: "member" as "admin" | "member",
-    screen_permissions: [] as string[],
+    screen_permissions: [] as any[],
     schedule_permissions: {} as Record<string, string>
   });
 
