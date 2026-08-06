@@ -6,7 +6,7 @@ import { ptBR } from "date-fns/locale";
 import {
   ArrowUp, ArrowDown, Plus, Trash2, Copy, Printer, Link2, Download, Save,
   ChevronDown, ChevronRight, CheckCircle2, Circle, Clock, Ban, CalendarClock, Settings2,
-  CalendarDays, Flag, Unlink, Handshake,
+  CalendarDays, Flag, Unlink, Handshake, FileText,
 } from "lucide-react";
 import { toast } from "sonner";
 import { PhaseReorderDialog } from "@/components/PhaseReorderDialog";
@@ -20,6 +20,12 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { STATUS_LABELS, STATUS_COLORS } from "@/lib/schedule";
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu";
 
 type Item = {
   id: string; phase_id: string; position: number; title: string;
@@ -292,11 +298,24 @@ export default function ScheduleEditor() {
             <Button variant="ghost" size="sm" className="px-2 sm:px-3" onClick={exportCsv}>
               <Download className="h-4 w-4" /> <span className="hidden sm:inline">CSV</span>
             </Button>
-            <Link to={`/cronogramas/${schedule.id}/imprimir`}>
-              <Button variant="ghost" size="sm" className="px-2 sm:px-3">
-                <Printer className="h-4 w-4" /> <span className="hidden sm:inline">PDF</span>
-              </Button>
-            </Link>
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="px-2 sm:px-3">
+                  <Printer className="h-4 w-4" /> <span className="hidden sm:inline">PDF</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => navigate(`/cronogramas/${schedule.id}/imprimir`)}>
+                  <Printer className="mr-2 h-4 w-4" />
+                  Com datas
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate(`/cronogramas/${schedule.id}/imprimir?dates=false`)}>
+                  <FileText className="mr-2 h-4 w-4" />
+                  Sem datas
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Link to={`/cronogramas/${schedule.id}/termo`}>
               <Button
                 variant={progress.pct === 100 ? "default" : "ghost"}

@@ -9,10 +9,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { SEO } from "@/components/SEO";
 import logoAsset from "@/assets/logo-use-sistemas.png.asset.json";
 import { STATUS_LABELS } from "@/lib/schedule";
+import { useSearchParams } from "react-router-dom";
 
 export default function SchedulePrint() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const showDates = searchParams.get("dates") !== "false";
   const [data, setData] = useState<any>(null);
 
   useEffect(() => {
@@ -69,7 +72,7 @@ export default function SchedulePrint() {
             <p className="text-sm text-black/70">Planejamento e execução das etapas de implantação do sistema USE</p>
             <div className="mt-3 text-sm">
               <div><strong>Cliente:</strong> {schedule.client_name}</div>
-              <div><strong>Início:</strong> {format(new Date(schedule.start_date), "d 'de' MMMM 'de' yyyy", { locale: ptBR })}</div>
+              {showDates && <div><strong>Início:</strong> {format(new Date(schedule.start_date), "d 'de' MMMM 'de' yyyy", { locale: ptBR })}</div>}
               <div><strong>Modalidade:</strong> {schedule.modality} · <strong>Cadência:</strong> {schedule.cadence}</div>
               {schedule.use_team?.length > 0 && <div><strong>Equipe Use Sistemas:</strong> {schedule.use_team.join(", ")}</div>}
             </div>
@@ -91,10 +94,10 @@ export default function SchedulePrint() {
                       <div>{it.title}</div>
                       <div className="text-[11px] text-black/60">
                         Status: {STATUS_LABELS[it.status] || it.status}
-                        {it.trainings?.scheduled_at && (
+                        {showDates && it.trainings?.scheduled_at && (
                           <> · Visita agendada: {format(new Date(it.trainings.scheduled_at), "dd/MM/yyyy")}</>
                         )}
-                        {it.done_date && <> · Concluído: {format(new Date(it.done_date), "dd/MM/yyyy")}</>}
+                        {showDates && it.done_date && <> · Concluído: {format(new Date(it.done_date), "dd/MM/yyyy")}</>}
                         {it.assignee && <> · Resp.: {it.assignee}</>}
                       </div>
                       {it.notes && (
