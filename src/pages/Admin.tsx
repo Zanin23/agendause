@@ -28,7 +28,7 @@ type AdminUser = {
   email_confirmed: boolean;
   workspace: string | null;
   roles: string[];
-  screen_permissions: any[];
+  screen_permissions: { screen: string; actions: string[] }[];
   schedule_permissions: Record<string, string>;
 };
 
@@ -59,7 +59,7 @@ const Admin = () => {
     fullName: "", 
     password: "", 
     role: "member" as "admin" | "member",
-    screen_permissions: [] as any[],
+    screen_permissions: [] as { screen: string; actions: string[] }[],
     schedule_permissions: {} as Record<string, string>
   });
 
@@ -449,7 +449,7 @@ const Admin = () => {
                           } else {
                             setNewUser(prev => ({
                               ...prev,
-                              screen_permissions: prev.screen_permissions.filter(p => (p as any).screen !== screen.id)
+                              screen_permissions: prev.screen_permissions.filter(p => p.screen !== screen.id)
                             }));
                           }
                         }}
@@ -582,7 +582,7 @@ const Admin = () => {
                         if (checked) {
                           nextScreens.push({ screen: screen.id, actions: ['read', 'write'] });
                         } else {
-                          nextScreens = nextScreens.filter(p => (p as any).screen !== screen.id);
+                          nextScreens = nextScreens.filter(p => p.screen !== screen.id);
                         }
                         setEditPermsTarget({ ...editPermsTarget, screen_permissions: nextScreens });
                       }}
