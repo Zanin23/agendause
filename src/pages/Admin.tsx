@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Shield, ShieldCheck, Search, KeyRound, Loader2, Mail, RefreshCw, UserCog, UserPlus, Eye, EyeOff } from "lucide-react";
+import { Shield, ShieldCheck, Search, KeyRound, Loader2, Mail, RefreshCw, UserCog, UserPlus, Eye, EyeOff, LayoutGrid, ClipboardList, CheckCircle2, Lock, Unlock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
@@ -9,6 +9,7 @@ import { SEO } from "@/components/SEO";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -27,6 +28,13 @@ type AdminUser = {
   email_confirmed: boolean;
   workspace: string | null;
   roles: string[];
+  screen_permissions: any[];
+  schedule_permissions: Record<string, string>;
+};
+
+type LiteSchedule = {
+  id: string;
+  client_name: string;
 };
 
 const formatDate = (v?: string | null) =>
@@ -36,15 +44,24 @@ const Admin = () => {
   const { user } = useAuth();
   const { isAdmin, loading: roleLoading } = useIsAdmin();
   const [users, setUsers] = useState<AdminUser[]>([]);
+  const [allSchedules, setAllSchedules] = useState<LiteSchedule[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
   const [target, setTarget] = useState<AdminUser | null>(null);
+  const [editPermsTarget, setEditPermsTarget] = useState<AdminUser | null>(null);
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [saving, setSaving] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
-  const [newUser, setNewUser] = useState({ email: "", fullName: "", password: "", role: "member" as "admin" | "member" });
+  const [newUser, setNewUser] = useState({ 
+    email: "", 
+    fullName: "", 
+    password: "", 
+    role: "member" as "admin" | "member",
+    screen_permissions: [] as string[],
+    schedule_permissions: {} as Record<string, string>
+  });
 
   const call = useCallback(async (payload: Record<string, unknown>) => {
     const { data, error } = await supabase.functions.invoke("admin-users", { body: payload });
@@ -70,6 +87,7 @@ const Admin = () => {
       setLoading(true);
       const data = await call({ action: "list" });
       setUsers(data.users ?? []);
+      setAllSchedules(data.all_schedules ?? []);
     } catch (e: any) {
       toast.error(e.message || "Erro ao carregar contas");
     } finally {
