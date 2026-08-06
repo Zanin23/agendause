@@ -22,8 +22,8 @@ import { ptBR } from "date-fns/locale";
 const ScheduleNode = ({ data }: NodeProps) => {
   return (
     <div className={`px-4 py-3 shadow-md rounded-md bg-white border-2 ${data.isPhase ? 'border-primary w-64' : 'border-border w-56'}`}>
-      {data.isPhase && <Handle type="target" position={Position.Top} className="w-3 !bg-primary" />}
-      {!data.isPhase && <Handle type="target" position={Position.Left} className="w-3 !bg-border" />}
+      {data.isPhase && <Handle type="target" position={Position.Left} className="w-3 !bg-primary" />}
+      {!data.isPhase && <Handle type="target" position={Position.Top} className="w-3 !bg-border" />}
       
       <div className="flex flex-col">
         <div className={`text-xs font-bold uppercase tracking-wider mb-1 ${data.isPhase ? 'text-primary' : 'text-muted-foreground'}`}>
@@ -46,8 +46,8 @@ const ScheduleNode = ({ data }: NodeProps) => {
         )}
       </div>
 
-      {data.isPhase && <Handle type="source" position={Position.Bottom} className="w-3 !bg-primary" />}
-      {data.isPhase && <Handle type="source" position={Position.Right} className="w-3 !bg-primary" id="right" />}
+      {data.isPhase && <Handle type="source" position={Position.Right} className="w-3 !bg-primary" />}
+      {data.isPhase && <Handle type="source" position={Position.Bottom} className="w-3 !bg-primary" id="bottom" />}
     </div>
   );
 };
@@ -81,21 +81,22 @@ export default function ScheduleVisual() {
       const newNodes: Node[] = [];
       const newEdges: Edge[] = [];
 
-      let currentY = 0;
-      const PHASE_X = 50;
-      const ITEM_X_START = 350;
-      const Y_GAP = 150;
-      const ITEM_Y_GAP = 100;
+      let currentX = 50;
+      const PHASE_Y = 50;
+      const ITEM_Y_START = 200;
+      const ITEM_X_GAP = 280;
+      const PHASE_X_GAP = 300;
 
       (phases || []).forEach((phase, pIdx) => {
         const phaseNodeId = `phase-${phase.id}`;
+        const phaseItems = (items || []).filter(it => it.phase_id === phase.id);
         
         // Phase Node
         newNodes.push({
           id: phaseNodeId,
           type: 'schedule',
           data: { title: phase.title, isPhase: true },
-          position: { x: PHASE_X, y: currentY },
+          position: { x: currentX, y: PHASE_Y },
         });
 
         // Edge between phases
@@ -109,11 +110,13 @@ export default function ScheduleVisual() {
           });
         }
 
-        const phaseItems = (items || []).filter(it => it.phase_id === phase.id);
-        let itemY = currentY;
-
+        let itemYOffset = 0;
+        const itemsPerColumn = 6;
+        
         phaseItems.forEach((item, iIdx) => {
           const itemNodeId = `item-${item.id}`;
+          const col = Math.floor(iIdx / itemsPerColumn);
+          const row = iIdx % itemsPerColumn;
           
           newNodes.push({
             id: itemNodeId,
@@ -124,21 +127,23 @@ export default function ScheduleVisual() {
               date: item.done_date || item.planned_date,
               isPhase: false 
             },
-            position: { x: ITEM_X_START, y: itemY },
+            position: { 
+              x: currentX + (col * 240), 
+              y: ITEM_Y_START + (row * 85) 
+            },
           });
 
           newEdges.push({
             id: `e-${phaseNodeId}-${itemNodeId}`,
             source: phaseNodeId,
-            sourceHandle: 'right',
+            sourceHandle: 'bottom',
             target: itemNodeId,
             style: { stroke: '#94a3b8' },
           });
-
-          itemY += ITEM_Y_GAP;
         });
 
-        currentY += Math.max(Y_GAP, phaseItems.length * ITEM_Y_GAP);
+        const numCols = Math.ceil(phaseItems.length / itemsPerColumn) || 1;
+        currentX += Math.max(PHASE_X_GAP, numCols * 260);
       });
 
       setNodes(newNodes);
