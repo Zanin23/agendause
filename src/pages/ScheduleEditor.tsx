@@ -141,6 +141,7 @@ export default function ScheduleEditor() {
 
   // --- Phases ---
   const addPhase = async () => {
+    if (!canEdit) return toast.error("Sem permissão para alterar este cronograma");
     if (!schedule) return;
     const maxPos = phases.length > 0 ? Math.max(...phases.map(p => p.position)) + 1 : 0;
     const { data, error } = await supabase.from("schedule_phases")
@@ -152,10 +153,12 @@ export default function ScheduleEditor() {
   const updatePhase = async (phaseId: string, patch: Partial<Phase>) => {
     setPhases((prev) => prev.map((p) => p.id === phaseId ? { ...p, ...patch } : p));
     const { items, ...dbPatch } = patch as any;
+    if (!canEdit) return toast.error("Sem permissão para alterar este cronograma");
     const { error } = await supabase.from("schedule_phases").update(dbPatch).eq("id", phaseId);
     if (error) toast.error(error.message);
   };
   const removePhase = async (phaseId: string) => {
+    if (!canEdit) return toast.error("Sem permissão para alterar este cronograma");
     if (!confirm("Remover esta fase e todos os itens?")) return;
     const { error } = await supabase.from("schedule_phases").delete().eq("id", phaseId);
     if (error) return toast.error(error.message);
@@ -191,6 +194,7 @@ export default function ScheduleEditor() {
 
   // --- Items ---
   const addItem = async (phase: Phase) => {
+    if (!canEdit) return toast.error("Sem permissão para alterar este cronograma");
     const maxPos = phase.items.length > 0 ? Math.max(...phase.items.map(i => i.position)) + 1 : 0;
     const { data, error } = await supabase.from("schedule_items")
       .insert(({ phase_id: phase.id, title: "Novo item", position: maxPos }) as any)
@@ -202,10 +206,12 @@ export default function ScheduleEditor() {
     setPhases((prev) => prev.map((p) => p.id === phaseId
       ? { ...p, items: p.items.map((i) => i.id === itemId ? { ...i, ...patch } : i) }
       : p));
+    if (!canEdit) return toast.error("Sem permissão para alterar este cronograma");
     const { error } = await supabase.from("schedule_items").update(patch as any).eq("id", itemId);
     if (error) toast.error(error.message);
   };
   const removeItem = async (phaseId: string, itemId: string) => {
+    if (!canEdit) return toast.error("Sem permissão para alterar este cronograma");
     const { error } = await supabase.from("schedule_items").delete().eq("id", itemId);
     if (error) return toast.error(error.message);
     setPhases((prev) => prev.map((p) => p.id === phaseId
