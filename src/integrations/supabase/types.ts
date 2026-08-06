@@ -937,18 +937,24 @@ export type Database = {
           created_at: string
           id: string
           role: Database["public"]["Enums"]["app_role"]
+          schedule_permissions: Json | null
+          screen_permissions: Json | null
           user_id: string
         }
         Insert: {
           created_at?: string
           id?: string
           role: Database["public"]["Enums"]["app_role"]
+          schedule_permissions?: Json | null
+          screen_permissions?: Json | null
           user_id: string
         }
         Update: {
           created_at?: string
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
+          schedule_permissions?: Json | null
+          screen_permissions?: Json | null
           user_id?: string
         }
         Relationships: []
@@ -1069,6 +1075,14 @@ export type Database = {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      has_schedule_permission: {
+        Args: { _action?: string; _schedule_id: string; _user_id: string }
+        Returns: boolean
+      }
+      has_screen_permission: {
+        Args: { _action?: string; _screen: string; _user_id: string }
         Returns: boolean
       }
       is_workspace_member: { Args: { _workspace_id: string }; Returns: boolean }
