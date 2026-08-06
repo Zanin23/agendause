@@ -386,35 +386,58 @@ const Admin = () => {
                 placeholder="Mínimo 6 caracteres"
               />
             </div>
-            <div className="space-y-2">
-              <Label>Cargo / Permissão</Label>
-              <div className="flex gap-4">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="role"
-                    checked={newUser.role === "member"}
-                    onChange={() => setNewUser({ ...newUser, role: "member" })}
-                    className="w-4 h-4"
-                  />
-                  <span className="text-sm">Usuário Padrão</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer text-primary">
-                  <input
-                    type="radio"
-                    name="role"
-                    checked={newUser.role === "admin"}
-                    onChange={() => setNewUser({ ...newUser, role: "admin" })}
-                    className="w-4 h-4"
-                  />
-                  <span className="text-sm font-medium flex items-center gap-1">
-                    <ShieldCheck className="h-3 w-3" /> Administrador
-                  </span>
-                </label>
+            <div className="space-y-4">
+              <Label>Permissões</Label>
+              
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">Telas acessíveis</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  {['Cronogramas', 'Relatórios', 'Notas'].map((screen) => (
+                    <label key={screen} className="flex items-center gap-2">
+                      <input 
+                        type="checkbox" 
+                        checked={newUser.role === 'admin' || false} 
+                        onChange={() => {}} 
+                        className="rounded border-border"
+                      />
+                      <span className="text-sm">{screen}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
-              <p className="text-[10px] text-muted-foreground mt-1">
-                Administradores podem gerenciar usuários, visualizar relatórios e alterar configurações globais.
-              </p>
+
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">Cronogramas (visualizar vs. alterar)</Label>
+                <div className="text-sm text-muted-foreground italic">Selecione cronogramas específicos...</div>
+              </div>
+
+              <div className="space-y-2 mt-4 pt-4 border-t">
+                <Label>Cargo</Label>
+                <div className="flex gap-4">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="role"
+                      checked={newUser.role === "member"}
+                      onChange={() => setNewUser({ ...newUser, role: "member" })}
+                      className="w-4 h-4"
+                    />
+                    <span className="text-sm">Usuário Padrão</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer text-primary">
+                    <input
+                      type="radio"
+                      name="role"
+                      checked={newUser.role === "admin"}
+                      onChange={() => setNewUser({ ...newUser, role: "admin" })}
+                      className="w-4 h-4"
+                    />
+                    <span className="text-sm font-medium flex items-center gap-1">
+                      <ShieldCheck className="h-3 w-3" /> Administrador
+                    </span>
+                  </label>
+                </div>
+              </div>
             </div>
           </div>
           <DialogFooter>
