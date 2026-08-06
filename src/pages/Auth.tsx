@@ -14,7 +14,7 @@ import { SEO } from "@/components/SEO";
 const Auth = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [mode, setMode] = useState<"signin" | "signup">("signin"); // Note: signup UI is kept for the component but could be restricted if needed. However, since the user asked that only admins create accounts, we should probably remove the toggle or restrict it.
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
@@ -29,16 +29,10 @@ const Auth = () => {
     setLoading(true);
     try {
       if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            emailRedirectTo: `${window.location.origin}/`,
-            data: { full_name: fullName },
-          },
-        });
-        if (error) throw error;
-        toast.success("Conta criada! Verifique seu email se a confirmação estiver ativada.");
+        // Bloqueio de segurança redundante no front-end
+        toast.error("O cadastro público está desabilitado. Solicite uma conta ao administrador.");
+        setMode("signin");
+        return;
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
@@ -73,12 +67,6 @@ const Auth = () => {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Button variant="outline" className="w-full" onClick={handleGoogle}>
-            Continuar com Google
-          </Button>
-          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-            <div className="flex-1 h-px bg-border" /> ou <div className="flex-1 h-px bg-border" />
-          </div>
           <form onSubmit={handleSubmit} className="space-y-3">
             {mode === "signup" && (
               <div className="space-y-1.5">
@@ -99,14 +87,7 @@ const Auth = () => {
             </Button>
           </form>
           <p className="text-center text-sm text-muted-foreground">
-            {mode === "signin" ? "Não tem conta? " : "Já tem conta? "}
-            <button
-              type="button"
-              className="text-primary hover:underline"
-              onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
-            >
-              {mode === "signin" ? "Cadastre-se" : "Entrar"}
-            </button>
+            Apenas contas criadas por administradores podem acessar o sistema.
           </p>
         </CardContent>
       </Card>
