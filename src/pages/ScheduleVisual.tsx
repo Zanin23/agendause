@@ -81,11 +81,11 @@ export default function ScheduleVisual() {
       const newNodes: Node[] = [];
       const newEdges: Edge[] = [];
 
-      let currentY = 0;
-      const PHASE_X = 50;
-      const ITEM_X_START = 350;
-      const ITEM_Y_GAP = 85;
-      const MIN_PHASE_SPACING = 180;
+      let currentX = 50;
+      const PHASE_Y = 50;
+      const ITEM_Y_START = 200;
+      const ITEM_X_GAP = 280;
+      const PHASE_X_GAP = 300;
 
       (phases || []).forEach((phase, pIdx) => {
         const phaseNodeId = `phase-${phase.id}`;
@@ -96,7 +96,7 @@ export default function ScheduleVisual() {
           id: phaseNodeId,
           type: 'schedule',
           data: { title: phase.title, isPhase: true },
-          position: { x: PHASE_X, y: currentY },
+          position: { x: currentX, y: PHASE_Y },
         });
 
         // Edge between phases
@@ -111,8 +111,12 @@ export default function ScheduleVisual() {
         }
 
         let itemYOffset = 0;
+        const itemsPerColumn = 6;
+        
         phaseItems.forEach((item, iIdx) => {
           const itemNodeId = `item-${item.id}`;
+          const col = Math.floor(iIdx / itemsPerColumn);
+          const row = iIdx % itemsPerColumn;
           
           newNodes.push({
             id: itemNodeId,
@@ -123,23 +127,23 @@ export default function ScheduleVisual() {
               date: item.done_date || item.planned_date,
               isPhase: false 
             },
-            position: { x: ITEM_X_START, y: currentY + itemYOffset },
+            position: { 
+              x: currentX + (col * 240), 
+              y: ITEM_Y_START + (row * 85) 
+            },
           });
 
           newEdges.push({
             id: `e-${phaseNodeId}-${itemNodeId}`,
             source: phaseNodeId,
-            sourceHandle: 'right',
+            sourceHandle: 'bottom',
             target: itemNodeId,
             style: { stroke: '#94a3b8' },
           });
-
-          itemYOffset += ITEM_Y_GAP;
         });
 
-        // Calculate next phase Y position
-        const phaseHeight = Math.max(MIN_PHASE_SPACING, phaseItems.length * ITEM_Y_GAP + 60);
-        currentY += phaseHeight;
+        const numCols = Math.ceil(phaseItems.length / itemsPerColumn) || 1;
+        currentX += Math.max(PHASE_X_GAP, numCols * 260);
       });
 
       setNodes(newNodes);
