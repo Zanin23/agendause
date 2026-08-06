@@ -26,6 +26,7 @@ import {
   FileCheck2,
 } from "lucide-react";
 import { BackButton } from "@/components/BackButton";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { supabase } from "@/integrations/supabase/client";
 import { AppHeader } from "@/components/AppHeader";
 import { SEO } from "@/components/SEO";

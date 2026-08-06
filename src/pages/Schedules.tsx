@@ -6,6 +6,7 @@ import { Plus, ClipboardList, ExternalLink, Trash2, Send, CheckCircle2, Network 
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { AppHeader } from "@/components/AppHeader";
 import { SEO } from "@/components/SEO";
 import { Button } from "@/components/ui/button";

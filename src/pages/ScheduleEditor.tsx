@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { PhaseReorderDialog } from "@/components/PhaseReorderDialog";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { supabase } from "@/integrations/supabase/client";
 import { AppHeader } from "@/components/AppHeader";
 import { SEO } from "@/components/SEO";
