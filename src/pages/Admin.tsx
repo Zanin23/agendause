@@ -170,16 +170,16 @@ const Admin = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <SEO title="Administração — TreinaCheck" description="Gerencie contas e senhas do sistema." path="/admin" />
+      <SEO title="Controle de Acessos — TreinaCheck" description="Gerencie contas e permissões do sistema." path="/admin" />
       <AppHeader />
       <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-6">
         <div>
           <BackButton />
           <div className="flex flex-wrap items-end justify-between gap-3 mt-3">
             <div>
-              <h1 className="text-3xl font-semibold tracking-tight">Administração</h1>
+              <h1 className="text-3xl font-semibold tracking-tight">Controle de Acessos</h1>
               <p className="text-muted-foreground mt-1">
-                Contas cadastradas no sistema — ajuste senhas e permissões.
+                Gerencie os usuários e permissões administrativas do sistema.
               </p>
             </div>
             <Button variant="outline" onClick={load} disabled={loading}>
