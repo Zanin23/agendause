@@ -20,6 +20,7 @@ import ScheduleEditor from "./pages/ScheduleEditor";
 import SchedulePrint from "./pages/SchedulePrint";
 import SchedulePublic from "./pages/SchedulePublic";
 import HandoffTerm from "./pages/HandoffTerm";
+import ScheduleVisual from "./pages/ScheduleVisual";
 import HandoffPublic from "./pages/HandoffPublic";
 import BillingRequests from "./pages/BillingRequests";
 import Notes from "./pages/Notes";
@@ -58,6 +59,7 @@ const App = () => (
             <Route path="/cronogramas/novo" element={<ProtectedRoute><ScheduleNew /></ProtectedRoute>} />
             <Route path="/cronogramas/:id" element={<ProtectedRoute><ScheduleEditor /></ProtectedRoute>} />
             <Route path="/cronogramas/:id/imprimir" element={<ProtectedRoute><SchedulePrint /></ProtectedRoute>} />
+            <Route path="/cronogramas/:id/visualizar" element={<ProtectedRoute><ScheduleVisual /></ProtectedRoute>} />
             <Route path="/cronogramas/:id/termo" element={<ProtectedRoute><HandoffTerm /></ProtectedRoute>} />
             <Route path="/cobrar" element={<ProtectedRoute><BillingRequests /></ProtectedRoute>} />
             <Route path="/anotacoes" element={<ProtectedRoute><Notes /></ProtectedRoute>} />

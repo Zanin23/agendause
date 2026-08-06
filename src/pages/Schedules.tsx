@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Plus, ClipboardList, ExternalLink, Trash2, Send, CheckCircle2 } from "lucide-react";
+import { Plus, ClipboardList, ExternalLink, Trash2, Send, CheckCircle2, Network } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -180,7 +180,10 @@ export default function Schedules() {
                           <CheckCircle2 className="h-4 w-4" />
                         </Button>
                       )}
-                      <Button variant="ghost" size="sm" onClick={() => navigate(`/cronogramas/${r.id}`)}>
+                      <Button variant="ghost" size="sm" onClick={() => navigate(`/cronogramas/${r.id}/visualizar`)} title="Ver organograma">
+                        <Network className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => navigate(`/cronogramas/${r.id}`)} title="Editar">
                         <ExternalLink className="h-4 w-4" />
                       </Button>
                       <Button variant="ghost" size="sm" onClick={() => remove(r.id)} className="text-destructive">
