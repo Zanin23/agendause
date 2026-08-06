@@ -107,7 +107,7 @@ export default function ScheduleVisual() {
             target: phaseNodeId,
             animated: true,
             sourceHandle: null,
-          });
+            style: { stroke: '#F97316', strokeWidth: 2 },
         }
 
         let itemYOffset = 0;
