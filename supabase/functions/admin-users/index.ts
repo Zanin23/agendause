@@ -42,18 +42,22 @@ Deno.serve(async (req) => {
       const { data: list, error } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
       if (error) throw error;
       const { data: profiles } = await admin.from('profiles').select('id, full_name, active_workspace_id');
-      const { data: roles } = await admin.from('user_roles').select('user_id, role');
+      const { data: roles } = await admin.from('user_roles').select('user_id, role, screen_permissions, schedule_permissions');
       const { data: workspaces } = await admin.from('workspaces').select('id, name');
+      const { data: schedules } = await admin.from('implementation_schedules').select('id, client_name');
 
       const pMap = new Map((profiles ?? []).map((p) => [p.id, p]));
       const wMap = new Map((workspaces ?? []).map((w) => [w.id, w.name]));
-      const rMap = new Map<string, string[]>();
+      const rMap = new Map<string, { roles: string[], screens: any[], schedules: any }>();
       for (const r of roles ?? []) {
-        rMap.set(r.user_id, [...(rMap.get(r.user_id) ?? []), r.role]);
+        const entry = rMap.get(r.user_id) ?? { roles: [], screens: r.screen_permissions || [], schedules: r.schedule_permissions || {} };
+        entry.roles.push(r.role);
+        rMap.set(r.user_id, entry);
       }
 
       const users = (list.users ?? []).map((u) => {
         const p = pMap.get(u.id) as { full_name?: string | null; active_workspace_id?: string | null } | undefined;
+        const perms = rMap.get(u.id);
         return {
           id: u.id,
           email: u.email ?? null,
@@ -62,11 +66,13 @@ Deno.serve(async (req) => {
           last_sign_in_at: u.last_sign_in_at ?? null,
           email_confirmed: Boolean(u.email_confirmed_at),
           workspace: p?.active_workspace_id ? wMap.get(p.active_workspace_id) ?? null : null,
-          roles: rMap.get(u.id) ?? [],
+          roles: perms?.roles ?? [],
+          screen_permissions: perms?.screens ?? [],
+          schedule_permissions: perms?.schedules ?? {},
         };
       });
       users.sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
-      return json({ users });
+      return json({ users, all_schedules: schedules });
     }
 
     if (action === 'set_password') {
@@ -125,11 +131,34 @@ Deno.serve(async (req) => {
       return json({ success: true });
     }
 
+    if (action === 'set_permissions') {
+      const userId = String(body?.user_id || '').trim();
+      const screens = body?.screen_permissions || [];
+      const schedules = body?.schedule_permissions || {};
+      if (!userId) return json({ error: 'user_id é obrigatório' }, 400);
+
+      const { error } = await admin
+        .from('user_roles')
+        .upsert(
+          { 
+            user_id: userId, 
+            role: 'user', // Default to user if not specified, usually updated by set_admin
+            screen_permissions: screens, 
+            schedule_permissions: schedules 
+          }, 
+          { onConflict: 'user_id,role' }
+        );
+      if (error) throw error;
+      return json({ success: true });
+    }
+
     if (action === 'create_user') {
       const email = String(body?.email || '').trim();
       const password = String(body?.password || '');
       const fullName = String(body?.full_name || '').trim();
       const role = String(body?.role || 'member').trim();
+      const screens = body?.screen_permissions || [];
+      const schedules = body?.schedule_permissions || {};
 
       if (!email || !password) return json({ error: 'E-mail e senha são obrigatórios' }, 400);
 
@@ -144,7 +173,7 @@ Deno.serve(async (req) => {
       if (authError) throw authError;
       const newUser = authData.user;
 
-      // 2. Garantir perfil (geralmente via trigger, mas reforçamos)
+      // 2. Garantir perfil
       const { error: profileError } = await admin.from('profiles').upsert({
         id: newUser.id,
         email: newUser.email,
@@ -152,13 +181,16 @@ Deno.serve(async (req) => {
       });
       if (profileError) console.error('Profile creation error:', profileError);
 
-      // 3. Atribuir role se for admin
-      if (role === 'admin') {
-        const { error: roleError } = await admin
-          .from('user_roles')
-          .insert({ user_id: newUser.id, role: 'admin' });
-        if (roleError) throw roleError;
-      }
+      // 3. Atribuir role e permissões
+      const { error: roleError } = await admin
+        .from('user_roles')
+        .insert({ 
+          user_id: newUser.id, 
+          role: role === 'admin' ? 'admin' : 'user',
+          screen_permissions: role === 'admin' ? [] : screens,
+          schedule_permissions: role === 'admin' ? {} : schedules
+        });
+      if (roleError) throw roleError;
 
       return json({ success: true, user_id: newUser.id });
     }
