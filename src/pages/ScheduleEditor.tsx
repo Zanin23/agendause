@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { PhaseReorderDialog } from "@/components/PhaseReorderDialog";
-import { useIsAdmin } from "@/hooks/useIsAdmin";
+import { usePermissions } from "@/hooks/usePermissions";
 import { supabase } from "@/integrations/supabase/client";
 import { AppHeader } from "@/components/AppHeader";
 import { SEO } from "@/components/SEO";
@@ -47,7 +47,7 @@ type TrainingLite = {
 export default function ScheduleEditor() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { isAdmin, loading: roleLoading } = useIsAdmin();
+  const { isAdmin, hasSchedulePermission, loading: roleLoading } = usePermissions();
   const [schedule, setSchedule] = useState<Schedule | null>(null);
   const [phases, setPhases] = useState<Phase[]>([]);
   const [loading, setLoading] = useState(true);
@@ -128,7 +128,10 @@ export default function ScheduleEditor() {
   }, [phases]);
 
   // --- Schedule meta ---
+  const canEdit = id ? hasSchedulePermission(id, 'write') : isAdmin;
+
   const updateSchedule = async (patch: Partial<Schedule>) => {
+    if (!canEdit) return toast.error("Sem permissão para alterar este cronograma");
     if (!schedule) return;
     const next = { ...schedule, ...patch };
     setSchedule(next);
@@ -262,7 +265,7 @@ export default function ScheduleEditor() {
   };
 
   if (roleLoading) return <div className="p-8 text-center text-muted-foreground">Carregando permissões...</div>;
-  if (!isAdmin) {
+  if (id && !hasSchedulePermission(id)) {
     return (
       <div className="min-h-screen bg-background">
         <AppHeader />
