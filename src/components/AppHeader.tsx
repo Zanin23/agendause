@@ -5,6 +5,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/hooks/useTheme";
 import { useWorkspace } from "@/hooks/useWorkspace";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 import logoAsset from "@/assets/logo-use-sistemas.png.asset.json";
 
 export const AppHeader = () => {
