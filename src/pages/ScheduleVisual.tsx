@@ -46,8 +46,8 @@ const ScheduleNode = ({ data }: NodeProps) => {
         )}
       </div>
 
-      {data.isPhase && <Handle type="source" position={Position.Bottom} className="w-3 !bg-primary" />}
-      {data.isPhase && <Handle type="source" position={Position.Right} className="w-3 !bg-primary" id="right" />}
+      {data.isPhase && <Handle type="source" position={Position.Right} className="w-3 !bg-primary" />}
+      {data.isPhase && <Handle type="source" position={Position.Bottom} className="w-3 !bg-primary" id="bottom" />}
     </div>
   );
 };
