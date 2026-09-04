@@ -30,7 +30,16 @@ import Admin from "./pages/Admin";
 import Index from "./pages/Index";
 import Article from "./pages/Article";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // Never refetch just because the tab regained focus — it wiped in-progress edits.
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+      staleTime: 30_000,
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>

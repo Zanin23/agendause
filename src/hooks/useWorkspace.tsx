@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from "react";
+import { createContext, useContext, useEffect, useState, ReactNode, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useQueryClient } from "@tanstack/react-query";
@@ -25,6 +25,7 @@ const WorkspaceContext = createContext<WorkspaceContextValue>({
 
 export const WorkspaceProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();
+  const userId = user?.id ?? null;
   const qc = useQueryClient();
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [activeId, setActiveIdState] = useState<string | null>(() => {
@@ -41,17 +42,21 @@ export const WorkspaceProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
+  const loadedForRef = useRef<string | null>(null);
+
   const load = useCallback(async () => {
-    if (!user) {
+    if (!userId) {
       setWorkspaces([]);
       setActiveId(null);
       setLoading(false);
       return;
     }
-    setLoading(true);
+    // Only block the UI on the very first load for this user. Later refreshes
+    // (focus / token refresh) must never unmount the current screen.
+    if (loadedForRef.current !== userId) setLoading(true);
     const [{ data: ws }, { data: prof }] = await Promise.all([
       supabase.from("workspaces").select("id,slug,name").order("name"),
-      supabase.from("profiles").select("active_workspace_id").eq("id", user.id).maybeSingle(),
+      supabase.from("profiles").select("active_workspace_id").eq("id", userId).maybeSingle(),
     ]);
     const list = (ws as Workspace[]) || [];
     setWorkspaces(list);
@@ -61,15 +66,16 @@ export const WorkspaceProvider = ({ children }: { children: ReactNode }) => {
     if (!resolved && cached && list.some((w) => w.id === cached)) {
       // restore from cache and persist back to profile
       resolved = cached;
-      await supabase.from("profiles").update({ active_workspace_id: cached } as any).eq("id", user.id);
+      await supabase.from("profiles").update({ active_workspace_id: cached } as any).eq("id", userId);
     }
     if (!resolved && list.length === 1) {
       resolved = list[0].id;
-      await supabase.from("profiles").update({ active_workspace_id: resolved } as any).eq("id", user.id);
+      await supabase.from("profiles").update({ active_workspace_id: resolved } as any).eq("id", userId);
     }
     setActiveId(resolved);
+    loadedForRef.current = userId;
     setLoading(false);
-  }, [user, setActiveId]);
+  }, [userId, setActiveId]);
 
   useEffect(() => {
     load();
@@ -77,13 +83,13 @@ export const WorkspaceProvider = ({ children }: { children: ReactNode }) => {
 
   const setActive = useCallback(
     async (id: string) => {
-      if (!user) return;
-      const { error } = await supabase.from("profiles").update({ active_workspace_id: id } as any).eq("id", user.id);
+      if (!userId) return;
+      const { error } = await supabase.from("profiles").update({ active_workspace_id: id } as any).eq("id", userId);
       if (error) throw error;
       setActiveId(id);
       await qc.invalidateQueries();
     },
-    [user, qc, setActiveId]
+    [userId, qc, setActiveId]
   );
 
   const active = workspaces.find((w) => w.id === activeId) || null;

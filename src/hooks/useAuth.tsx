@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, ReactNode } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -21,14 +21,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Keep the last known identity so token refreshes (which fire whenever the tab
+  // regains focus) do not create new object identities and re-render the whole app.
+  const lastUserIdRef = useRef<string | null>(null);
+
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
+    const apply = (s: Session | null) => {
+      const nextId = s?.user?.id ?? null;
       setSession(s);
-      setUser(s?.user ?? null);
+      if (nextId !== lastUserIdRef.current) {
+        lastUserIdRef.current = nextId;
+        setUser(s?.user ?? null);
+      }
+    };
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
+      apply(s);
     });
     supabase.auth.getSession().then(({ data: { session: s } }) => {
-      setSession(s);
-      setUser(s?.user ?? null);
+      apply(s);
       setLoading(false);
     });
     return () => subscription.unsubscribe();
