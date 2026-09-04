@@ -984,3 +984,59 @@ html.a11y-contrast *:focus-visible {
   outline: 3px solid hsl(var(--primary)) !important;
   outline-offset: 2px !important;
 }
+
+/* ── Experimental home ─────────────────────────────────────── */
+@keyframes xp-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.xp-marquee {
+  display: flex;
+  width: max-content;
+  animation: xp-marquee 38s linear infinite;
+}
+@keyframes xp-aurora {
+  0%, 100% { transform: translate3d(0,0,0) scale(1); }
+  33% { transform: translate3d(6%, -4%, 0) scale(1.15); }
+  66% { transform: translate3d(-5%, 5%, 0) scale(0.95); }
+}
+.xp-aurora {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(70px);
+  opacity: 0.55;
+  animation: xp-aurora 22s ease-in-out infinite;
+}
+.xp-grain::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.5;
+  background-image: radial-gradient(hsl(var(--foreground) / 0.14) 1px, transparent 1px);
+  background-size: 4px 4px;
+}
+.xp-outline-text {
+  -webkit-text-stroke: 1.5px hsl(var(--foreground) / 0.55);
+  color: transparent;
+}
+.xp-tile {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  transition: transform .45s cubic-bezier(.2,.8,.2,1), border-color .45s, background-color .45s;
+}
+.xp-tile::before {
+  content: "";
+  position: absolute;
+  inset: -40% -10%;
+  background: radial-gradient(circle at 30% 20%, hsl(var(--primary) / 0.35), transparent 60%);
+  opacity: 0;
+  transition: opacity .5s ease;
+  z-index: -1;
+}
+.xp-tile:hover { transform: translateY(-6px); }
+.xp-tile:hover::before { opacity: 1; }
+@media (prefers-reduced-motion: reduce) {
+  .xp-marquee, .xp-aurora { animation: none; }
+}
