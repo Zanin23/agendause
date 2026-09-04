@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { AlarmClock, ArrowUpRight, Check, Clock, Link2, MapPin } from "lucide-react";
+import { AlarmClock, ArrowUpRight, Check, Clock, Link2, MapPin, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { publicUrl } from "@/lib/publicUrl";
