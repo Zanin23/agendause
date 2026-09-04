@@ -263,11 +263,13 @@ const HomeExperimental = () => {
           ))}
         </span>
 
-        <div className="mt-10 sm:mt-14 grid grid-cols-1 lg:grid-cols-12 gap-4">
-          <div className="lg:col-span-5 lg:col-start-8">
-            <TodayVisitsCard className="opacity-80 transition-opacity hover:opacity-100" />
-          </div>
+        <div className="mt-8 sm:mt-10 border-t border-border/70 pt-6 sm:pt-8">
+          <p className="mb-3 text-[10px] font-mono uppercase tracking-[0.3em] text-muted-foreground">
+            Lembrete do dia
+          </p>
+          <TodayVisitsCard />
         </div>
+
 
         <div className="mt-12 flex flex-wrap items-center gap-4">
           <Link
