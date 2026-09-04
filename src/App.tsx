@@ -7,6 +7,7 @@ import { WorkspaceProvider } from "@/hooks/useWorkspace";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Auth from "./pages/Auth";
 import Home from "./pages/Home";
+import HomeExperimental from "./pages/HomeExperimental";
 import Dashboard from "./pages/Dashboard";
 import Reports from "./pages/Reports";
 import TrainingDetail from "./pages/TrainingDetail";
