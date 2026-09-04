@@ -91,6 +91,13 @@ const Home = () => {
                   Anotações por empresa
                   <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
                 </Link>
+                <Link
+                  to="/inicio-experimental"
+                  className="group inline-flex items-center gap-2 rounded-xl border border-dashed border-primary/40 px-5 py-3 text-sm font-semibold text-primary transition-all duration-300 hover:-translate-y-0.5 hover:border-primary"
+                >
+                  Nova tela inicial (experimental)
+                  <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+                </Link>
               </div>
             </div>
             <img
