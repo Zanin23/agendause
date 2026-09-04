@@ -7,6 +7,7 @@ import { WorkspaceProvider } from "@/hooks/useWorkspace";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Auth from "./pages/Auth";
 import Home from "./pages/Home";
+import HomeExperimental from "./pages/HomeExperimental";
 import Dashboard from "./pages/Dashboard";
 import Reports from "./pages/Reports";
 import TrainingDetail from "./pages/TrainingDetail";
@@ -57,6 +58,7 @@ const App = () => (
             <Route path="/configuracoes" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
             <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
             <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+            <Route path="/inicio-experimental" element={<ProtectedRoute><HomeExperimental /></ProtectedRoute>} />
             <Route path="/blog" element={<ProtectedRoute><Index /></ProtectedRoute>} />
             <Route path="/blog/:slug" element={<ProtectedRoute><Article /></ProtectedRoute>} />
             <Route path="/agenda" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
