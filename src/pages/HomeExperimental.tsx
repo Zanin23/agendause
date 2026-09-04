@@ -15,6 +15,7 @@ import { SEO } from "@/components/SEO";
 import { CreateTrainingDialog } from "@/components/CreateTrainingDialog";
 import { useAuth } from "@/hooks/useAuth";
 import { useWorkspace } from "@/hooks/useWorkspace";
+import { TodayVisitsCard } from "@/components/TodayVisitsCard";
 
 type Tile = {
   to?: string;
@@ -213,6 +214,8 @@ const HomeExperimental = () => {
 
       {/* BENTO */}
       <main className="relative max-w-6xl mx-auto px-4 sm:px-6 py-12 sm:py-20">
+        <TodayVisitsCard className="xp-rise mb-4 sm:mb-6" />
+
         <div className="grid grid-cols-1 sm:grid-cols-6 lg:grid-cols-12 auto-rows-[minmax(9rem,auto)] gap-3 sm:gap-4">
           {tiles.map(({ icon: Icon, label, hint, to, onClick, span }, i) => {
             const body = (
