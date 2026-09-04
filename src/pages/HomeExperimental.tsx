@@ -88,9 +88,8 @@ const HomeExperimental = () => {
   }, [target]);
 
   const spawnSparks = useCallback((e: React.MouseEvent<HTMLElement>) => {
-    const r = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - r.left;
-    const y = e.clientY - r.top;
+    const x = e.clientX;
+    const y = e.clientY;
     const batch: Spark[] = Array.from({ length: 6 }, () => {
       sparkId.current += 1;
       const a = Math.random() * Math.PI * 2;
@@ -253,7 +252,7 @@ const HomeExperimental = () => {
         </div>
 
         {/* sparks layer */}
-        <span className="pointer-events-none absolute inset-0" aria-hidden="true">
+        <span className="pointer-events-none fixed inset-0 z-10" aria-hidden="true">
           {sparks.map((s) => (
             <span
               key={s.id}
