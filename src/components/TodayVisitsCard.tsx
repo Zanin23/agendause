@@ -158,14 +158,15 @@ export const TodayVisitsCard = ({ className = "" }: { className?: string }) => {
                 </Link>
 
                 {(!isDone || v.requires_acceptance) && (
-                  <div className="mt-2 flex flex-wrap items-center gap-2 border-t border-border/50 pt-2">
+                  <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-border/40 pt-2.5">
                     {!isDone && (
                       <button
                         type="button"
                         disabled={busy === v.id}
                         onClick={() => finalize(v.id)}
-                        className="inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-background/60 px-3 py-1 text-[11px] font-semibold text-foreground transition-colors hover:border-primary/60 hover:text-primary disabled:opacity-50"
+                        className="group/btn relative inline-flex items-center gap-1.5 overflow-hidden rounded-xl bg-emerald-500 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide text-white shadow-sm shadow-emerald-500/25 transition-all hover:-translate-y-0.5 hover:shadow-md hover:shadow-emerald-500/30 active:translate-y-0 disabled:opacity-60"
                       >
+                        <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/25 to-transparent transition-transform group-hover/btn:translate-x-full" />
                         <Check className="h-3.5 w-3.5" />
                         Finalizar
                       </button>
@@ -174,10 +175,11 @@ export const TodayVisitsCard = ({ className = "" }: { className?: string }) => {
                       <button
                         type="button"
                         onClick={() => copyAcceptLink(v.id)}
-                        className="inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-background/60 px-3 py-1 text-[11px] font-semibold text-foreground transition-colors hover:border-primary/60 hover:text-primary"
+                        className="group/btn relative inline-flex items-center gap-1.5 overflow-hidden rounded-xl bg-primary px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide text-primary-foreground shadow-sm shadow-primary/25 transition-all hover:-translate-y-0.5 hover:shadow-md hover:shadow-primary/30 active:translate-y-0"
                       >
+                        <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/25 to-transparent transition-transform group-hover/btn:translate-x-full" />
                         <Link2 className="h-3.5 w-3.5" />
-                        Copiar link de aceite
+                        Copiar link
                       </button>
                     )}
                   </div>
