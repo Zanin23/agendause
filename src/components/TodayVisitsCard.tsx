@@ -180,6 +180,18 @@ export const TodayVisitsCard = ({ className = "" }: { className?: string }) => {
                         Finalizar
                       </button>
                     )}
+                    {!isDone && (
+                      <button
+                        type="button"
+                        disabled={busy === v.id}
+                        onClick={() => cancel(v.id)}
+                        className="group/btn relative inline-flex items-center gap-1.5 overflow-hidden rounded-xl bg-rose-500 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide text-white shadow-sm shadow-rose-500/25 transition-all hover:-translate-y-0.5 hover:shadow-md hover:shadow-rose-500/30 active:translate-y-0 disabled:opacity-60"
+                      >
+                        <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/25 to-transparent transition-transform group-hover/btn:translate-x-full" />
+                        <X className="h-3.5 w-3.5" />
+                        Cancelar
+                      </button>
+                    )}
                     {v.requires_acceptance && (
                       <button
                         type="button"
