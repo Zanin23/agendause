@@ -214,8 +214,6 @@ const HomeExperimental = () => {
 
       {/* BENTO */}
       <main className="relative max-w-6xl mx-auto px-4 sm:px-6 py-12 sm:py-20">
-        <TodayVisitsCard className="xp-rise mb-4 sm:mb-6" />
-
         <div className="grid grid-cols-1 sm:grid-cols-6 lg:grid-cols-12 auto-rows-[minmax(9rem,auto)] gap-3 sm:gap-4">
           {tiles.map(({ icon: Icon, label, hint, to, onClick, span }, i) => {
             const body = (
@@ -264,6 +262,12 @@ const HomeExperimental = () => {
             />
           ))}
         </span>
+
+        <div className="mt-10 sm:mt-14 grid grid-cols-1 lg:grid-cols-12 gap-4">
+          <div className="lg:col-span-5 lg:col-start-8">
+            <TodayVisitsCard className="opacity-80 transition-opacity hover:opacity-100" />
+          </div>
+        </div>
 
         <div className="mt-12 flex flex-wrap items-center gap-4">
           <Link
