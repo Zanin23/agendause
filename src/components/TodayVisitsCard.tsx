@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { AlarmClock, ArrowUpRight, Check, Clock, Link2, MapPin } from "lucide-react";
+import { AlarmClock, ArrowUpRight, Check, Clock, Link2, MapPin, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { publicUrl } from "@/lib/publicUrl";
@@ -66,6 +66,15 @@ export const TodayVisitsCard = ({ className = "" }: { className?: string }) => {
     } catch {
       toast.info(url);
     }
+  };
+
+  const cancel = async (id: string) => {
+    setBusy(id);
+    const { error } = await supabase.from("trainings").update({ status: "cancelado" }).eq("id", id);
+    setBusy(null);
+    if (error) return toast.error(error.message);
+    toast.success("Visita cancelada");
+    refetch();
   };
 
   const next = visits.find((v) => new Date(v.scheduled_at).getTime() + v.duration_minutes * 60000 > now);
@@ -169,6 +178,18 @@ export const TodayVisitsCard = ({ className = "" }: { className?: string }) => {
                         <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/25 to-transparent transition-transform group-hover/btn:translate-x-full" />
                         <Check className="h-3.5 w-3.5" />
                         Finalizar
+                      </button>
+                    )}
+                    {!isDone && (
+                      <button
+                        type="button"
+                        disabled={busy === v.id}
+                        onClick={() => cancel(v.id)}
+                        className="group/btn relative inline-flex items-center gap-1.5 overflow-hidden rounded-xl bg-rose-500 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide text-white shadow-sm shadow-rose-500/25 transition-all hover:-translate-y-0.5 hover:shadow-md hover:shadow-rose-500/30 active:translate-y-0 disabled:opacity-60"
+                      >
+                        <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/25 to-transparent transition-transform group-hover/btn:translate-x-full" />
+                        <X className="h-3.5 w-3.5" />
+                        Cancelar
                       </button>
                     )}
                     {v.requires_acceptance && (
