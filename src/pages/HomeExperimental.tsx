@@ -104,6 +104,7 @@ const HomeExperimental = () => {
 
   const tiles: Tile[] = useMemo(
     () => [
+      { to: "/anotacoes", label: "Anotações", hint: "Por empresa", icon: StickyNote, span: "sm:col-span-6 lg:col-span-12" },
       {
         onClick: () => setOpen(true),
         label: "Agendar treinamento",
@@ -115,7 +116,6 @@ const HomeExperimental = () => {
       { to: "/cronogramas", label: "Cronogramas", hint: "ERP e PDV", icon: ClipboardList, span: "sm:col-span-3 lg:col-span-4" },
       { to: "/cobrar", label: "A cobrar", hint: "Pendências da semana", icon: Receipt, span: "sm:col-span-2 lg:col-span-4" },
       { to: "/relatorios", label: "Aceites", hint: "Termos e impressão", icon: FileCheck2, span: "sm:col-span-2 lg:col-span-4" },
-      { to: "/anotacoes", label: "Anotações", hint: "Por empresa", icon: StickyNote, span: "sm:col-span-6 lg:col-span-12" },
     ],
     []
   );
