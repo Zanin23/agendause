@@ -68,6 +68,15 @@ export const TodayVisitsCard = ({ className = "" }: { className?: string }) => {
     }
   };
 
+  const cancel = async (id: string) => {
+    setBusy(id);
+    const { error } = await supabase.from("trainings").update({ status: "cancelado" }).eq("id", id);
+    setBusy(null);
+    if (error) return toast.error(error.message);
+    toast.success("Visita cancelada");
+    refetch();
+  };
+
   const next = visits.find((v) => new Date(v.scheduled_at).getTime() + v.duration_minutes * 60000 > now);
 
   return (
