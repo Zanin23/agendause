@@ -189,10 +189,13 @@ const HomeExperimental = () => {
           </h1>
 
           <p
-            className="xp-rise mt-8 max-w-md text-sm sm:text-base text-muted-foreground first-letter:uppercase"
+            className="xp-rise mt-5 max-w-2xl border-l-2 border-primary pl-4 text-lg font-semibold leading-snug text-foreground sm:mt-7 sm:pl-5 sm:text-xl lg:text-2xl first-letter:uppercase"
             style={{ animationDelay: ".26s" }}
           >
-            {dateLabel}. Escolha por onde começar — tudo a um toque.
+            <span className="block text-xs font-bold uppercase tracking-[0.22em] text-primary sm:text-sm">
+              {dateLabel}
+            </span>
+            <span className="mt-2 block">Escolha por onde começar — tudo a um toque.</span>
           </p>
         </div>
 
