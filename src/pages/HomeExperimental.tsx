@@ -9,6 +9,7 @@ import {
   StickyNote,
   ArrowUpRight,
   Sparkles,
+  type LucideIcon,
 } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
 import { SEO } from "@/components/SEO";
@@ -22,7 +23,7 @@ type Tile = {
   onClick?: () => void;
   label: string;
   hint: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: LucideIcon;
   span: string;
 };
 
