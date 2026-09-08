@@ -9,6 +9,7 @@ import {
   StickyNote,
   ArrowUpRight,
   Sparkles,
+  type LucideIcon,
 } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
 import { SEO } from "@/components/SEO";
@@ -22,7 +23,7 @@ type Tile = {
   onClick?: () => void;
   label: string;
   hint: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: LucideIcon;
   span: string;
 };
 
@@ -217,8 +218,13 @@ const HomeExperimental = () => {
         <div className="grid grid-cols-1 sm:grid-cols-6 lg:grid-cols-12 auto-rows-[minmax(9rem,auto)] gap-3 sm:gap-4">
           {tiles.map(({ icon: Icon, label, hint, to, onClick, span }, i) => {
             const body = (
-              <span className="relative flex h-full flex-col justify-between p-5 sm:p-7">
+              <span className="relative flex h-full flex-col justify-between overflow-hidden p-5 sm:p-7">
                 <span className="xp-shine" />
+                <Icon
+                  aria-hidden="true"
+                  strokeWidth={1}
+                  className="pointer-events-none absolute -bottom-8 -right-6 h-36 w-36 text-primary opacity-[0.055] transition-all duration-700 group-hover:-translate-x-2 group-hover:-translate-y-2 group-hover:rotate-[-6deg] group-hover:scale-110 group-hover:opacity-[0.11] sm:-bottom-10 sm:-right-8 sm:h-48 sm:w-48"
+                />
                 <span className="flex items-start justify-between gap-4">
                   <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/12 text-primary transition-transform duration-500 group-hover:rotate-[-8deg] group-hover:scale-110">
                     <Icon className="h-5 w-5" />
