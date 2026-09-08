@@ -57,7 +57,8 @@ const App = () => (
             <Route path="/selecionar-base" element={<ProtectedRoute requireWorkspace={false}><SelectWorkspace /></ProtectedRoute>} />
             <Route path="/configuracoes" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
             <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
-            <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+            <Route path="/" element={<ProtectedRoute><HomeExperimental /></ProtectedRoute>} />
+            <Route path="/inicio-classico" element={<ProtectedRoute><Home /></ProtectedRoute>} />
             <Route path="/inicio-experimental" element={<ProtectedRoute><HomeExperimental /></ProtectedRoute>} />
             <Route path="/blog" element={<ProtectedRoute><Index /></ProtectedRoute>} />
             <Route path="/blog/:slug" element={<ProtectedRoute><Article /></ProtectedRoute>} />
