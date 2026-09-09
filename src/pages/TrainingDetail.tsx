@@ -997,7 +997,7 @@ const VisitTypeSelector = ({ value, onChange }: { value: VisitType; onChange: (v
             }`}
             style={
               active
-                ? { borderColor: opt.color, background: opt.bg, color: opt.color }
+                ? { borderColor: opt.color, background: `${opt.color}24`, color: opt.color }
                 : undefined
             }
             aria-pressed={active}

@@ -187,7 +187,7 @@ const PrintAgenda = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white text-black">
+    <div className="min-h-screen bg-background text-foreground print:bg-white print:text-black">
       <SEO
         title="Imprimir agenda — TreinaCheck"
         description="Visualize e exporte a agenda semanal de treinamentos em PDF ou para impressão."
@@ -285,7 +285,7 @@ const PrintAgenda = () => {
         }
       `}</style>
 
-      <div className="no-print border-b border-neutral-200">
+      <div className="no-print border-b border-border bg-card/60">
         <div className="max-w-[1200px] mx-auto px-4 sm:px-6 py-3 sm:py-4 flex flex-wrap items-center justify-between gap-3">
           <BackButton to="/" />
 
@@ -324,7 +324,7 @@ const PrintAgenda = () => {
             >
               <ChevronRight className="h-4 w-4" />
             </Button>
-            <span className="text-sm text-neutral-600 ml-3 capitalize">
+            <span className="text-sm text-muted-foreground ml-3 capitalize">
               {weekLabel}
             </span>
           </div>
@@ -342,7 +342,7 @@ const PrintAgenda = () => {
         </div>
       </div>
 
-      <main className="agenda-page max-w-[1200px] mx-auto px-4 sm:px-8 py-4 sm:py-8">
+      <main className="agenda-page max-w-[1200px] mx-auto px-4 sm:px-8 py-4 sm:py-8 bg-white text-black my-4 sm:my-8 rounded-xl shadow-xl print:my-0 print:rounded-none print:shadow-none">
         {/* Header */}
         <header className="agenda-header flex flex-col md:flex-row md:items-start md:justify-between gap-4 md:gap-8 mb-6">
           <div className="min-w-0">
