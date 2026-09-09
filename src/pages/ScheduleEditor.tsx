@@ -207,8 +207,16 @@ export default function ScheduleEditor() {
       ? { ...p, items: p.items.map((i) => i.id === itemId ? { ...i, ...patch } : i) }
       : p));
     if (!canEdit) return toast.error("Sem permissão para alterar este cronograma");
-    const { error } = await supabase.from("schedule_items").update(patch as any).eq("id", itemId);
-    if (error) toast.error(error.message);
+    const { data, error } = await supabase
+      .from("schedule_items")
+      .update(patch as any)
+      .eq("id", itemId)
+      .select("id");
+    if (error) { toast.error(error.message); await load(); return; }
+    if (!data || data.length === 0) {
+      toast.error("Não foi possível salvar esta alteração no servidor.");
+      await load();
+    }
   };
   const removeItem = async (phaseId: string, itemId: string) => {
     if (!canEdit) return toast.error("Sem permissão para alterar este cronograma");
