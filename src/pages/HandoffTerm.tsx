@@ -378,21 +378,24 @@ export default function HandoffTerm() {
         </footer>
       </main>
 
-      <AlertDialog open={askComplete} onOpenChange={setAskComplete}>
-        <AlertDialogContent className="no-print">
-          <AlertDialogHeader>
-            <AlertDialogTitle>Concluir o cronograma?</AlertDialogTitle>
-            <AlertDialogDescription>
+      <Dialog open={askComplete} onOpenChange={setAskComplete}>
+        <DialogContent className="no-print">
+          <DialogHeader>
+            <DialogTitle>Concluir o cronograma?</DialogTitle>
+            <DialogDescription>
               Deseja marcar todas as etapas do cronograma de {schedule.client_name} como concluídas
               agora que o termo de passagem foi gerado? O termo já está criado de qualquer forma.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Não concluir</AlertDialogCancel>
-            <AlertDialogAction onClick={completeSchedule}>Sim, concluir</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAskComplete(false)}>
+              Não concluir
+            </Button>
+            <Button onClick={completeSchedule}>Sim, concluir</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
     </div>
 
   );
