@@ -11,7 +11,8 @@ export const ProtectedRoute = ({ children, requireWorkspace = true }: { children
   }
   if (!user) return <Navigate to="/auth" replace />;
   if (requireWorkspace && !activeId && location.pathname !== "/selecionar-base") {
-    return <Navigate to="/selecionar-base" replace />;
+    // Guarda a tela pedida (ex.: impressão do cronograma) para voltar nela depois da base carregar
+    return <Navigate to="/selecionar-base" replace state={{ from: location.pathname + location.search }} />;
   }
   return children;
 };

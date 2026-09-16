@@ -1,4 +1,4 @@
-import { Navigate, useNavigate } from "react-router-dom";
+import { Navigate, useNavigate, useLocation } from "react-router-dom";
 import { Database, Loader2 } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
 import { SEO } from "@/components/SEO";
@@ -9,17 +9,19 @@ import { useState } from "react";
 const SelectWorkspace = () => {
   const { workspaces, loading, setActive, activeId } = useWorkspace();
   const navigate = useNavigate();
+  const location = useLocation();
   const [pendingId, setPendingId] = useState<string | null>(null);
+  const from = (location.state as { from?: string } | null)?.from || "/";
 
   // Uma vez selecionada, a base fica fixada. Só é possível trocar via /configuracoes.
-  if (activeId) return <Navigate to="/" replace />;
+  if (activeId) return <Navigate to={from} replace />;
 
   const choose = async (id: string) => {
     try {
       setPendingId(id);
       await setActive(id);
       toast.success("Base selecionada");
-      navigate("/", { replace: true });
+      navigate(from, { replace: true });
     } catch (e: any) {
       toast.error(e.message || "Erro ao selecionar base");
     } finally {
