@@ -51,6 +51,8 @@ export default function HandoffTerm() {
   const [loading, setLoading] = useState(true);
   const [newModule, setNewModule] = useState("");
   const [supportName, setSupportName] = useState("");
+  const [askComplete, setAskComplete] = useState(false);
+
 
   const isSupport = useMemo(() => {
     // check membership in 'suporte' workspace via workspaces list is not enough; we rely on RPC to enforce.
