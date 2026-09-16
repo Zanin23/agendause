@@ -82,7 +82,7 @@ export default function SchedulePrint() {
             <div className="mt-3 text-sm">
               <div><strong>Cliente:</strong> {schedule.client_name}</div>
               {showDates && schedule.start_date && <div><strong>Início:</strong> {fmtDate(schedule.start_date, "d 'de' MMMM 'de' yyyy")}</div>}
-              {showDates && schedule.target_date && <div><strong>Entrega prevista:</strong> {fmtDate(schedule.target_date, "d 'de' MMMM 'de' yyyy")}</div>}
+              
               <div><strong>Modalidade:</strong> {schedule.modality} · <strong>Cadência:</strong> {schedule.cadence}</div>
               {schedule.use_team?.length > 0 && <div><strong>Equipe Use Sistemas:</strong> {schedule.use_team.join(", ")}</div>}
             </div>
