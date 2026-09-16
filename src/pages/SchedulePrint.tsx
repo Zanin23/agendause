@@ -103,9 +103,12 @@ export default function SchedulePrint() {
                       </div>
                       <div className="text-[11px] text-black/60">
                         {showDates && it.trainings?.scheduled_at && (
-                          <> · Visita agendada: {format(new Date(it.trainings.scheduled_at), "dd/MM/yyyy")}</>
+                          <> · Visita agendada: {fmtDate(it.trainings.scheduled_at)}</>
                         )}
-                        {showDates && it.done_date && <> · Concluído: {format(new Date(it.done_date), "dd/MM/yyyy")}</>}
+                        {showDates && !it.trainings?.scheduled_at && it.planned_date && (
+                          <> · Previsto: {fmtDate(it.planned_date)}</>
+                        )}
+                        {showDates && it.done_date && <> · Concluído: {fmtDate(it.done_date)}</>}
                         {it.assignee && <> · Resp.: {it.assignee}</>}
                       </div>
                       {it.notes && (
