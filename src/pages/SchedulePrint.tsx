@@ -81,7 +81,8 @@ export default function SchedulePrint() {
             <p className="text-sm text-black/70">Planejamento e execução das etapas de implantação do sistema USE</p>
             <div className="mt-3 text-sm">
               <div><strong>Cliente:</strong> {schedule.client_name}</div>
-              {showDates && <div><strong>Início:</strong> {format(new Date(schedule.start_date), "d 'de' MMMM 'de' yyyy", { locale: ptBR })}</div>}
+              {showDates && schedule.start_date && <div><strong>Início:</strong> {fmtDate(schedule.start_date, "d 'de' MMMM 'de' yyyy")}</div>}
+              {showDates && schedule.target_date && <div><strong>Entrega prevista:</strong> {fmtDate(schedule.target_date, "d 'de' MMMM 'de' yyyy")}</div>}
               <div><strong>Modalidade:</strong> {schedule.modality} · <strong>Cadência:</strong> {schedule.cadence}</div>
               {schedule.use_team?.length > 0 && <div><strong>Equipe Use Sistemas:</strong> {schedule.use_team.join(", ")}</div>}
             </div>
