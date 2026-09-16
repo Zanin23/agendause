@@ -367,7 +367,24 @@ export default function HandoffTerm() {
           </div>
         </footer>
       </main>
+
+      <AlertDialog open={askComplete} onOpenChange={setAskComplete}>
+        <AlertDialogContent className="no-print">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Concluir o cronograma?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Deseja marcar todas as etapas do cronograma de {schedule.client_name} como concluídas
+              agora que o termo de passagem foi gerado? O termo já está criado de qualquer forma.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Não concluir</AlertDialogCancel>
+            <AlertDialogAction onClick={completeSchedule}>Sim, concluir</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
+
   );
 }
 
