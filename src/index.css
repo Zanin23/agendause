@@ -1017,8 +1017,9 @@ html.a11y-contrast *:focus-visible {
   background-size: 4px 4px;
 }
 .xp-outline-text {
-  -webkit-text-stroke: 1.5px hsl(var(--foreground) / 0.55);
-  color: transparent;
+  -webkit-text-stroke: 1.5px hsl(var(--foreground) / 0.9);
+  color: hsl(var(--foreground) / 0.14);
+  paint-order: stroke fill;
 }
 .xp-tile {
   position: relative;
