@@ -11,6 +11,15 @@ import logoAsset from "@/assets/logo-use-sistemas.png.asset.json";
 import { STATUS_LABELS } from "@/lib/schedule";
 import { useSearchParams } from "react-router-dom";
 
+// Datas "YYYY-MM-DD" precisam ser lidas como locais, senão o fuso puxa um dia pra trás
+function fmtDate(value?: string | null, pattern = "dd/MM/yyyy") {
+  if (!value) return "";
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  const d = m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : new Date(value);
+  if (isNaN(d.getTime())) return "";
+  return format(d, pattern, { locale: ptBR });
+}
+
 export default function SchedulePrint() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -72,7 +81,8 @@ export default function SchedulePrint() {
             <p className="text-sm text-black/70">Planejamento e execução das etapas de implantação do sistema USE</p>
             <div className="mt-3 text-sm">
               <div><strong>Cliente:</strong> {schedule.client_name}</div>
-              {showDates && <div><strong>Início:</strong> {format(new Date(schedule.start_date), "d 'de' MMMM 'de' yyyy", { locale: ptBR })}</div>}
+              {showDates && schedule.start_date && <div><strong>Início:</strong> {fmtDate(schedule.start_date, "d 'de' MMMM 'de' yyyy")}</div>}
+              
               <div><strong>Modalidade:</strong> {schedule.modality} · <strong>Cadência:</strong> {schedule.cadence}</div>
               {schedule.use_team?.length > 0 && <div><strong>Equipe Use Sistemas:</strong> {schedule.use_team.join(", ")}</div>}
             </div>
@@ -103,9 +113,12 @@ export default function SchedulePrint() {
                       </div>
                       <div className="text-[11px] text-black/60">
                         {showDates && it.trainings?.scheduled_at && (
-                          <> · Visita agendada: {format(new Date(it.trainings.scheduled_at), "dd/MM/yyyy")}</>
+                          <> · Visita agendada: {fmtDate(it.trainings.scheduled_at)}</>
                         )}
-                        {showDates && it.done_date && <> · Concluído: {format(new Date(it.done_date), "dd/MM/yyyy")}</>}
+                        {showDates && !it.trainings?.scheduled_at && it.planned_date && (
+                          <> · Previsto: {fmtDate(it.planned_date)}</>
+                        )}
+                        {showDates && it.done_date && <> · Concluído: {fmtDate(it.done_date)}</>}
                         {it.assignee && <> · Resp.: {it.assignee}</>}
                       </div>
                       {it.notes && (
