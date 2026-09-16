@@ -110,6 +110,14 @@ export default function HandoffTerm() {
 
   useEffect(() => { load(); }, [id]);
 
+  const completeSchedule = async () => {
+    setAskComplete(false);
+    const { error } = await supabase.rpc("complete_schedule_for_handoff", { _schedule_id: id });
+    if (error) toast.error(`Falha ao concluir cronograma: ${error.message}`);
+    else toast.success("Cronograma marcado como concluído");
+  };
+
+
   const persist = async (patch: Partial<Handoff>) => {
     if (!handoff) return;
     setHandoff({ ...handoff, ...patch } as Handoff);
