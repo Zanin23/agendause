@@ -55,7 +55,7 @@ export function plannedDateFor(
   const base = addDays(startDate, phaseIndex * step);
   // distribute items across the phase window
   const within = Math.floor((itemIndex / Math.max(1, itemsInPhase)) * step);
-  return addDays(base, within);
+  return toBusinessDay(addDays(base, within));
 }
 
 /** Distribute item dates evenly between startDate and endDate across all phases. */
@@ -74,5 +74,5 @@ export function plannedDateForRange(
   const phaseWindow = totalDays / Math.max(1, totalPhases);
   const base = phaseIndex * phaseWindow;
   const within = (itemIndex / Math.max(1, itemsInPhase)) * phaseWindow;
-  return addDays(startDate, Math.round(base + within));
+  return toBusinessDay(addDays(startDate, Math.round(base + within)));
 }
