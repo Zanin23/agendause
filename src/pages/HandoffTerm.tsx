@@ -16,6 +16,16 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+
+
 import logoAsset from "@/assets/logo-use-sistemas.png.asset.json";
 
 type Module = { name: string; notes?: string };
@@ -51,6 +61,8 @@ export default function HandoffTerm() {
   const [loading, setLoading] = useState(true);
   const [newModule, setNewModule] = useState("");
   const [supportName, setSupportName] = useState("");
+  const [askComplete, setAskComplete] = useState(false);
+
 
   const isSupport = useMemo(() => {
     // check membership in 'suporte' workspace via workspaces list is not enough; we rely on RPC to enforce.
@@ -88,21 +100,23 @@ export default function HandoffTerm() {
         .single();
       if (ce) { toast.error(ce.message); setLoading(false); return; }
       h = created;
-      // Ao emitir o termo, conclui automaticamente o cronograma de implantação
-      const { error: compErr } = await supabase.rpc("complete_schedule_for_handoff", {
-        _schedule_id: id,
-      });
-      if (compErr) {
-        toast.error(`Termo criado, mas falhou ao concluir cronograma: ${compErr.message}`);
-      } else {
-        toast.success("Cronograma marcado como concluído");
-      }
+      // Pergunta antes de concluir o cronograma
+      setAskComplete(true);
     }
+
     setHandoff(h as unknown as Handoff);
     setLoading(false);
   };
 
   useEffect(() => { load(); }, [id]);
+
+  const completeSchedule = async () => {
+    setAskComplete(false);
+    const { error } = await supabase.rpc("complete_schedule_for_handoff", { _schedule_id: id });
+    if (error) toast.error(`Falha ao concluir cronograma: ${error.message}`);
+    else toast.success("Cronograma marcado como concluído");
+  };
+
 
   const persist = async (patch: Partial<Handoff>) => {
     if (!handoff) return;
@@ -371,7 +385,27 @@ export default function HandoffTerm() {
           </div>
         </footer>
       </main>
+
+      <Dialog open={askComplete} onOpenChange={setAskComplete}>
+        <DialogContent className="no-print">
+          <DialogHeader>
+            <DialogTitle>Concluir o cronograma?</DialogTitle>
+            <DialogDescription>
+              Deseja marcar todas as etapas do cronograma de {schedule.client_name} como concluídas
+              agora que o termo de passagem foi gerado? O termo já está criado de qualquer forma.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAskComplete(false)}>
+              Não concluir
+            </Button>
+            <Button onClick={completeSchedule}>Sim, concluir</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
     </div>
+
   );
 }
 
