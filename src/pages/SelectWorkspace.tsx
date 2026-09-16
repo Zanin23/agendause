@@ -1,4 +1,4 @@
-import { Navigate, useNavigate } from "react-router-dom";
+import { Navigate, useNavigate, useLocation } from "react-router-dom";
 import { Database, Loader2 } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
 import { SEO } from "@/components/SEO";
