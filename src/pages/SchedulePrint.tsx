@@ -11,6 +11,15 @@ import logoAsset from "@/assets/logo-use-sistemas.png.asset.json";
 import { STATUS_LABELS } from "@/lib/schedule";
 import { useSearchParams } from "react-router-dom";
 
+// Datas "YYYY-MM-DD" precisam ser lidas como locais, senão o fuso puxa um dia pra trás
+function fmtDate(value?: string | null, pattern = "dd/MM/yyyy") {
+  if (!value) return "";
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  const d = m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : new Date(value);
+  if (isNaN(d.getTime())) return "";
+  return format(d, pattern, { locale: ptBR });
+}
+
 export default function SchedulePrint() {
   const { id } = useParams();
   const navigate = useNavigate();
