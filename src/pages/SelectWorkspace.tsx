@@ -21,7 +21,7 @@ const SelectWorkspace = () => {
       setPendingId(id);
       await setActive(id);
       toast.success("Base selecionada");
-      navigate("/", { replace: true });
+      navigate(from, { replace: true });
     } catch (e: any) {
       toast.error(e.message || "Erro ao selecionar base");
     } finally {
