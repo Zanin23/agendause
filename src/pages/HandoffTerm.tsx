@@ -88,16 +88,10 @@ export default function HandoffTerm() {
         .single();
       if (ce) { toast.error(ce.message); setLoading(false); return; }
       h = created;
-      // Ao emitir o termo, conclui automaticamente o cronograma de implantação
-      const { error: compErr } = await supabase.rpc("complete_schedule_for_handoff", {
-        _schedule_id: id,
-      });
-      if (compErr) {
-        toast.error(`Termo criado, mas falhou ao concluir cronograma: ${compErr.message}`);
-      } else {
-        toast.success("Cronograma marcado como concluído");
-      }
+      // Pergunta antes de concluir o cronograma
+      setAskComplete(true);
     }
+
     setHandoff(h as unknown as Handoff);
     setLoading(false);
   };
