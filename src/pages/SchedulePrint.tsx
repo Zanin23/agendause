@@ -112,11 +112,11 @@ export default function SchedulePrint() {
                         </span>
                       </div>
                       <div className="text-[11px] text-black/60">
+                        {showDates && it.planned_date && (
+                          <> · Previsto: {fmtDate(it.planned_date)}</>
+                        )}
                         {showDates && it.trainings?.scheduled_at && (
                           <> · Visita agendada: {fmtDate(it.trainings.scheduled_at)}</>
-                        )}
-                        {showDates && !it.trainings?.scheduled_at && it.planned_date && (
-                          <> · Previsto: {fmtDate(it.planned_date)}</>
                         )}
                         {showDates && it.done_date && <> · Concluído: {fmtDate(it.done_date)}</>}
                         {it.assignee && <> · Resp.: {it.assignee}</>}
