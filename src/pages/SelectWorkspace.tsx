@@ -9,10 +9,12 @@ import { useState } from "react";
 const SelectWorkspace = () => {
   const { workspaces, loading, setActive, activeId } = useWorkspace();
   const navigate = useNavigate();
+  const location = useLocation();
   const [pendingId, setPendingId] = useState<string | null>(null);
+  const from = (location.state as { from?: string } | null)?.from || "/";
 
   // Uma vez selecionada, a base fica fixada. Só é possível trocar via /configuracoes.
-  if (activeId) return <Navigate to="/" replace />;
+  if (activeId) return <Navigate to={from} replace />;
 
   const choose = async (id: string) => {
     try {
