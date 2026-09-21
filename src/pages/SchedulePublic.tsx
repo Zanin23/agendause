@@ -198,6 +198,40 @@ export default function SchedulePublic() {
           </CardContent>
         </Card>
       </main>
+
+      <Dialog open={Boolean(requestItem)} onOpenChange={(open) => !open && setRequestItem(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Agendar visita</DialogTitle>
+            <DialogDescription>{requestItem?.title}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="req-date">Data</Label>
+                <Input id="req-date" type="date" value={requestDate} onChange={(e) => setRequestDate(e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="req-time">Horário</Label>
+                <Input id="req-time" type="time" value={requestTime} onChange={(e) => setRequestTime(e.target.value)} />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="req-name">Seu nome</Label>
+              <Input id="req-name" placeholder="Quem está solicitando" value={requestName} onChange={(e) => setRequestName(e.target.value)} />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              A data fica registrada como solicitação e passa por confirmação da equipe Use Sistemas.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRequestItem(null)}>Cancelar</Button>
+            <Button onClick={sendRequest} disabled={sending}>{sending ? "Enviando…" : "Enviar data"}</Button>
+          </DialogFooter>
+        </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
+
   );
 }
