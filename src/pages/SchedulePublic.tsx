@@ -1,9 +1,11 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
-import { CalendarPlus, CheckCircle2, ChevronLeft, ChevronRight, Clock3, List, Network } from "lucide-react";
+import { CalendarPlus, CheckCircle2, Clock3, List, Network } from "lucide-react";
+import ReactFlow, { Background, Controls, Edge, Handle, MiniMap, Node, NodeProps, Position } from "reactflow";
+import "reactflow/dist/style.css";
 import { supabase } from "@/integrations/supabase/client";
 import { SEO } from "@/components/SEO";
 import { Button } from "@/components/ui/button";
@@ -14,6 +16,74 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Label } from "@/components/ui/label";
 import logoAsset from "@/assets/logo-use-sistemas.png.asset.json";
 import { STATUS_LABELS, STATUS_COLORS } from "@/lib/schedule";
+
+type PublicNodeData = {
+  kind: "phase" | "item";
+  title: string;
+  phaseNumber?: number;
+  progress?: number;
+  item?: any;
+  onSchedule?: (item: any) => void;
+};
+
+const PublicScheduleNode = ({ data }: NodeProps<PublicNodeData>) => {
+  if (data.kind === "phase") {
+    return (
+      <div className="w-72 rounded-xl border border-primary/40 bg-primary/10 px-4 py-3 shadow-lg shadow-primary/10">
+        <Handle type="target" position={Position.Left} className="!h-2.5 !w-2.5 !border-background !bg-primary" />
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-primary">Fase {data.phaseNumber}</span>
+          <span className="text-xs font-semibold text-muted-foreground">{data.progress}%</span>
+        </div>
+        <div className="mt-1 line-clamp-2 text-sm font-bold leading-snug" title={data.title}>{data.title}</div>
+        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
+          <div className="h-full rounded-full bg-primary" style={{ width: `${data.progress ?? 0}%` }} />
+        </div>
+        <Handle type="source" position={Position.Right} className="!h-2.5 !w-2.5 !border-background !bg-primary" />
+        <Handle type="source" position={Position.Bottom} id="items" className="!h-2.5 !w-2.5 !border-background !bg-primary" />
+      </div>
+    );
+  }
+
+  const it = data.item;
+  const canSchedule = it.status !== "done" && it.status !== "not_applicable";
+  const label = it.approval_status === "pending" || it.scheduled_date ? "Trocar data" : "Agendar data";
+
+  return (
+    <div className="w-72 rounded-xl border border-border bg-card px-4 py-3 text-card-foreground shadow-md">
+      <Handle type="target" position={Position.Top} className="!h-2 !w-2 !border-background !bg-border" />
+      <div className="flex items-start justify-between gap-2">
+        <div className="line-clamp-2 text-sm font-semibold leading-snug" title={it.title}>{it.title}</div>
+        <span className={`shrink-0 rounded px-2 py-1 text-[10px] ${STATUS_COLORS[it.status]}`}>{STATUS_LABELS[it.status]}</span>
+      </div>
+      <div className="mt-2 space-y-1">
+        {it.scheduled_date && (
+          <div className="text-xs text-muted-foreground">Visita agendada: {format(new Date(it.scheduled_date), "dd/MM/yyyy 'às' HH:mm")}</div>
+        )}
+        {it.planned_date && !it.scheduled_date && (
+          <div className="text-xs text-muted-foreground">Previsto: {format(new Date(it.planned_date), "dd/MM/yyyy")}</div>
+        )}
+        {it.approval_status === "pending" && (
+          <Badge variant="outline" className="gap-1 text-[10px]"><Clock3 className="h-3 w-3" /> Aguardando confirmação</Badge>
+        )}
+        {it.approval_status === "approved" && it.scheduled_date && (
+          <Badge variant="success" className="gap-1 text-[10px]"><CheckCircle2 className="h-3 w-3" /> Data confirmada</Badge>
+        )}
+        {it.approval_status === "rejected" && (
+          <Badge variant="destructive" className="text-[10px]">Data recusada — escolha outra</Badge>
+        )}
+      </div>
+      {canSchedule && (
+        <Button size="sm" className="nodrag mt-2 h-8 w-full gap-1.5 text-xs" onClick={() => data.onSchedule?.(it)}>
+          <CalendarPlus className="h-3.5 w-3.5" /> {label}
+        </Button>
+      )}
+    </div>
+  );
+};
+
+const publicNodeTypes = { publicSchedule: PublicScheduleNode };
+
 
 export default function SchedulePublic() {
   const { token } = useParams();
@@ -27,7 +97,53 @@ export default function SchedulePublic() {
   const [requestTime, setRequestTime] = useState("09:00");
   const [requestName, setRequestName] = useState("");
   const [sending, setSending] = useState(false);
-  const mapRef = useRef<HTMLDivElement | null>(null);
+  const { mapNodes, mapEdges } = useMemo(() => {
+    const nodes: Node<PublicNodeData>[] = [];
+    const edges: Edge[] = [];
+    const phases = (data as any)?.phases ?? [];
+    let x = 40;
+    phases.forEach((p: any, i: number) => {
+      const items = p.items ?? [];
+      const applicable = items.filter((it: any) => it.status !== "not_applicable").length;
+      const done = items.filter((it: any) => it.status === "done").length;
+      const phaseId = `phase-${p.id}`;
+      nodes.push({
+        id: phaseId,
+        type: "publicSchedule",
+        position: { x, y: 30 },
+        draggable: false,
+        data: { kind: "phase", title: p.title, phaseNumber: i + 1, progress: applicable ? Math.round((done / applicable) * 100) : 0 },
+      });
+      if (i > 0) {
+        edges.push({
+          id: `edge-${phases[i - 1].id}-${p.id}`,
+          source: `phase-${phases[i - 1].id}`,
+          target: phaseId,
+          animated: true,
+          style: { stroke: "var(--color-primary)", strokeWidth: 2 },
+        });
+      }
+      items.forEach((it: any, idx: number) => {
+        const itemId = `item-${it.id}`;
+        nodes.push({
+          id: itemId,
+          type: "publicSchedule",
+          position: { x, y: 175 + idx * 210 },
+          draggable: false,
+          data: { kind: "item", title: it.title, item: it, onSchedule: (target: any) => openRequest(target) },
+        });
+        edges.push({
+          id: `edge-${phaseId}-${itemId}`,
+          source: phaseId,
+          sourceHandle: "items",
+          target: itemId,
+          style: { stroke: "var(--color-border)", strokeWidth: 1.5 },
+        });
+      });
+      x += 340;
+    });
+    return { mapNodes: nodes, mapEdges: edges };
+  }, [data]);
 
   const openRequest = (item: any) => {
     setRequestItem(item);
@@ -197,66 +313,35 @@ export default function SchedulePublic() {
         ))}
 
         {view === "mapa" && (
-          <div className="relative -mx-4">
-            <div className="mb-2 flex items-center justify-between gap-2 px-4">
-              <p className="text-[11px] text-muted-foreground">Arraste para o lado ou use as setas para ver todas as fases.</p>
-              <div className="flex gap-1.5">
-                <Button size="icon" variant="outline" className="h-8 w-8" aria-label="Fases anteriores" onClick={() => mapRef.current?.scrollBy({ left: -300, behavior: "smooth" })}>
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <Button size="icon" variant="outline" className="h-8 w-8" aria-label="Próximas fases" onClick={() => mapRef.current?.scrollBy({ left: 300, behavior: "smooth" })}>
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
+          <div className="-mx-4 sm:mx-0">
+            <div className="h-[72vh] min-h-[420px] overflow-hidden border-y border-border bg-card/30 sm:rounded-xl sm:border">
+              <ReactFlow
+                nodes={mapNodes}
+                edges={mapEdges}
+                nodeTypes={publicNodeTypes}
+                defaultViewport={{ x: 16, y: 18, zoom: 0.8 }}
+                minZoom={0.2}
+                maxZoom={1.4}
+                nodesDraggable={false}
+                nodesConnectable={false}
+                panOnScroll
+                zoomOnDoubleClick={false}
+                proOptions={{ hideAttribution: true }}
+              >
+                <Background color="var(--color-border)" gap={24} size={1} />
+                <Controls showInteractive={false} />
+                <MiniMap
+                  className="!hidden !border !border-border !bg-card sm:!block"
+                  nodeColor={(n) => (n.data?.kind === "phase" ? "var(--color-primary)" : "var(--color-muted)")}
+                  maskColor="color-mix(in oklch, var(--color-background) 72%, transparent)"
+                  pannable
+                  zoomable
+                />
+              </ReactFlow>
             </div>
-            <div
-              ref={mapRef}
-              onWheel={(e) => {
-                const el = mapRef.current;
-                if (!el) return;
-                if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
-                  el.scrollLeft += e.deltaY;
-                  e.preventDefault();
-                }
-              }}
-              className="overflow-x-auto overscroll-x-contain px-4 pb-3"
-            >
-              <div className="flex min-w-max items-stretch gap-4">
-                {phases.map((p: any, i: number) => (
-                  <div key={p.id} className="flex max-h-[68vh] w-[280px] shrink-0 flex-col">
-                    <div className="rounded-xl border border-primary/30 bg-primary/10 px-3 py-2">
-                      <div className="text-[10px] font-semibold uppercase tracking-wider text-primary">Fase {String(i + 1).padStart(2, "0")}</div>
-                      <div className="text-sm font-semibold leading-snug">{p.title}</div>
-                      <div className="mt-1 text-[11px] text-muted-foreground">
-                        {p.items.filter((it: any) => it.status === "done").length} de {p.items.length} concluídas
-                      </div>
-                    </div>
-                    <div className="mt-3 min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
-                      {p.items.map((it: any) => (
-                        <div key={it.id} className="rounded-xl border border-border bg-card p-3">
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="text-sm font-medium leading-snug">{it.title}</div>
-                            <span className={`text-[10px] px-2 py-1 rounded shrink-0 ${STATUS_COLORS[it.status]}`}>
-                              {STATUS_LABELS[it.status]}
-                            </span>
-                          </div>
-                          <div className="mt-1.5 space-y-1">
-                            <ItemDates it={it} />
-                            <ItemBadges it={it} />
-                          </div>
-                          {canSchedule(it) && (
-                            <Button size="sm" className="mt-2 h-8 w-full gap-1.5 text-xs" onClick={() => openRequest(it)}>
-                              <CalendarPlus className="h-3.5 w-3.5" />
-                              {scheduleLabel(it)}
-                            </Button>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <p className="px-4 pt-2 text-[11px] text-muted-foreground sm:px-0">
+              Arraste para navegar, use a rolagem para mover e os controles para aproximar ou afastar.
+            </p>
           </div>
         )}
 
