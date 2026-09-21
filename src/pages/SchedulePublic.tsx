@@ -3,12 +3,15 @@ import { useParams } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
+import { CalendarPlus, CheckCircle2, Clock3 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { SEO } from "@/components/SEO";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import logoAsset from "@/assets/logo-use-sistemas.png.asset.json";
 import { STATUS_LABELS, STATUS_COLORS } from "@/lib/schedule";
 
@@ -18,6 +21,35 @@ export default function SchedulePublic() {
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
   const [accepting, setAccepting] = useState(false);
+  const [requestItem, setRequestItem] = useState<any>(null);
+  const [requestDate, setRequestDate] = useState("");
+  const [requestTime, setRequestTime] = useState("09:00");
+  const [requestName, setRequestName] = useState("");
+  const [sending, setSending] = useState(false);
+
+  const openRequest = (item: any) => {
+    setRequestItem(item);
+    setRequestDate(item.planned_date ?? "");
+    setRequestTime("09:00");
+  };
+
+  const sendRequest = async () => {
+    if (!requestDate) return toast.error("Escolha uma data");
+    if (!requestName.trim()) return toast.error("Informe seu nome");
+    setSending(true);
+    const { error } = await supabase.rpc("request_schedule_visit" as any, {
+      _token: token,
+      _item_id: requestItem.id,
+      _date: requestDate,
+      _time: requestTime,
+      _name: requestName.trim(),
+    } as any);
+    setSending(false);
+    if (error) return toast.error(error.message);
+    toast.success("Data enviada! Aguarde a confirmação da equipe.");
+    setRequestItem(null);
+    await load();
+  };
 
   const load = async () => {
     if (!token) return;
