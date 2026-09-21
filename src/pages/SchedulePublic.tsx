@@ -326,8 +326,7 @@ export default function SchedulePublic() {
                 nodesConnectable={false}
                 panOnScroll
                 zoomOnDoubleClick={false}
-                fitView
-                fitViewOptions={{ padding: 0.15, maxZoom: 0.9 }}
+                proOptions={{ hideAttribution: true }}
               >
                 <Background color="var(--color-border)" gap={24} size={1} />
                 <Controls showInteractive={false} />
