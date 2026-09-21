@@ -79,6 +79,28 @@ const Dashboard = () => {
     return Array.from(map.entries()).map(([key, items]) => ({ key, date: new Date(items[0].scheduled_at), items }));
   }, [upcoming]);
 
+  const pendingApproval = useMemo(
+    () => trainings.filter((t) => t.approval_status === "pending" && t.status !== "cancelado"),
+    [trainings]
+  );
+
+  const decide = async (id: string, approve: boolean) => {
+    const { error } = await supabase
+      .from("trainings")
+      .update(
+        approve
+          ? ({ approval_status: "approved" } as any)
+          : ({ approval_status: "rejected", status: "cancelado", cancellation_reason: "Data recusada pela equipe" } as any)
+      )
+      .eq("id", id);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success(approve ? "Data aprovada!" : "Data recusada.");
+    await load();
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <SEO
