@@ -27,6 +27,7 @@ export default function SchedulePublic() {
   const [requestTime, setRequestTime] = useState("09:00");
   const [requestName, setRequestName] = useState("");
   const [sending, setSending] = useState(false);
+  const mapRef = useRef<HTMLDivElement | null>(null);
 
   const openRequest = (item: any) => {
     setRequestItem(item);
