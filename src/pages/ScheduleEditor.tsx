@@ -438,6 +438,31 @@ export default function ScheduleEditor() {
           </Card>
         )}
 
+        {/* Abas: cronograma / levantamento de processos */}
+        <div className="flex gap-1 border-b border-border">
+          <button
+            onClick={() => setTab("cronograma")}
+            className={`px-3 py-2 text-sm font-medium border-b-2 -mb-px flex items-center gap-1.5 transition-colors ${
+              tab === "cronograma" ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <ListChecks className="h-4 w-4" /> Cronograma
+          </button>
+          <button
+            onClick={() => setTab("levantamento")}
+            className={`px-3 py-2 text-sm font-medium border-b-2 -mb-px flex items-center gap-1.5 transition-colors ${
+              tab === "levantamento" ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <ClipboardList className="h-4 w-4" /> Levantamento
+          </button>
+        </div>
+
+        {tab === "levantamento" && (
+          <SurveyTab scheduleId={schedule.id} clientName={schedule.client_name} canEdit={canEdit} />
+        )}
+
+        {tab === "cronograma" && (<>
         {/* Mobile phase tabs (horizontal scroll) */}
         <div className="lg:hidden -mx-3 px-3">
           <div className="flex items-center justify-between mb-2">
