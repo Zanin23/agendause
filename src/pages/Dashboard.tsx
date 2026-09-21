@@ -133,6 +133,43 @@ const Dashboard = () => {
           </div>
         </div>
 
+        {pendingApproval.length > 0 && (
+          <section className="rounded-2xl border border-amber-500/40 bg-amber-500/5 p-4 sm:p-5">
+            <div className="flex items-center gap-2">
+              <BadgeCheck className="h-5 w-5 text-amber-500" />
+              <h2 className="font-semibold">Datas solicitadas pelo cliente</h2>
+              <Badge variant="outline" className="ml-1">{pendingApproval.length}</Badge>
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
+              Confirme se conseguimos atender o cliente nessas datas.
+            </p>
+            <div className="mt-4 space-y-2">
+              {pendingApproval.map((t) => (
+                <div key={t.id} className="flex flex-col gap-3 rounded-xl border border-border bg-card p-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0">
+                    <Link to={`/treinamento/${t.id}`} className="font-medium hover:text-primary">{t.title}</Link>
+                    <div className="mt-0.5 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                      <span className="flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        {format(new Date(t.scheduled_at), "d MMM • HH:mm", { locale: ptBR })}
+                      </span>
+                      {t.requested_by && <span>Solicitado por {t.requested_by}</span>}
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={() => decide(t.id, true)}>
+                      <CheckCircle2 className="h-4 w-4" /> Aprovar
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => decide(t.id, false)}>
+                      <XCircle className="h-4 w-4" /> Recusar
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
         <div className="grid lg:grid-cols-[auto_1fr] gap-6 lg:gap-8 items-start">
           <Card className="calendar-card lg:sticky lg:top-20 w-full lg:w-auto relative overflow-hidden rounded-3xl border border-border/60 bg-card/60 backdrop-blur-xl shadow-2xl shadow-primary/5">
             <div className="calendar-orb-a" aria-hidden />
