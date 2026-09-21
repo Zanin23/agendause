@@ -8,6 +8,7 @@ import {
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { publicUrl } from "@/lib/publicUrl";
+import { SURVEY_TEMPLATE } from "@/lib/surveyTemplate";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -76,18 +77,54 @@ export function SurveyTab({
 
   useEffect(() => { load(); }, [load]);
 
-  const createSurvey = async () => {
+  const createSurvey = async (withTemplate = true) => {
     setCreating(true);
     const { data: userData } = await supabase.auth.getUser();
-    const { error } = await supabase.from("process_surveys").insert({
+    const { data: created, error } = await supabase.from("process_surveys").insert({
       schedule_id: scheduleId,
       created_by: userData.user?.id ?? null,
       title: "Levantamento de Processos",
       intro: `Olá! Para avançarmos com a implantação de ${clientName}, precisamos entender como funcionam hoje os processos da empresa. Responda ao questionário abaixo e anexe os arquivos solicitados.`,
-    });
+    }).select("id").single();
+    if (error) { setCreating(false); return toast.error(error.message); }
+    if (withTemplate && created) {
+      const { error: qErr } = await supabase.from("survey_questions").insert(
+        SURVEY_TEMPLATE.map((q, i) => ({
+          survey_id: created.id,
+          position: i,
+          section: q.section,
+          label: q.label,
+          help_text: q.help_text ?? null,
+          type: q.type,
+          options: (q.options ?? null) as any,
+          required: !!q.required,
+        })),
+      );
+      if (qErr) toast.error(qErr.message);
+    }
     setCreating(false);
-    if (error) return toast.error(error.message);
     toast.success("Levantamento criado");
+    load();
+  };
+
+  const applyTemplate = async () => {
+    if (!survey) return;
+    if (!confirm("Adicionar o padrão de perguntas ao questionário? As perguntas atuais serão mantidas.")) return;
+    const base = questions.length ? Math.max(...questions.map((q) => q.position)) + 1 : 0;
+    const { error } = await supabase.from("survey_questions").insert(
+      SURVEY_TEMPLATE.map((q, i) => ({
+        survey_id: survey.id,
+        position: base + i,
+        section: q.section,
+        label: q.label,
+        help_text: q.help_text ?? null,
+        type: q.type,
+        options: (q.options ?? null) as any,
+        required: !!q.required,
+      })),
+    );
+    if (error) return toast.error(error.message);
+    toast.success("Padrão de perguntas aplicado");
     load();
   };
 
@@ -181,9 +218,14 @@ export function SurveyTab({
             </p>
           </div>
           {canEdit && (
-            <Button onClick={createSurvey} disabled={creating}>
-              <Plus className="h-4 w-4" /> Criar levantamento
-            </Button>
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              <Button onClick={() => createSurvey(true)} disabled={creating}>
+                <Plus className="h-4 w-4" /> Criar com o padrão de perguntas
+              </Button>
+              <Button variant="outline" onClick={() => createSurvey(false)} disabled={creating}>
+                Criar em branco
+              </Button>
+            </div>
           )}
         </CardContent>
       </Card>
@@ -219,6 +261,11 @@ export function SurveyTab({
               )}
               <Button variant="ghost" size="sm" onClick={load}><RefreshCw className="h-4 w-4" /></Button>
               <Button size="sm" onClick={copyLink}><Link2 className="h-4 w-4" /> Link do cliente</Button>
+              {canEdit && (
+                <Button variant="outline" size="sm" onClick={applyTemplate}>
+                  <ClipboardList className="h-4 w-4" /> Aplicar padrão
+                </Button>
+              )}
               {submitted && canEdit && (
                 <Button variant="outline" size="sm" onClick={reopen}>Reabrir</Button>
               )}
