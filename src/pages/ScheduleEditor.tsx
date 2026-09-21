@@ -775,6 +775,7 @@ export default function ScheduleEditor() {
             })()}
           </section>
         </div>
+        </>)}
       </main>
     </div>
   );
