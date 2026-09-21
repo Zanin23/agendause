@@ -117,14 +117,14 @@ export default function SchedulePublic() {
               <h2 className="font-semibold">{String(i + 1).padStart(2, "0")}. {p.title}</h2>
               <ul className="space-y-1.5">
                 {p.items.map((it: any) => (
-                  <li key={it.id} className="flex items-start justify-between gap-2 text-sm border-b border-border/40 pb-1.5 last:border-0">
-                    <div className="flex items-start gap-2 flex-1">
+                  <li key={it.id} className="flex flex-col gap-2 border-b border-border/40 pb-2 text-sm last:border-0 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="flex flex-1 items-start gap-2">
                       <span className="text-muted-foreground">›</span>
-                      <div>
+                      <div className="min-w-0">
                         <div>{it.title}</div>
                         {it.scheduled_date && (
                           <div className="text-xs text-muted-foreground">
-                            Visita agendada: {format(new Date(it.scheduled_date), "dd/MM/yyyy")}
+                            Visita agendada: {format(new Date(it.scheduled_date), "dd/MM/yyyy 'às' HH:mm")}
                           </div>
                         )}
                         {it.planned_date && !it.scheduled_date && (
@@ -132,11 +132,34 @@ export default function SchedulePublic() {
                             Previsto: {format(new Date(it.planned_date), "dd/MM/yyyy")}
                           </div>
                         )}
+                        {it.approval_status === "pending" && (
+                          <Badge variant="outline" className="mt-1 gap-1 text-[10px]">
+                            <Clock3 className="h-3 w-3" /> Aguardando confirmação da equipe
+                          </Badge>
+                        )}
+                        {it.approval_status === "approved" && it.scheduled_date && (
+                          <Badge variant="success" className="mt-1 gap-1 text-[10px]">
+                            <CheckCircle2 className="h-3 w-3" /> Data confirmada
+                          </Badge>
+                        )}
+                        {it.approval_status === "rejected" && (
+                          <Badge variant="destructive" className="mt-1 gap-1 text-[10px]">
+                            Data recusada — escolha outra
+                          </Badge>
+                        )}
                       </div>
                     </div>
-                    <span className={`text-[10px] px-2 py-1 rounded shrink-0 ${STATUS_COLORS[it.status]}`}>
-                      {STATUS_LABELS[it.status]}
-                    </span>
+                    <div className="flex shrink-0 items-center gap-2 sm:pl-2">
+                      {it.status !== "done" && it.status !== "not_applicable" && it.approval_status !== "approved" && (
+                        <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => openRequest(it)}>
+                          <CalendarPlus className="h-3.5 w-3.5" />
+                          {it.approval_status === "pending" ? "Trocar data" : "Agendar data"}
+                        </Button>
+                      )}
+                      <span className={`text-[10px] px-2 py-1 rounded shrink-0 ${STATUS_COLORS[it.status]}`}>
+                        {STATUS_LABELS[it.status]}
+                      </span>
+                    </div>
                   </li>
                 ))}
               </ul>
