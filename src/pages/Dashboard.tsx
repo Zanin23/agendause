@@ -284,15 +284,24 @@ const Dashboard = () => {
 const TrainingCard = ({ training, accepted }: { training: Training; accepted: boolean }) => {
   const date = new Date(training.scheduled_at);
   const isCancelled = training.status === "cancelado";
+  const isPending = training.approval_status === "pending" && !isCancelled;
   return (
     <Link to={`/treinamento/${training.id}`}>
       <Card
         className={
           isCancelled
             ? "border-destructive/60 bg-destructive/5 hover:border-destructive transition-colors"
-            : "hover:border-primary/50 transition-colors"
+            : isPending
+              ? "relative overflow-hidden border-2 border-amber-500 bg-amber-500/10 ring-2 ring-amber-500/30 shadow-[0_0_0_4px_hsl(38_92%_50%/0.08)] hover:border-amber-400 transition-colors"
+              : "hover:border-primary/50 transition-colors"
         }
       >
+        {isPending && (
+          <>
+            <span className="absolute left-0 top-0 bottom-0 w-1.5 bg-amber-500" aria-hidden />
+            <span className="absolute right-3 top-3 h-3 w-3 rounded-full bg-amber-500 animate-pulse ring-4 ring-amber-500/25" aria-hidden />
+          </>
+        )}
         <CardContent className="p-4 sm:p-5 flex items-start justify-between gap-3 sm:gap-4">
           <div className="space-y-2 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
@@ -310,9 +319,9 @@ const TrainingCard = ({ training, accepted }: { training: Training; accepted: bo
                   <XCircle className="h-3 w-3" /> Cancelada
                 </Badge>
               )}
-              {training.approval_status === "pending" && (
-                <Badge variant="outline" className="gap-1 border-amber-500/60 text-amber-600 dark:text-amber-400">
-                  <BadgeCheck className="h-3 w-3" /> Aguardando aprovação
+              {isPending && (
+                <Badge className="gap-1 border-transparent bg-amber-500 text-amber-950 hover:bg-amber-500">
+                  <BadgeCheck className="h-3 w-3" /> Cliente pediu esta data
                 </Badge>
               )}
               {!isCancelled && accepted && (
@@ -405,6 +414,7 @@ const UpcomingGroup = ({
 const UpcomingRow = ({ training, accepted }: { training: Training; accepted: boolean }) => {
   const date = new Date(training.scheduled_at);
   const isCancelled = training.status === "cancelado";
+  const isPending = training.approval_status === "pending" && !isCancelled;
   return (
     <Link to={`/treinamento/${training.id}`} className="block group">
       <div
@@ -412,16 +422,27 @@ const UpcomingRow = ({ training, accepted }: { training: Training; accepted: boo
           "relative rounded-lg border bg-card px-4 py-3 transition-all hover:shadow-md hover:-translate-y-px " +
           (isCancelled
             ? "border-destructive/50 bg-destructive/5 hover:border-destructive"
-            : "border-border hover:border-primary/50")
+            : isPending
+              ? "border-2 border-amber-500 bg-amber-500/10 ring-2 ring-amber-500/25 hover:border-amber-400"
+              : "border-border hover:border-primary/50")
         }
       >
         <div
           className={
-            "absolute left-0 top-3 bottom-3 w-1 rounded-r " +
-            (isCancelled ? "bg-destructive/60" : accepted ? "bg-emerald-500/70" : "bg-primary/50")
+            "absolute left-0 top-3 bottom-3 rounded-r " +
+            (isCancelled
+              ? "w-1 bg-destructive/60"
+              : isPending
+                ? "w-1.5 bg-amber-500"
+                : accepted
+                  ? "w-1 bg-emerald-500/70"
+                  : "w-1 bg-primary/50")
           }
           aria-hidden
         />
+        {isPending && (
+          <span className="absolute right-3 top-3 h-2.5 w-2.5 rounded-full bg-amber-500 animate-pulse ring-4 ring-amber-500/25" aria-hidden />
+        )}
         <div className="flex items-center justify-between gap-3 pl-2">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 flex-wrap">
@@ -442,9 +463,9 @@ const UpcomingRow = ({ training, accepted }: { training: Training; accepted: boo
                   <CheckCircle2 className="h-3 w-3" /> Aceito
                 </Badge>
               ) : null}
-              {training.approval_status === "pending" && (
-                <Badge variant="outline" className="gap-1 h-5 border-amber-500/60 text-[10px] text-amber-600 dark:text-amber-400">
-                  <BadgeCheck className="h-3 w-3" /> Aguardando aprovação
+              {isPending && (
+                <Badge className="gap-1 h-5 border-transparent bg-amber-500 text-[10px] text-amber-950 hover:bg-amber-500">
+                  <BadgeCheck className="h-3 w-3" /> Cliente pediu esta data
                 </Badge>
               )}
             </div>
