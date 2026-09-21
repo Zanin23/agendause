@@ -480,6 +480,69 @@ export type Database = {
           },
         ]
       }
+      process_surveys: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          intro: string | null
+          public_token: string | null
+          respondent_email: string | null
+          respondent_name: string | null
+          schedule_id: string
+          status: string
+          submitted_at: string | null
+          title: string
+          updated_at: string
+          workspace_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          intro?: string | null
+          public_token?: string | null
+          respondent_email?: string | null
+          respondent_name?: string | null
+          schedule_id: string
+          status?: string
+          submitted_at?: string | null
+          title?: string
+          updated_at?: string
+          workspace_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          intro?: string | null
+          public_token?: string | null
+          respondent_email?: string | null
+          respondent_name?: string | null
+          schedule_id?: string
+          status?: string
+          submitted_at?: string | null
+          title?: string
+          updated_at?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "process_surveys_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "implementation_schedules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "process_surveys_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           active_workspace_id: string | null
@@ -707,6 +770,146 @@ export type Database = {
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      survey_answers: {
+        Row: {
+          id: string
+          question_id: string
+          survey_id: string
+          updated_at: string
+          value: string | null
+          value_json: Json | null
+        }
+        Insert: {
+          id?: string
+          question_id: string
+          survey_id: string
+          updated_at?: string
+          value?: string | null
+          value_json?: Json | null
+        }
+        Update: {
+          id?: string
+          question_id?: string
+          survey_id?: string
+          updated_at?: string
+          value?: string | null
+          value_json?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "survey_answers_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "survey_questions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "survey_answers_survey_id_fkey"
+            columns: ["survey_id"]
+            isOneToOne: false
+            referencedRelation: "process_surveys"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      survey_files: {
+        Row: {
+          created_at: string
+          file_name: string
+          file_path: string
+          file_size: number | null
+          id: string
+          mime_type: string | null
+          question_id: string | null
+          survey_id: string
+          uploaded_by_name: string | null
+        }
+        Insert: {
+          created_at?: string
+          file_name: string
+          file_path: string
+          file_size?: number | null
+          id?: string
+          mime_type?: string | null
+          question_id?: string | null
+          survey_id: string
+          uploaded_by_name?: string | null
+        }
+        Update: {
+          created_at?: string
+          file_name?: string
+          file_path?: string
+          file_size?: number | null
+          id?: string
+          mime_type?: string | null
+          question_id?: string | null
+          survey_id?: string
+          uploaded_by_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "survey_files_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "survey_questions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "survey_files_survey_id_fkey"
+            columns: ["survey_id"]
+            isOneToOne: false
+            referencedRelation: "process_surveys"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      survey_questions: {
+        Row: {
+          created_at: string
+          help_text: string | null
+          id: string
+          label: string
+          options: Json
+          position: number
+          required: boolean
+          section: string | null
+          survey_id: string
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          help_text?: string | null
+          id?: string
+          label: string
+          options?: Json
+          position?: number
+          required?: boolean
+          section?: string | null
+          survey_id: string
+          type?: string
+        }
+        Update: {
+          created_at?: string
+          help_text?: string | null
+          id?: string
+          label?: string
+          options?: Json
+          position?: number
+          required?: boolean
+          section?: string | null
+          survey_id?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "survey_questions_survey_id_fkey"
+            columns: ["survey_id"]
+            isOneToOne: false
+            referencedRelation: "process_surveys"
             referencedColumns: ["id"]
           },
         ]
@@ -1069,6 +1272,7 @@ export type Database = {
         }[]
       }
       get_schedule_by_token: { Args: { _token: string }; Returns: Json }
+      get_survey_by_token: { Args: { _token: string }; Returns: Json }
       get_training_user_acceptances: {
         Args: { _training_id: string }
         Returns: {
@@ -1095,6 +1299,18 @@ export type Database = {
         Returns: boolean
       }
       is_workspace_member: { Args: { _workspace_id: string }; Returns: boolean }
+      register_survey_file: {
+        Args: {
+          _file_name: string
+          _file_path: string
+          _file_size: number
+          _mime_type: string
+          _question_id: string
+          _token: string
+          _uploaded_by_name: string
+        }
+        Returns: string
+      }
       request_schedule_visit: {
         Args: {
           _date: string
@@ -1104,6 +1320,16 @@ export type Database = {
           _token: string
         }
         Returns: string
+      }
+      save_survey_answers: {
+        Args: {
+          _answers: Json
+          _finalize?: boolean
+          _respondent_email: string
+          _respondent_name: string
+          _token: string
+        }
+        Returns: Json
       }
     }
     Enums: {

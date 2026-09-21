@@ -20,6 +20,7 @@ import ScheduleNew from "./pages/ScheduleNew";
 import ScheduleEditor from "./pages/ScheduleEditor";
 import SchedulePrint from "./pages/SchedulePrint";
 import SchedulePublic from "./pages/SchedulePublic";
+import SurveyPublic from "./pages/SurveyPublic";
 import HandoffTerm from "./pages/HandoffTerm";
 import ScheduleVisual from "./pages/ScheduleVisual";
 import HandoffPublic from "./pages/HandoffPublic";
@@ -53,6 +54,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/aceite/:id" element={<GuestAccept />} />
             <Route path="/c/:token" element={<SchedulePublic />} />
+            <Route path="/q/:token" element={<SurveyPublic />} />
             <Route path="/t/:token" element={<HandoffPublic />} />
             <Route path="/selecionar-base" element={<ProtectedRoute requireWorkspace={false}><SelectWorkspace /></ProtectedRoute>} />
             <Route path="/configuracoes" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
