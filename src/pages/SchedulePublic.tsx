@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
-import { CalendarPlus, CheckCircle2, Clock3, List, Network } from "lucide-react";
+import { CalendarPlus, CheckCircle2, ChevronLeft, ChevronRight, Clock3, List, Network } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { SEO } from "@/components/SEO";
 import { Button } from "@/components/ui/button";
@@ -27,6 +27,7 @@ export default function SchedulePublic() {
   const [requestTime, setRequestTime] = useState("09:00");
   const [requestName, setRequestName] = useState("");
   const [sending, setSending] = useState(false);
+  const mapRef = useRef<HTMLDivElement | null>(null);
 
   const openRequest = (item: any) => {
     setRequestItem(item);
@@ -196,41 +197,65 @@ export default function SchedulePublic() {
         ))}
 
         {view === "mapa" && (
-          <div className="-mx-4 overflow-x-auto px-4 pb-4">
-            <div className="flex min-w-max items-start gap-4">
-              {phases.map((p: any, i: number) => (
-                <div key={p.id} className="w-[280px] shrink-0 space-y-3">
-                  <div className="rounded-xl border border-primary/30 bg-primary/10 px-3 py-2">
-                    <div className="text-[10px] font-semibold uppercase tracking-wider text-primary">Fase {String(i + 1).padStart(2, "0")}</div>
-                    <div className="text-sm font-semibold leading-snug">{p.title}</div>
-                    <div className="mt-1 text-[11px] text-muted-foreground">
-                      {p.items.filter((it: any) => it.status === "done").length} de {p.items.length} concluídas
+          <div className="relative -mx-4">
+            <div className="mb-2 flex items-center justify-between gap-2 px-4">
+              <p className="text-[11px] text-muted-foreground">Arraste para o lado ou use as setas para ver todas as fases.</p>
+              <div className="flex gap-1.5">
+                <Button size="icon" variant="outline" className="h-8 w-8" aria-label="Fases anteriores" onClick={() => mapRef.current?.scrollBy({ left: -300, behavior: "smooth" })}>
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <Button size="icon" variant="outline" className="h-8 w-8" aria-label="Próximas fases" onClick={() => mapRef.current?.scrollBy({ left: 300, behavior: "smooth" })}>
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+            <div
+              ref={mapRef}
+              onWheel={(e) => {
+                const el = mapRef.current;
+                if (!el) return;
+                if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+                  el.scrollLeft += e.deltaY;
+                  e.preventDefault();
+                }
+              }}
+              className="overflow-x-auto overscroll-x-contain px-4 pb-3"
+            >
+              <div className="flex min-w-max items-stretch gap-4">
+                {phases.map((p: any, i: number) => (
+                  <div key={p.id} className="flex max-h-[68vh] w-[280px] shrink-0 flex-col">
+                    <div className="rounded-xl border border-primary/30 bg-primary/10 px-3 py-2">
+                      <div className="text-[10px] font-semibold uppercase tracking-wider text-primary">Fase {String(i + 1).padStart(2, "0")}</div>
+                      <div className="text-sm font-semibold leading-snug">{p.title}</div>
+                      <div className="mt-1 text-[11px] text-muted-foreground">
+                        {p.items.filter((it: any) => it.status === "done").length} de {p.items.length} concluídas
+                      </div>
+                    </div>
+                    <div className="mt-3 min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
+                      {p.items.map((it: any) => (
+                        <div key={it.id} className="rounded-xl border border-border bg-card p-3">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="text-sm font-medium leading-snug">{it.title}</div>
+                            <span className={`text-[10px] px-2 py-1 rounded shrink-0 ${STATUS_COLORS[it.status]}`}>
+                              {STATUS_LABELS[it.status]}
+                            </span>
+                          </div>
+                          <div className="mt-1.5 space-y-1">
+                            <ItemDates it={it} />
+                            <ItemBadges it={it} />
+                          </div>
+                          {canSchedule(it) && (
+                            <Button size="sm" className="mt-2 h-8 w-full gap-1.5 text-xs" onClick={() => openRequest(it)}>
+                              <CalendarPlus className="h-3.5 w-3.5" />
+                              {scheduleLabel(it)}
+                            </Button>
+                          )}
+                        </div>
+                      ))}
                     </div>
                   </div>
-                  <div className="space-y-2">
-                    {p.items.map((it: any) => (
-                      <div key={it.id} className="rounded-xl border border-border bg-card p-3">
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="text-sm font-medium leading-snug">{it.title}</div>
-                          <span className={`text-[10px] px-2 py-1 rounded shrink-0 ${STATUS_COLORS[it.status]}`}>
-                            {STATUS_LABELS[it.status]}
-                          </span>
-                        </div>
-                        <div className="mt-1.5 space-y-1">
-                          <ItemDates it={it} />
-                          <ItemBadges it={it} />
-                        </div>
-                        {canSchedule(it) && (
-                          <Button size="sm" className="mt-2 h-8 w-full gap-1.5 text-xs" onClick={() => openRequest(it)}>
-                            <CalendarPlus className="h-3.5 w-3.5" />
-                            {scheduleLabel(it)}
-                          </Button>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
         )}
