@@ -261,6 +261,11 @@ export function SurveyTab({
               )}
               <Button variant="ghost" size="sm" onClick={load}><RefreshCw className="h-4 w-4" /></Button>
               <Button size="sm" onClick={copyLink}><Link2 className="h-4 w-4" /> Link do cliente</Button>
+              {canEdit && (
+                <Button variant="outline" size="sm" onClick={applyTemplate}>
+                  <ClipboardList className="h-4 w-4" /> Aplicar padrão
+                </Button>
+              )}
               {submitted && canEdit && (
                 <Button variant="outline" size="sm" onClick={reopen}>Reabrir</Button>
               )}
