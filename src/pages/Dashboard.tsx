@@ -24,6 +24,8 @@ type Training = {
   created_by: string;
   status?: string;
   cancellation_reason?: string | null;
+  approval_status?: string | null;
+  requested_by?: string | null;
 };
 
 const Dashboard = () => {
