@@ -442,6 +442,11 @@ const UpcomingRow = ({ training, accepted }: { training: Training; accepted: boo
                   <CheckCircle2 className="h-3 w-3" /> Aceito
                 </Badge>
               ) : null}
+              {training.approval_status === "pending" && (
+                <Badge variant="outline" className="gap-1 h-5 border-amber-500/60 text-[10px] text-amber-600 dark:text-amber-400">
+                  <BadgeCheck className="h-3 w-3" /> Aguardando aprovação
+                </Badge>
+              )}
             </div>
             <div
               className={
