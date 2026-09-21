@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
-import { CheckCircle2, ClipboardList, Loader2, Paperclip, Save, Send } from "lucide-react";
+import { Check, CheckCircle2, Circle, ClipboardList, Loader2, Paperclip, Save, Send } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -157,82 +157,110 @@ export default function SurveyPublic() {
           </CardContent>
         </Card>
 
-        {sections.map((section) => (
-          <Card key={section.name}>
-            <CardContent className="p-4 sm:p-5 space-y-4">
-              <h2 className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">{section.name}</h2>
+        {sections.map((section, sectionIndex) => (
+          <section key={section.name} className="space-y-3">
+            <div className="flex items-center gap-3 border-b border-border pb-2">
+              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-primary text-sm font-bold text-primary-foreground">
+                {sectionIndex + 1}
+              </span>
+              <div>
+                <h2 className="text-base font-semibold">{section.name}</h2>
+                <p className="text-xs text-muted-foreground">{section.items.length} pergunta{section.items.length === 1 ? "" : "s"}</p>
+              </div>
+            </div>
+            <div className="space-y-3">
               {section.items.map((q) => {
                 const qFiles = survey.files.filter((f) => f.question_id === q.id);
+                const questionNumber = survey.questions.findIndex((item) => item.id === q.id) + 1;
                 return (
-                  <div key={q.id} className="space-y-1.5">
-                    <label className="text-sm font-medium">
-                      {q.label} {q.required && <span className="text-destructive">*</span>}
-                    </label>
-                    {q.help_text && <p className="text-xs text-muted-foreground">{q.help_text}</p>}
+                  <Card key={q.id} className="overflow-hidden border-border shadow-sm">
+                    <CardContent className="p-0">
+                      <div className="border-b border-border bg-muted/40 px-4 py-3 sm:px-5">
+                        <div className="flex items-start gap-3">
+                          <span className="mt-0.5 grid h-6 min-w-6 place-items-center rounded bg-background text-xs font-bold text-muted-foreground ring-1 ring-border">
+                            {questionNumber}
+                          </span>
+                          <div className="min-w-0">
+                            <label className="block text-sm font-semibold leading-5">
+                              {q.label} {q.required && <span className="text-destructive" aria-label="obrigatória">*</span>}
+                            </label>
+                            {q.help_text && <p className="mt-1 text-xs leading-5 text-muted-foreground">{q.help_text}</p>}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="space-y-2 px-4 py-4 sm:px-5">
+                        <p className="text-[11px] font-semibold uppercase text-muted-foreground">Sua resposta</p>
 
-                    {q.type === "longtext" && (
-                      <Textarea rows={4} disabled={done} value={values[q.id] || ""}
-                        onChange={(e) => setValues((v) => ({ ...v, [q.id]: e.target.value }))} />
-                    )}
-                    {(q.type === "text" || q.type === "number" || q.type === "date") && (
-                      <Input type={q.type === "text" ? "text" : q.type} disabled={done} value={values[q.id] || ""}
-                        onChange={(e) => setValues((v) => ({ ...v, [q.id]: e.target.value }))} />
-                    )}
-                    {q.type === "boolean" && (
-                      <div className="flex gap-2">
-                        {["Sim", "Não"].map((opt) => (
-                          <Button key={opt} type="button" size="sm" disabled={done}
-                            variant={values[q.id] === opt ? "default" : "outline"}
-                            onClick={() => setValues((v) => ({ ...v, [q.id]: opt }))}>{opt}</Button>
-                        ))}
-                      </div>
-                    )}
-                    {q.type === "select" && (
-                      <select disabled={done} value={values[q.id] || ""}
-                        onChange={(e) => setValues((v) => ({ ...v, [q.id]: e.target.value }))}
-                        className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm">
-                        <option value="">Selecione…</option>
-                        {(q.options || []).map((o) => <option key={o} value={o}>{o}</option>)}
-                      </select>
-                    )}
-                    {q.type === "multiselect" && (
-                      <div className="flex flex-wrap gap-2">
-                        {(q.options || []).map((o) => {
-                          const active = (multi[q.id] || []).includes(o);
-                          return (
-                            <Button key={o} type="button" size="sm" disabled={done}
-                              variant={active ? "default" : "outline"}
-                              onClick={() => setMulti((m) => {
-                                const cur = m[q.id] || [];
-                                return { ...m, [q.id]: active ? cur.filter((x) => x !== o) : [...cur, o] };
-                              })}>{o}</Button>
-                          );
-                        })}
-                      </div>
-                    )}
-                    {q.type === "file" && (
-                      <div className="space-y-1.5">
-                        {!done && (
-                          <Input type="file" disabled={uploading === q.id}
-                            onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadFile(q.id, f); e.target.value = ""; }} />
+                        {q.type === "longtext" && (
+                          <Textarea rows={4} disabled={done} value={values[q.id] || ""} placeholder="Digite sua resposta…"
+                            onChange={(e) => setValues((v) => ({ ...v, [q.id]: e.target.value }))} />
                         )}
-                        {uploading === q.id && (
-                          <p className="text-xs text-muted-foreground flex items-center gap-1">
-                            <Loader2 className="h-3 w-3 animate-spin" /> Enviando…
-                          </p>
+                        {(q.type === "text" || q.type === "number" || q.type === "date") && (
+                          <Input type={q.type === "text" ? "text" : q.type} disabled={done} value={values[q.id] || ""} placeholder={q.type === "text" ? "Digite sua resposta…" : undefined}
+                            onChange={(e) => setValues((v) => ({ ...v, [q.id]: e.target.value }))} />
                         )}
-                        {qFiles.map((f) => (
-                          <p key={f.id} className="text-xs flex items-center gap-1 text-muted-foreground">
-                            <Paperclip className="h-3 w-3" /> {f.file_name}
-                          </p>
-                        ))}
+                        {q.type === "boolean" && (
+                          <div className="grid grid-cols-2 gap-2">
+                            {["Sim", "Não"].map((opt) => {
+                              const active = values[q.id] === opt;
+                              return <Button key={opt} type="button" disabled={done} variant={active ? "default" : "outline"}
+                                className="h-11 justify-start gap-2" onClick={() => setValues((v) => ({ ...v, [q.id]: opt }))}>
+                                {active ? <CheckCircle2 className="h-4 w-4" /> : <Circle className="h-4 w-4" />} {opt}
+                              </Button>;
+                            })}
+                          </div>
+                        )}
+                        {q.type === "select" && (
+                          <div className="grid gap-2 sm:grid-cols-2">
+                            {(q.options || []).map((o) => {
+                              const active = values[q.id] === o;
+                              return <Button key={o} type="button" disabled={done} variant={active ? "default" : "outline"}
+                                className="h-auto min-h-11 justify-start whitespace-normal py-2 text-left" onClick={() => setValues((v) => ({ ...v, [q.id]: o }))}>
+                                {active ? <CheckCircle2 className="h-4 w-4 shrink-0" /> : <Circle className="h-4 w-4 shrink-0" />} {o}
+                              </Button>;
+                            })}
+                          </div>
+                        )}
+                        {q.type === "multiselect" && (
+                          <div className="grid gap-2 sm:grid-cols-2">
+                            {(q.options || []).map((o) => {
+                              const active = (multi[q.id] || []).includes(o);
+                              return (
+                                <Button key={o} type="button" disabled={done} variant={active ? "default" : "outline"}
+                                  className="h-auto min-h-11 justify-start whitespace-normal py-2 text-left"
+                                  onClick={() => setMulti((m) => {
+                                    const cur = m[q.id] || [];
+                                    return { ...m, [q.id]: active ? cur.filter((x) => x !== o) : [...cur, o] };
+                                  })}>{active ? <Check className="h-4 w-4 shrink-0" /> : <span className="h-4 w-4 shrink-0 rounded border border-current" />} {o}</Button>
+                              );
+                            })}
+                          </div>
+                        )}
+                        {q.type === "file" && (
+                          <div className="space-y-1.5">
+                            {!done && (
+                              <Input type="file" disabled={uploading === q.id}
+                                onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadFile(q.id, f); e.target.value = ""; }} />
+                            )}
+                            {uploading === q.id && (
+                              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                                <Loader2 className="h-3 w-3 animate-spin" /> Enviando…
+                              </p>
+                            )}
+                            {qFiles.map((f) => (
+                              <p key={f.id} className="text-xs flex items-center gap-1 text-muted-foreground">
+                                <Paperclip className="h-3 w-3" /> {f.file_name}
+                              </p>
+                            ))}
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
+                    </CardContent>
+                  </Card>
                 );
               })}
-            </CardContent>
-          </Card>
+            </div>
+          </section>
         ))}
 
         {/* Free attachments */}

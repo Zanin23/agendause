@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
   Plus, Trash2, Link2, ArrowUp, ArrowDown, FileText, Download, RefreshCw,
-  ClipboardList, CheckCircle2, Clock, Paperclip,
+  ClipboardList, CheckCircle2, Clock, Paperclip, Printer,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -53,6 +54,7 @@ export function SurveyTab({
   const [files, setFiles] = useState<SurveyFile[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
+  const navigate = useNavigate();
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -269,6 +271,11 @@ export function SurveyTab({
               {submitted && canEdit && (
                 <Button variant="outline" size="sm" onClick={reopen}>Reabrir</Button>
               )}
+              {submitted && (
+                <Button variant="outline" size="sm" onClick={() => navigate(`/levantamentos/${survey.id}/relatorio`)}>
+                  <Printer className="h-4 w-4" /> Relatório de respostas
+                </Button>
+              )}
             </div>
           </div>
 
@@ -318,10 +325,16 @@ export function SurveyTab({
       )}
 
       {/* Questions + answers */}
-      {sections.map((section) => (
-        <Card key={section.name}>
+      {sections.map((section, sectionIndex) => (
+        <Card key={section.name} className="overflow-hidden">
           <CardContent className="p-4 sm:p-5 space-y-3">
-            <h3 className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">{section.name}</h3>
+            <div className="flex items-center gap-3 border-b border-border pb-3">
+              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-primary text-sm font-bold text-primary-foreground">{sectionIndex + 1}</span>
+              <div>
+                <h3 className="font-semibold">{section.name}</h3>
+                <p className="text-xs text-muted-foreground">{section.items.length} pergunta{section.items.length === 1 ? "" : "s"}</p>
+              </div>
+            </div>
             <ul className="space-y-3">
               {section.items.map((q) => {
                 const a = answers[q.id];
@@ -330,8 +343,11 @@ export function SurveyTab({
                   : a?.value || "";
                 const qFiles = files.filter((f) => f.question_id === q.id);
                 return (
-                  <li key={q.id} className="rounded-lg border border-border p-3 space-y-2">
+                  <li key={q.id} className="rounded-md border border-border bg-background p-3 space-y-2 shadow-sm">
                     <div className="flex items-start gap-2">
+                      <span className="mt-1 grid h-7 min-w-7 place-items-center rounded bg-muted text-xs font-bold text-muted-foreground">
+                        {questions.findIndex((item) => item.id === q.id) + 1}
+                      </span>
                       <div className="flex-1 space-y-2">
                         <Input
                           value={q.label} disabled={!canEdit}
@@ -393,18 +409,21 @@ export function SurveyTab({
                       )}
                     </div>
 
-                    {(answerText || qFiles.length > 0) && (
-                      <div className="rounded-md bg-muted/50 border border-border p-2.5 space-y-1">
-                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Resposta do cliente</p>
-                        {answerText && <p className="text-sm whitespace-pre-wrap">{answerText}</p>}
+                    <div className={`rounded-md border p-3 space-y-1 ${answerText || qFiles.length > 0 ? "border-primary/30 bg-primary/5" : "border-dashed border-border bg-muted/20"}`}>
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-[10px] font-semibold uppercase text-muted-foreground">Resposta do cliente</p>
+                          {answerText || qFiles.length > 0
+                            ? <Badge variant="secondary" className="text-[10px]">Respondida</Badge>
+                            : <Badge variant="outline" className="text-[10px]">Sem resposta</Badge>}
+                        </div>
+                        {answerText && <p className="pt-1 text-sm font-medium whitespace-pre-wrap">{answerText}</p>}
                         {qFiles.map((f) => (
-                          <button key={f.id} onClick={() => openFile(f)}
-                            className="text-xs text-primary underline flex items-center gap-1">
+                          <Button key={f.id} type="button" variant="link" size="sm" onClick={() => openFile(f)}
+                            className="h-auto justify-start p-0 text-xs">
                             <FileText className="h-3 w-3" /> {f.file_name}
-                          </button>
+                          </Button>
                         ))}
-                      </div>
-                    )}
+                    </div>
                   </li>
                 );
               })}
