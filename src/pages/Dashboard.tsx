@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { format, isSameDay, isAfter, startOfDay, differenceInCalendarDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CalendarPlus, MapPin, Clock, CheckCircle2, Printer, XCircle, CalendarDays, ChevronRight } from "lucide-react";
+import { CalendarPlus, MapPin, Clock, CheckCircle2, Printer, XCircle, CalendarDays, ChevronRight, BadgeCheck } from "lucide-react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { AppHeader } from "@/components/AppHeader";
@@ -24,6 +25,8 @@ type Training = {
   created_by: string;
   status?: string;
   cancellation_reason?: string | null;
+  approval_status?: string | null;
+  requested_by?: string | null;
 };
 
 const Dashboard = () => {
@@ -77,6 +80,28 @@ const Dashboard = () => {
     return Array.from(map.entries()).map(([key, items]) => ({ key, date: new Date(items[0].scheduled_at), items }));
   }, [upcoming]);
 
+  const pendingApproval = useMemo(
+    () => trainings.filter((t) => t.approval_status === "pending" && t.status !== "cancelado"),
+    [trainings]
+  );
+
+  const decide = async (id: string, approve: boolean) => {
+    const { error } = await supabase
+      .from("trainings")
+      .update(
+        approve
+          ? ({ approval_status: "approved" } as any)
+          : ({ approval_status: "rejected", status: "cancelado", cancellation_reason: "Data recusada pela equipe" } as any)
+      )
+      .eq("id", id);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success(approve ? "Data aprovada!" : "Data recusada.");
+    await load();
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <SEO
@@ -107,6 +132,43 @@ const Dashboard = () => {
             </Button>
           </div>
         </div>
+
+        {pendingApproval.length > 0 && (
+          <section className="rounded-2xl border border-amber-500/40 bg-amber-500/5 p-4 sm:p-5">
+            <div className="flex items-center gap-2">
+              <BadgeCheck className="h-5 w-5 text-amber-500" />
+              <h2 className="font-semibold">Datas solicitadas pelo cliente</h2>
+              <Badge variant="outline" className="ml-1">{pendingApproval.length}</Badge>
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
+              Confirme se conseguimos atender o cliente nessas datas.
+            </p>
+            <div className="mt-4 space-y-2">
+              {pendingApproval.map((t) => (
+                <div key={t.id} className="flex flex-col gap-3 rounded-xl border border-border bg-card p-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0">
+                    <Link to={`/treinamento/${t.id}`} className="font-medium hover:text-primary">{t.title}</Link>
+                    <div className="mt-0.5 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                      <span className="flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        {format(new Date(t.scheduled_at), "d MMM • HH:mm", { locale: ptBR })}
+                      </span>
+                      {t.requested_by && <span>Solicitado por {t.requested_by}</span>}
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={() => decide(t.id, true)}>
+                      <CheckCircle2 className="h-4 w-4" /> Aprovar
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => decide(t.id, false)}>
+                      <XCircle className="h-4 w-4" /> Recusar
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         <div className="grid lg:grid-cols-[auto_1fr] gap-6 lg:gap-8 items-start">
           <Card className="calendar-card lg:sticky lg:top-20 w-full lg:w-auto relative overflow-hidden rounded-3xl border border-border/60 bg-card/60 backdrop-blur-xl shadow-2xl shadow-primary/5">
@@ -248,6 +310,11 @@ const TrainingCard = ({ training, accepted }: { training: Training; accepted: bo
                   <XCircle className="h-3 w-3" /> Cancelada
                 </Badge>
               )}
+              {training.approval_status === "pending" && (
+                <Badge variant="outline" className="gap-1 border-amber-500/60 text-amber-600 dark:text-amber-400">
+                  <BadgeCheck className="h-3 w-3" /> Aguardando aprovação
+                </Badge>
+              )}
               {!isCancelled && accepted && (
                 <Badge variant="success" className="gap-1">
                   <CheckCircle2 className="h-3 w-3" /> Aceito
@@ -375,6 +442,11 @@ const UpcomingRow = ({ training, accepted }: { training: Training; accepted: boo
                   <CheckCircle2 className="h-3 w-3" /> Aceito
                 </Badge>
               ) : null}
+              {training.approval_status === "pending" && (
+                <Badge variant="outline" className="gap-1 h-5 border-amber-500/60 text-[10px] text-amber-600 dark:text-amber-400">
+                  <BadgeCheck className="h-3 w-3" /> Aguardando aprovação
+                </Badge>
+              )}
             </div>
             <div
               className={

@@ -860,6 +860,7 @@ export type Database = {
       }
       trainings: {
         Row: {
+          approval_status: string
           cancellation_reason: string | null
           cancelled_at: string | null
           client: string | null
@@ -872,6 +873,8 @@ export type Database = {
           id: string
           internal_notes: string | null
           location: string | null
+          requested_at: string | null
+          requested_by: string | null
           requires_acceptance: boolean
           scheduled_at: string
           status: string
@@ -881,6 +884,7 @@ export type Database = {
           workspace_id: string
         }
         Insert: {
+          approval_status?: string
           cancellation_reason?: string | null
           cancelled_at?: string | null
           client?: string | null
@@ -893,6 +897,8 @@ export type Database = {
           id?: string
           internal_notes?: string | null
           location?: string | null
+          requested_at?: string | null
+          requested_by?: string | null
           requires_acceptance?: boolean
           scheduled_at: string
           status?: string
@@ -902,6 +908,7 @@ export type Database = {
           workspace_id: string
         }
         Update: {
+          approval_status?: string
           cancellation_reason?: string | null
           cancelled_at?: string | null
           client?: string | null
@@ -914,6 +921,8 @@ export type Database = {
           id?: string
           internal_notes?: string | null
           location?: string | null
+          requested_at?: string | null
+          requested_by?: string | null
           requires_acceptance?: boolean
           scheduled_at?: string
           status?: string
@@ -1086,6 +1095,16 @@ export type Database = {
         Returns: boolean
       }
       is_workspace_member: { Args: { _workspace_id: string }; Returns: boolean }
+      request_schedule_visit: {
+        Args: {
+          _date: string
+          _item_id: string
+          _name: string
+          _time: string
+          _token: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       app_role: "admin" | "member"
