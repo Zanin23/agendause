@@ -228,7 +228,6 @@ export default function SchedulePublic() {
             <Button variant="outline" onClick={() => setRequestItem(null)}>Cancelar</Button>
             <Button onClick={sendRequest} disabled={sending}>{sending ? "Enviando…" : "Enviar data"}</Button>
           </DialogFooter>
-        </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
