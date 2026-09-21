@@ -320,7 +320,14 @@ export default function ScheduleVisual() {
 
   useEffect(() => {
     if (!flow || loading) return;
-    const timer = window.setTimeout(() => flow.fitView({ padding: 0.12, duration: 350 }), 50);
+    const timer = window.setTimeout(() => {
+      if (filter !== "all" || search.trim()) {
+        flow.fitView({ padding: 0.15, duration: 350, maxZoom: 0.9 });
+        return;
+      }
+      const zoom = window.innerWidth < 640 ? 0.72 : 0.82;
+      flow.setViewport({ x: 16, y: 18, zoom }, { duration: 350 });
+    }, 50);
     return () => window.clearTimeout(timer);
   }, [filter, flow, loading, search]);
 
@@ -408,8 +415,7 @@ export default function ScheduleVisual() {
             nodeTypes={nodeTypes}
             onInit={setFlow}
             onNodeClick={handleNodeClick}
-            fitView
-            fitViewOptions={{ padding: 0.12 }}
+            defaultViewport={{ x: 16, y: 18, zoom: 0.82 }}
             minZoom={0.15}
             maxZoom={1.5}
             nodesDraggable={false}
