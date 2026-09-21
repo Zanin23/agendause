@@ -97,7 +97,53 @@ export default function SchedulePublic() {
   const [requestTime, setRequestTime] = useState("09:00");
   const [requestName, setRequestName] = useState("");
   const [sending, setSending] = useState(false);
-  const mapRef = useRef<HTMLDivElement | null>(null);
+  const { mapNodes, mapEdges } = useMemo(() => {
+    const nodes: Node<PublicNodeData>[] = [];
+    const edges: Edge[] = [];
+    const phases = (data as any)?.phases ?? [];
+    let x = 40;
+    phases.forEach((p: any, i: number) => {
+      const items = p.items ?? [];
+      const applicable = items.filter((it: any) => it.status !== "not_applicable").length;
+      const done = items.filter((it: any) => it.status === "done").length;
+      const phaseId = `phase-${p.id}`;
+      nodes.push({
+        id: phaseId,
+        type: "publicSchedule",
+        position: { x, y: 30 },
+        draggable: false,
+        data: { kind: "phase", title: p.title, phaseNumber: i + 1, progress: applicable ? Math.round((done / applicable) * 100) : 0 },
+      });
+      if (i > 0) {
+        edges.push({
+          id: `edge-${phases[i - 1].id}-${p.id}`,
+          source: `phase-${phases[i - 1].id}`,
+          target: phaseId,
+          animated: true,
+          style: { stroke: "var(--color-primary)", strokeWidth: 2 },
+        });
+      }
+      items.forEach((it: any, idx: number) => {
+        const itemId = `item-${it.id}`;
+        nodes.push({
+          id: itemId,
+          type: "publicSchedule",
+          position: { x, y: 175 + idx * 210 },
+          draggable: false,
+          data: { kind: "item", title: it.title, item: it, onSchedule: openRequest },
+        });
+        edges.push({
+          id: `edge-${phaseId}-${itemId}`,
+          source: phaseId,
+          sourceHandle: "items",
+          target: itemId,
+          style: { stroke: "var(--color-border)", strokeWidth: 1.5 },
+        });
+      });
+      x += 340;
+    });
+    return { mapNodes: nodes, mapEdges: edges };
+  }, [data]);
 
   const openRequest = (item: any) => {
     setRequestItem(item);
