@@ -10,6 +10,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { PhaseReorderDialog } from "@/components/PhaseReorderDialog";
+import { SurveyTab } from "@/components/SurveyTab";
+import { ClipboardList, ListChecks } from "lucide-react";
 import { usePermissions } from "@/hooks/usePermissions";
 import { supabase } from "@/integrations/supabase/client";
 import { AppHeader } from "@/components/AppHeader";
@@ -55,6 +57,7 @@ export default function ScheduleEditor() {
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
   const [showSettings, setShowSettings] = useState(false);
   const [trainings, setTrainings] = useState<TrainingLite[]>([]);
+  const [tab, setTab] = useState<"cronograma" | "levantamento">("cronograma");
 
   const load = async () => {
     if (!id) return;
