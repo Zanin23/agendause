@@ -52,7 +52,7 @@ export default function SurveyReport() {
     }
 
     const [scheduleResult, questionResult, answerResult, fileResult] = await Promise.all([
-      supabase.from("schedules").select("client_name").eq("id", surveyData.schedule_id).maybeSingle(),
+      supabase.from("implementation_schedules").select("client_name").eq("id", surveyData.schedule_id).maybeSingle(),
       supabase.from("survey_questions").select("id, section, position, label").eq("survey_id", id).order("position"),
       supabase.from("survey_answers").select("question_id, value, value_json").eq("survey_id", id),
       supabase.from("survey_files").select("id, question_id, file_name, file_path").eq("survey_id", id).order("created_at"),
