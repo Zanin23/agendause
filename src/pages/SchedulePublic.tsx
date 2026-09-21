@@ -197,66 +197,36 @@ export default function SchedulePublic() {
         ))}
 
         {view === "mapa" && (
-          <div className="relative -mx-4">
-            <div className="mb-2 flex items-center justify-between gap-2 px-4">
-              <p className="text-[11px] text-muted-foreground">Arraste para o lado ou use as setas para ver todas as fases.</p>
-              <div className="flex gap-1.5">
-                <Button size="icon" variant="outline" className="h-8 w-8" aria-label="Fases anteriores" onClick={() => mapRef.current?.scrollBy({ left: -300, behavior: "smooth" })}>
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <Button size="icon" variant="outline" className="h-8 w-8" aria-label="Próximas fases" onClick={() => mapRef.current?.scrollBy({ left: 300, behavior: "smooth" })}>
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
+          <div className="-mx-4 sm:mx-0">
+            <div className="h-[72vh] min-h-[420px] overflow-hidden border-y border-border bg-card/30 sm:rounded-xl sm:border">
+              <ReactFlow
+                nodes={mapNodes}
+                edges={mapEdges}
+                nodeTypes={publicNodeTypes}
+                defaultViewport={{ x: 16, y: 18, zoom: 0.8 }}
+                minZoom={0.2}
+                maxZoom={1.4}
+                nodesDraggable={false}
+                nodesConnectable={false}
+                panOnScroll
+                zoomOnDoubleClick={false}
+                fitView
+                fitViewOptions={{ padding: 0.15, maxZoom: 0.9 }}
+              >
+                <Background color="var(--color-border)" gap={24} size={1} />
+                <Controls showInteractive={false} />
+                <MiniMap
+                  className="!hidden !border !border-border !bg-card sm:!block"
+                  nodeColor={(n) => (n.data?.kind === "phase" ? "var(--color-primary)" : "var(--color-muted)")}
+                  maskColor="color-mix(in oklch, var(--color-background) 72%, transparent)"
+                  pannable
+                  zoomable
+                />
+              </ReactFlow>
             </div>
-            <div
-              ref={mapRef}
-              onWheel={(e) => {
-                const el = mapRef.current;
-                if (!el) return;
-                if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
-                  el.scrollLeft += e.deltaY;
-                  e.preventDefault();
-                }
-              }}
-              className="overflow-x-auto overscroll-x-contain px-4 pb-3"
-            >
-              <div className="flex min-w-max items-stretch gap-4">
-                {phases.map((p: any, i: number) => (
-                  <div key={p.id} className="flex max-h-[68vh] w-[280px] shrink-0 flex-col">
-                    <div className="rounded-xl border border-primary/30 bg-primary/10 px-3 py-2">
-                      <div className="text-[10px] font-semibold uppercase tracking-wider text-primary">Fase {String(i + 1).padStart(2, "0")}</div>
-                      <div className="text-sm font-semibold leading-snug">{p.title}</div>
-                      <div className="mt-1 text-[11px] text-muted-foreground">
-                        {p.items.filter((it: any) => it.status === "done").length} de {p.items.length} concluídas
-                      </div>
-                    </div>
-                    <div className="mt-3 min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
-                      {p.items.map((it: any) => (
-                        <div key={it.id} className="rounded-xl border border-border bg-card p-3">
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="text-sm font-medium leading-snug">{it.title}</div>
-                            <span className={`text-[10px] px-2 py-1 rounded shrink-0 ${STATUS_COLORS[it.status]}`}>
-                              {STATUS_LABELS[it.status]}
-                            </span>
-                          </div>
-                          <div className="mt-1.5 space-y-1">
-                            <ItemDates it={it} />
-                            <ItemBadges it={it} />
-                          </div>
-                          {canSchedule(it) && (
-                            <Button size="sm" className="mt-2 h-8 w-full gap-1.5 text-xs" onClick={() => openRequest(it)}>
-                              <CalendarPlus className="h-3.5 w-3.5" />
-                              {scheduleLabel(it)}
-                            </Button>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <p className="px-4 pt-2 text-[11px] text-muted-foreground sm:px-0">
+              Arraste para navegar, use a rolagem para mover e os controles para aproximar ou afastar.
+            </p>
           </div>
         )}
 
