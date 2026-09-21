@@ -1,9 +1,11 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
-import { CalendarPlus, CheckCircle2, ChevronLeft, ChevronRight, Clock3, List, Network } from "lucide-react";
+import { CalendarPlus, CheckCircle2, Clock3, List, Network } from "lucide-react";
+import ReactFlow, { Background, Controls, Edge, Handle, MiniMap, Node, NodeProps, Position } from "reactflow";
+import "reactflow/dist/style.css";
 import { supabase } from "@/integrations/supabase/client";
 import { SEO } from "@/components/SEO";
 import { Button } from "@/components/ui/button";
@@ -14,6 +16,74 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Label } from "@/components/ui/label";
 import logoAsset from "@/assets/logo-use-sistemas.png.asset.json";
 import { STATUS_LABELS, STATUS_COLORS } from "@/lib/schedule";
+
+type PublicNodeData = {
+  kind: "phase" | "item";
+  title: string;
+  phaseNumber?: number;
+  progress?: number;
+  item?: any;
+  onSchedule?: (item: any) => void;
+};
+
+const PublicScheduleNode = ({ data }: NodeProps<PublicNodeData>) => {
+  if (data.kind === "phase") {
+    return (
+      <div className="w-72 rounded-xl border border-primary/40 bg-primary/10 px-4 py-3 shadow-lg shadow-primary/10">
+        <Handle type="target" position={Position.Left} className="!h-2.5 !w-2.5 !border-background !bg-primary" />
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-primary">Fase {data.phaseNumber}</span>
+          <span className="text-xs font-semibold text-muted-foreground">{data.progress}%</span>
+        </div>
+        <div className="mt-1 line-clamp-2 text-sm font-bold leading-snug" title={data.title}>{data.title}</div>
+        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
+          <div className="h-full rounded-full bg-primary" style={{ width: `${data.progress ?? 0}%` }} />
+        </div>
+        <Handle type="source" position={Position.Right} className="!h-2.5 !w-2.5 !border-background !bg-primary" />
+        <Handle type="source" position={Position.Bottom} id="items" className="!h-2.5 !w-2.5 !border-background !bg-primary" />
+      </div>
+    );
+  }
+
+  const it = data.item;
+  const canSchedule = it.status !== "done" && it.status !== "not_applicable";
+  const label = it.approval_status === "pending" || it.scheduled_date ? "Trocar data" : "Agendar data";
+
+  return (
+    <div className="w-72 rounded-xl border border-border bg-card px-4 py-3 text-card-foreground shadow-md">
+      <Handle type="target" position={Position.Top} className="!h-2 !w-2 !border-background !bg-border" />
+      <div className="flex items-start justify-between gap-2">
+        <div className="line-clamp-2 text-sm font-semibold leading-snug" title={it.title}>{it.title}</div>
+        <span className={`shrink-0 rounded px-2 py-1 text-[10px] ${STATUS_COLORS[it.status]}`}>{STATUS_LABELS[it.status]}</span>
+      </div>
+      <div className="mt-2 space-y-1">
+        {it.scheduled_date && (
+          <div className="text-xs text-muted-foreground">Visita agendada: {format(new Date(it.scheduled_date), "dd/MM/yyyy 'às' HH:mm")}</div>
+        )}
+        {it.planned_date && !it.scheduled_date && (
+          <div className="text-xs text-muted-foreground">Previsto: {format(new Date(it.planned_date), "dd/MM/yyyy")}</div>
+        )}
+        {it.approval_status === "pending" && (
+          <Badge variant="outline" className="gap-1 text-[10px]"><Clock3 className="h-3 w-3" /> Aguardando confirmação</Badge>
+        )}
+        {it.approval_status === "approved" && it.scheduled_date && (
+          <Badge variant="success" className="gap-1 text-[10px]"><CheckCircle2 className="h-3 w-3" /> Data confirmada</Badge>
+        )}
+        {it.approval_status === "rejected" && (
+          <Badge variant="destructive" className="text-[10px]">Data recusada — escolha outra</Badge>
+        )}
+      </div>
+      {canSchedule && (
+        <Button size="sm" className="nodrag mt-2 h-8 w-full gap-1.5 text-xs" onClick={() => data.onSchedule?.(it)}>
+          <CalendarPlus className="h-3.5 w-3.5" /> {label}
+        </Button>
+      )}
+    </div>
+  );
+};
+
+const publicNodeTypes = { publicSchedule: PublicScheduleNode };
+
 
 export default function SchedulePublic() {
   const { token } = useParams();
