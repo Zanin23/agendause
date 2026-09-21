@@ -130,7 +130,7 @@ export default function SchedulePublic() {
           type: "publicSchedule",
           position: { x, y: 175 + idx * 210 },
           draggable: false,
-          data: { kind: "item", title: it.title, item: it, onSchedule: openRequest },
+          data: { kind: "item", title: it.title, item: it, onSchedule: (target: any) => openRequest(target) },
         });
         edges.push({
           id: `edge-${phaseId}-${itemId}`,
