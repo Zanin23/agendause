@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
   Plus, Trash2, Link2, ArrowUp, ArrowDown, FileText, Download, RefreshCw,
-  ClipboardList, CheckCircle2, Clock, Paperclip,
+  ClipboardList, CheckCircle2, Clock, Paperclip, Printer,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -53,6 +54,7 @@ export function SurveyTab({
   const [files, setFiles] = useState<SurveyFile[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
+  const navigate = useNavigate();
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -268,6 +270,11 @@ export function SurveyTab({
               )}
               {submitted && canEdit && (
                 <Button variant="outline" size="sm" onClick={reopen}>Reabrir</Button>
+              )}
+              {submitted && (
+                <Button variant="outline" size="sm" onClick={() => navigate(`/levantamentos/${survey.id}/relatorio`)}>
+                  <Printer className="h-4 w-4" /> Relatório de respostas
+                </Button>
               )}
             </div>
           </div>
