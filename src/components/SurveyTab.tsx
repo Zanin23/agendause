@@ -96,7 +96,7 @@ export function SurveyTab({
           label: q.label,
           help_text: q.help_text ?? null,
           type: q.type,
-          options: (q.options ?? null) as any,
+          options: (q.options ?? []) as any,
           required: !!q.required,
         })),
       );
@@ -119,7 +119,7 @@ export function SurveyTab({
         label: q.label,
         help_text: q.help_text ?? null,
         type: q.type,
-        options: (q.options ?? null) as any,
+        options: (q.options ?? []) as any,
         required: !!q.required,
       })),
     );
