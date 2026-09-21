@@ -310,6 +310,11 @@ const TrainingCard = ({ training, accepted }: { training: Training; accepted: bo
                   <XCircle className="h-3 w-3" /> Cancelada
                 </Badge>
               )}
+              {training.approval_status === "pending" && (
+                <Badge variant="outline" className="gap-1 border-amber-500/60 text-amber-600 dark:text-amber-400">
+                  <BadgeCheck className="h-3 w-3" /> Aguardando aprovação
+                </Badge>
+              )}
               {!isCancelled && accepted && (
                 <Badge variant="success" className="gap-1">
                   <CheckCircle2 className="h-3 w-3" /> Aceito
