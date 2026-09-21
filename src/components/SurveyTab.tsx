@@ -218,9 +218,14 @@ export function SurveyTab({
             </p>
           </div>
           {canEdit && (
-            <Button onClick={createSurvey} disabled={creating}>
-              <Plus className="h-4 w-4" /> Criar levantamento
-            </Button>
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              <Button onClick={() => createSurvey(true)} disabled={creating}>
+                <Plus className="h-4 w-4" /> Criar com o padrão de perguntas
+              </Button>
+              <Button variant="outline" onClick={() => createSurvey(false)} disabled={creating}>
+                Criar em branco
+              </Button>
+            </div>
           )}
         </CardContent>
       </Card>
