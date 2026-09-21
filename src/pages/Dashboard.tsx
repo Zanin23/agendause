@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { format, isSameDay, isAfter, startOfDay, differenceInCalendarDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { CalendarPlus, MapPin, Clock, CheckCircle2, Printer, XCircle, CalendarDays, ChevronRight } from "lucide-react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { AppHeader } from "@/components/AppHeader";
