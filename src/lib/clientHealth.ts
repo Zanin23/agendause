@@ -42,6 +42,7 @@ export const computeHealth = (args: {
 }): HealthLevel => {
   const { scheduleStatus, total, done, overdue, dueSoon } = args;
   if (scheduleStatus === "completed" || (total > 0 && done === total)) return "done";
+  if (scheduleStatus === "paused" || scheduleStatus === "waiting_client") return "ok";
   if (overdue > 0) return "late";
   if (dueSoon > 0) return "warn";
   return "ok";

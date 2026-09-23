@@ -317,6 +317,7 @@ export default function ScheduleEditor() {
       />
       <AppHeader />
       <main className="max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-5">
+        <SchedulePauseControl part="banner" schedule={schedule} items={phases.flatMap((p) => p.items)} canEdit={canEdit} onChanged={load} />
         {/* Toolbar */}
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">

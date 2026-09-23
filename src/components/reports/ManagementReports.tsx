@@ -64,15 +64,16 @@ const STATE_CLS: Record<Activity["state"], string> = {
   pending: "bg-muted text-muted-foreground border-border",
   cancelled: "bg-muted text-muted-foreground border-border line-through",
 };
-type ProjHealth = "ok" | "warn" | "late" | "idle" | "done";
-const PH_LABEL: Record<ProjHealth, string> = { ok: "Dentro do prazo", warn: "Atenção", late: "Em atraso", idle: "Não iniciada", done: "Concluída" };
-const PH_BAR: Record<ProjHealth, string> = { ok: "bg-emerald-500", warn: "bg-amber-500", late: "bg-destructive", idle: "bg-slate-400", done: "bg-sky-500" };
+type ProjHealth = "ok" | "warn" | "late" | "idle" | "done" | "paused";
+const PH_LABEL: Record<ProjHealth, string> = { ok: "Dentro do prazo", warn: "Atenção", late: "Em atraso", idle: "Não iniciada", done: "Concluída", paused: "Pausada / aguardando cliente" };
+const PH_BAR: Record<ProjHealth, string> = { ok: "bg-emerald-500", warn: "bg-amber-500", late: "bg-destructive", idle: "bg-slate-400", done: "bg-sky-500", paused: "bg-slate-400" };
 const PH_CLS: Record<ProjHealth, string> = {
   ok: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30",
   warn: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30",
   late: "bg-destructive/10 text-destructive border-destructive/30",
   idle: "bg-muted text-muted-foreground border-border",
   done: "bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/30",
+  paused: "bg-muted text-muted-foreground border-border",
 };
 const TR_LABEL: Record<string, string> = { agendado: "Agendado", concluido: "Realizado", cancelado: "Cancelado", reagendado: "Reagendado" };
 const DEV_LABEL: Record<string, string> = { pending: "Aberta", delivered: "Concluída", rescheduled: "Reprogramada", cancelled: "Cancelada" };
@@ -142,11 +143,11 @@ export default function ManagementReports() {
     let state: Activity["state"];
     if (it.status === "done") state = "done";
     else if (it.status === "not_applicable") state = "cancelled";
-    else if (planned && planned < today) state = "late";
+    else if (planned && planned < today && !["paused", "waiting_client"].includes(sc.status)) state = "late";
     else if (it.status === "in_progress") state = "progress";
     else state = "pending";
     const end = it.status === "done" ? pd(it.done_date) ?? today : today;
-    const delay = planned && state !== "cancelled" ? Math.max(0, diffDays(end, planned)) : 0;
+    const delay = planned && state !== "cancelled" && (state === "done" || !["paused", "waiting_client"].includes(sc.status)) ? Math.max(0, diffDays(end, planned)) : 0;
     return [{ ...it, client: sc.client_name, scheduleId: sc.id, module: ph.title, state, delay }];
   }), [items, phaseMap, schedMap]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -160,13 +161,15 @@ export default function ManagementReports() {
     const late = acts.filter((a) => a.state === "late").length;
     const progress = pct(done, acts.length);
     let h: ProjHealth;
+    const st = schedMap.get(scId)?.status;
     if (acts.length && done === acts.length) h = "done";
+    else if (st === "paused" || st === "waiting_client") h = "paused";
     else if (done === 0 && !acts.some((a) => a.state === "progress")) h = late ? "late" : "idle";
     else if (late >= 3 || acts.some((a) => a.delay > 15)) h = "late";
     else if (late > 0) h = "warn";
     else h = "ok";
     return { h, progress, total: acts.length, done, late };
-  }, [activities]);
+  }, [activities, schedMap]);
 
   /* ---- filter option lists ---- */
   const opts = useMemo(() => ({
