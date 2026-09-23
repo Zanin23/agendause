@@ -66,7 +66,7 @@ const STATE_CLS: Record<Activity["state"], string> = {
 };
 type ProjHealth = "ok" | "warn" | "late" | "idle" | "done";
 const PH_LABEL: Record<ProjHealth, string> = { ok: "Dentro do prazo", warn: "Atenção", late: "Em atraso", idle: "Não iniciada", done: "Concluída" };
-const PH_BAR: Record<ProjHealth, string> = { ok: "bg-emerald-500", warn: "bg-amber-500", late: "bg-destructive", idle: "bg-muted-foreground/40", done: "bg-sky-500" };
+const PH_BAR: Record<ProjHealth, string> = { ok: "bg-emerald-500", warn: "bg-amber-500", late: "bg-destructive", idle: "bg-slate-400", done: "bg-sky-500" };
 const PH_CLS: Record<ProjHealth, string> = {
   ok: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30",
   warn: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30",
@@ -387,7 +387,7 @@ export default function ManagementReports() {
                   <Donut data={(Object.keys(PH_LABEL) as ProjHealth[]).map((h) => ({ label: PH_LABEL[h], value: projStats.filter((p) => p.h === h).length, cls: PH_BAR[h], onClick: () => quick({ projectStatus: h }, "implantacoes") }))} />
                 </Panel>
                 <Panel title="Atividades por status">
-                  <Donut data={(["done", "progress", "pending", "late"] as const).map((s) => ({ label: STATE_LABEL[s], value: valid.filter((a) => a.state === s).length, cls: { done: "bg-sky-500", progress: "bg-amber-500", pending: "bg-muted-foreground/40", late: "bg-destructive" }[s], onClick: () => s === "late" ? setTab("atividades") : quick({ activityStatus: s }, "cronograma") }))} />
+                  <Donut data={(["done", "progress", "pending", "late"] as const).map((s) => ({ label: STATE_LABEL[s], value: valid.filter((a) => a.state === s).length, cls: { done: "bg-sky-500", progress: "bg-amber-500", pending: "bg-slate-400", late: "bg-destructive" }[s], onClick: () => s === "late" ? setTab("atividades") : quick({ activityStatus: s }, "cronograma") }))} />
                 </Panel>
               </div>
               <Panel title="Andamento das implantações">
@@ -485,7 +485,7 @@ export default function ManagementReports() {
                 <Mini label="Atrasadas" value={devLate.length} tone="bad" />
               </div>
               <Panel title="Distribuição por status">
-                <HBars data={Object.entries(DEV_LABEL).map(([k, l]) => ({ label: l, value: fBilling.filter((b) => b.status === k).length, cls: k === "delivered" ? "bg-emerald-500" : k === "pending" ? "bg-amber-500" : "bg-muted-foreground/50", onClick: () => quick({ devStatus: k }) }))} />
+                <HBars data={Object.entries(DEV_LABEL).map(([k, l]) => ({ label: l, value: fBilling.filter((b) => b.status === k).length, cls: k === "delivered" ? "bg-emerald-500" : k === "pending" ? "bg-amber-500" : "bg-slate-400", onClick: () => quick({ devStatus: k }) }))} />
               </Panel>
               <TableWrap head={["Nº", "Cliente", "Solicitação", "Data", "Prazo", "Status", "Dias em aberto"]}>
                 {fBilling.sort((a, b) => b.created_at.localeCompare(a.created_at)).map((b) => {
@@ -510,7 +510,7 @@ export default function ManagementReports() {
               <div className="space-y-4">
                 <div className="grid lg:grid-cols-2 gap-4">
                   <Panel title="Pendências por responsável"><HBars data={owners.map((o) => ({ label: o, value: list.filter((a) => pendOwner(a) === o).length, cls: "bg-primary" }))} /></Panel>
-                  <Panel title="Pendências por status"><HBars data={(["late", "progress", "pending"] as const).map((s) => ({ label: STATE_LABEL[s], value: list.filter((a) => a.state === s).length, cls: s === "late" ? "bg-destructive" : s === "progress" ? "bg-amber-500" : "bg-muted-foreground/50", onClick: () => quick({ activityStatus: s }) }))} /></Panel>
+                  <Panel title="Pendências por status"><HBars data={(["late", "progress", "pending"] as const).map((s) => ({ label: STATE_LABEL[s], value: list.filter((a) => a.state === s).length, cls: s === "late" ? "bg-destructive" : s === "progress" ? "bg-amber-500" : "bg-slate-400", onClick: () => quick({ activityStatus: s }) }))} /></Panel>
                 </div>
                 <label className="inline-flex items-center gap-2 text-sm"><input type="checkbox" checked={onlyOverdue} onChange={(e) => setOnlyOverdue(e.target.checked)} className="accent-primary" />Somente vencidas</label>
                 <ActTable acts={list} showPriority />
@@ -752,16 +752,16 @@ function HBars({ data }: { data: { label: string; value: number; cls: string; on
 
 function Donut({ data }: { data: { label: string; value: number; cls: string; onClick?: () => void }[] }) {
   const total = data.reduce((s, d) => s + d.value, 0);
-  const COLORS: Record<string, string> = { "bg-emerald-500": "#10b981", "bg-amber-500": "#f59e0b", "bg-destructive": "hsl(var(--destructive))", "bg-sky-500": "#0ea5e9", "bg-muted-foreground/40": "hsl(var(--muted-foreground) / .4)" };
+  const COLORS: Record<string, string> = { "bg-emerald-500": "stroke-emerald-500", "bg-amber-500": "stroke-amber-500", "bg-destructive": "stroke-destructive", "bg-sky-500": "stroke-sky-500", "bg-slate-400": "stroke-slate-400" };
   let acc = 0;
   const r = 40, c = 2 * Math.PI * r;
   return (
     <div className="flex items-center gap-6">
       <svg viewBox="0 0 100 100" className="h-32 w-32 shrink-0 -rotate-90">
-        <circle cx="50" cy="50" r={r} fill="none" stroke="hsl(var(--muted))" strokeWidth="14" />
+        <circle cx="50" cy="50" r={r} fill="none" className="stroke-muted" strokeWidth="14" />
         {total > 0 && data.map((d) => {
           const len = (d.value / total) * c; const off = acc; acc += len;
-          return d.value ? <circle key={d.label} cx="50" cy="50" r={r} fill="none" stroke={COLORS[d.cls] || "hsl(var(--primary))"} strokeWidth="14" strokeDasharray={`${len} ${c - len}`} strokeDashoffset={-off} className="cursor-pointer hover:opacity-80" onClick={d.onClick}><title>{`${d.label}: ${d.value}`}</title></circle> : null;
+          return d.value ? <circle key={d.label} cx="50" cy="50" r={r} fill="none" strokeWidth="14" strokeDasharray={`${len} ${c - len}`} strokeDashoffset={-off} className={`${COLORS[d.cls] || "stroke-primary"} cursor-pointer hover:opacity-80`} onClick={d.onClick}><title>{`${d.label}: ${d.value}`}</title></circle> : null;
         })}
       </svg>
       <div className="flex-1 space-y-1.5">
@@ -812,7 +812,7 @@ function PlanVsDone({ acts }: { acts: Activity[] }) {
           <Tooltip key={k}><TooltipTrigger asChild>
             <div className="flex-1 flex flex-col items-center gap-1 h-full justify-end">
               <div className="w-full flex items-end gap-0.5 h-full">
-                <div className="flex-1 rounded-t bg-muted-foreground/40" style={{ height: `${(plan[i] / max) * 100}%` }} />
+                <div className="flex-1 rounded-t bg-slate-400" style={{ height: `${(plan[i] / max) * 100}%` }} />
                 <div className="flex-1 rounded-t bg-primary" style={{ height: `${(done[i] / max) * 100}%` }} />
               </div>
               <span className="text-[10px] text-muted-foreground">{format(new Date(k + "-01T00:00:00"), "MMM/yy", { locale: ptBR })}</span>
@@ -820,7 +820,7 @@ function PlanVsDone({ acts }: { acts: Activity[] }) {
           </TooltipTrigger><TooltipContent>Planejado {plan[i]} · Realizado {done[i]}</TooltipContent></Tooltip>
         ))}
       </div>
-      <div className="flex gap-4 mt-2 text-xs text-muted-foreground"><span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm bg-muted-foreground/40" />Planejado</span><span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm bg-primary" />Realizado</span></div>
+      <div className="flex gap-4 mt-2 text-xs text-muted-foreground"><span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm bg-slate-400" />Planejado</span><span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm bg-primary" />Realizado</span></div>
     </div>
   );
 }
@@ -835,10 +835,10 @@ function Evolution({ acts }: { acts: Activity[] }) {
   return (
     <div>
       <svg viewBox={`-6 -6 ${W + 12} ${H + 12}`} className="w-full h-40">
-        {[0, 50, 100].map((g) => <line key={g} x1="0" x2={W} y1={y(g)} y2={y(g)} stroke="hsl(var(--border))" strokeDasharray="3 3" />)}
-        <path d={path(planned)} fill="none" stroke="hsl(var(--muted-foreground))" strokeWidth="2" strokeDasharray="4 3" />
-        <path d={path(real)} fill="none" stroke="hsl(var(--primary))" strokeWidth="2.5" />
-        {real.map((v, i) => <circle key={i} cx={x(i)} cy={y(v)} r="3.5" fill="hsl(var(--primary))"><title>{`${ks[i]}: realizado ${Math.round(v)}% · planejado ${Math.round(planned[i])}%`}</title></circle>)}
+        {[0, 50, 100].map((g) => <line key={g} x1="0" x2={W} y1={y(g)} y2={y(g)} className="stroke-border" strokeDasharray="3 3" />)}
+        <path d={path(planned)} fill="none" className="stroke-muted-foreground" strokeWidth="2" strokeDasharray="4 3" />
+        <path d={path(real)} fill="none" className="stroke-primary" strokeWidth="2.5" />
+        {real.map((v, i) => <circle key={i} cx={x(i)} cy={y(v)} r="3.5" className="fill-primary"><title>{`${ks[i]}: realizado ${Math.round(v)}% · planejado ${Math.round(planned[i])}%`}</title></circle>)}
       </svg>
       <div className="flex justify-between text-[10px] text-muted-foreground">{ks.map((k) => <span key={k}>{format(new Date(k + "-01T00:00:00"), "MMM/yy", { locale: ptBR })}</span>)}</div>
     </div>
