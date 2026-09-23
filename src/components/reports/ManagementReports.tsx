@@ -411,7 +411,7 @@ export default function ManagementReports() {
                 <Mini label="Atrasadas" value={lateActs.length} tone="bad" onClick={() => setTab("atividades")} />
                 <Mini label="Futuras" value={valid.filter((a) => a.state !== "done" && pd(a.planned_date) && pd(a.planned_date)! >= today).length} />
               </div>
-              <Seg value={chronoView} onChange={setChronoView} options={[["grafico", "Gráfico"], ["tabela", "Tabela"], ["projeto", "Por projeto"]]} />
+              <Seg<typeof chronoView> value={chronoView} onChange={setChronoView} options={[["grafico", "Gráfico"], ["tabela", "Tabela"], ["projeto", "Por projeto"]]} />
               {chronoView === "grafico" && (
                 <div className="grid lg:grid-cols-2 gap-4">
                   <Panel title="Planejado x Realizado (por mês)"><PlanVsDone acts={valid} /></Panel>
@@ -439,7 +439,7 @@ export default function ManagementReports() {
                   value: lateActs.filter((a) => bucketOf(a.delay) === k).length, cls: "bg-destructive", onClick: () => setLateBucket(k),
                 }))} />
               </Panel>
-              <Seg value={lateBucket} onChange={setLateBucket} options={[["all", "Todas"], ["0", "Hoje"], ["1-7", "1–7 dias"], ["8-15", "8–15 dias"], ["16-30", "16–30 dias"], ["30+", "+30 dias"]]} />
+              <Seg<typeof lateBucket> value={lateBucket} onChange={setLateBucket} options={[["all", "Todas"], ["0", "Hoje"], ["1-7", "1–7 dias"], ["8-15", "8–15 dias"], ["16-30", "16–30 dias"], ["30+", "+30 dias"]]} />
               <ActTable acts={lateActs.filter((a) => lateBucket === "all" || bucketOf(a.delay) === lateBucket)} showPriority />
             </div>
           )}
