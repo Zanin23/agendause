@@ -37,6 +37,15 @@ export const CommandPalette = () => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
         setOpen((o) => !o);
+        return;
+      }
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === "a") {
+        const t = e.target as HTMLElement | null;
+        const typing = t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable);
+        if (typing) return;
+        e.preventDefault();
+        setOpen(false);
+        navigate("/agenda/imprimir");
       }
     };
     window.addEventListener("keydown", onKey);
