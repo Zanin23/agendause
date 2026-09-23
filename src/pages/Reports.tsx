@@ -35,7 +35,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
-import Clients from "@/pages/Clients";
+import ManagementReports from "@/components/reports/ManagementReports";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -262,7 +262,7 @@ const Reports = () => {
         <div className="flex items-center gap-2 border-b border-border">
           {([
             { id: "aceites", label: "Aceites" },
-            { id: "clientes", label: "Clientes" },
+            { id: "clientes", label: "Clientes e relatórios" },
           ] as const).map((t) => (
             <button
               key={t.id}
@@ -280,7 +280,7 @@ const Reports = () => {
         </div>
 
         {tab === "clientes" ? (
-          <Clients embedded />
+          <ManagementReports />
         ) : (
         <>
         <WeeklyAIReport
