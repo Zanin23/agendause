@@ -248,7 +248,7 @@ const Reports = () => {
         path="/relatorios"
       />
       <AppHeader />
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-6">
+      <main className={`${tab === "clientes" ? "max-w-7xl" : "max-w-5xl"} mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-6`}>
         <div className="flex items-end justify-between flex-wrap gap-4">
           <div className="min-w-0">
             <BackButton to="/" />
