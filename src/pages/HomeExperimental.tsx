@@ -7,6 +7,7 @@ import {
   ClipboardList,
   Receipt,
   StickyNote,
+  Building2,
   ArrowUpRight,
   Sparkles,
   type LucideIcon,
