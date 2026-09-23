@@ -57,7 +57,7 @@ type ClientRow = {
   visits: number;
 };
 
-export default function Clients() {
+export default function Clients({ embedded = false }: { embedded?: boolean }) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { hasScreenPermission, hasSchedulePermission, loading: roleLoading } = usePermissions();
@@ -256,23 +256,30 @@ export default function Clients() {
   );
 
   return (
-    <div className="min-h-screen bg-background">
-      <SEO
-        title="Clientes — TreinaCheck"
-        description="Histórico de visitas, levantamentos e saúde dos prazos de implantação por cliente."
-        path="/clientes"
-      />
-      <AppHeader />
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-6">
-        <div>
-          <BackButton to="/" />
-          <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight mt-2 flex items-center gap-2">
-            <Building2 className="h-7 w-7 text-primary" /> Clientes
-          </h1>
-          <p className="text-muted-foreground mt-1 text-sm">
-            Quem já agendou, o que respondeu no levantamento e como está a saúde dos prazos.
-          </p>
-        </div>
+    <div className={embedded ? "" : "min-h-screen bg-background"}>
+      {!embedded && (
+        <>
+          <SEO
+            title="Clientes — TreinaCheck"
+            description="Histórico de visitas, levantamentos e saúde dos prazos de implantação por cliente."
+            path="/clientes"
+          />
+          <AppHeader />
+        </>
+      )}
+      <main className={embedded ? "space-y-6" : "max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-6"}>
+        {!embedded && (
+          <div>
+            <BackButton to="/" />
+            <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight mt-2 flex items-center gap-2">
+              <Building2 className="h-7 w-7 text-primary" /> Clientes
+            </h1>
+            <p className="text-muted-foreground mt-1 text-sm">
+              Quem já agendou, o que respondeu no levantamento e como está a saúde dos prazos.
+            </p>
+          </div>
+        )}
+
 
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
           <StatTile
