@@ -20,12 +20,13 @@ type Props = {
   items: Item[];
   canEdit: boolean;
   onChanged: () => void;
+  part: "button" | "banner";
 };
 
 const d0 = (s: string) => new Date(s.slice(0, 10) + "T00:00:00");
 const iso = (d: Date) => format(d, "yyyy-MM-dd");
 
-export function SchedulePauseControl({ schedule, items, canEdit, onChanged }: Props) {
+export function SchedulePauseControl({ schedule, items, canEdit, onChanged, part }: Props) {
   const paused = isPausedStatus(schedule.status);
   const [openPause, setOpenPause] = useState(false);
   const [openResume, setOpenResume] = useState(false);
@@ -73,7 +74,7 @@ export function SchedulePauseControl({ schedule, items, canEdit, onChanged }: Pr
 
   return (
     <>
-      {paused && (
+      {part === "banner" && paused && (
         <div className="flex flex-col sm:flex-row sm:items-center gap-3 rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3">
           <div className="flex items-start gap-3 flex-1 min-w-0">
             {schedule.status === "waiting_client" ? <UserRoundX className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" /> : <PauseCircle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />}
@@ -85,7 +86,7 @@ export function SchedulePauseControl({ schedule, items, canEdit, onChanged }: Pr
           {canEdit && <Button size="sm" onClick={startResume}><PlayCircle className="h-4 w-4 mr-1.5" />Retomar cronograma</Button>}
         </div>
       )}
-      {!paused && canEdit && schedule.status !== "completed" && (
+      {part === "button" && !paused && canEdit && schedule.status !== "completed" && (
         <Button variant="ghost" size="sm" className="px-2 sm:px-3" onClick={() => setOpenPause(true)}>
           <PauseCircle className="h-4 w-4" /> <span className="hidden sm:inline">Pausar</span>
         </Button>
