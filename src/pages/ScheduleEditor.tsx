@@ -11,6 +11,7 @@ import {
 import { toast } from "sonner";
 import { PhaseReorderDialog } from "@/components/PhaseReorderDialog";
 import { SurveyTab } from "@/components/SurveyTab";
+import { SchedulePauseControl } from "@/components/SchedulePauseControl";
 import { ClipboardList, ListChecks } from "lucide-react";
 import { usePermissions } from "@/hooks/usePermissions";
 import { supabase } from "@/integrations/supabase/client";
@@ -40,6 +41,7 @@ type Phase = { id: string; schedule_id: string; position: number; title: string;
 type Schedule = {
   id: string; client_name: string; client_email: string | null; start_date: string;
   cadence: string; modality: string; use_team: string[]; status: string;
+  paused_at?: string | null; pause_reason?: string | null;
   observations: string | null; public_token: string | null; accepted_at: string | null; accepted_by: string | null;
 };
 type TrainingLite = {
@@ -315,6 +317,7 @@ export default function ScheduleEditor() {
       />
       <AppHeader />
       <main className="max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-5">
+        <SchedulePauseControl part="banner" schedule={schedule} items={phases.flatMap((p) => p.items)} canEdit={canEdit} onChanged={load} />
         {/* Toolbar */}
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
@@ -327,6 +330,7 @@ export default function ScheduleEditor() {
             </div>
           </div>
           <div className="flex flex-wrap gap-1 sm:gap-1.5">
+            <SchedulePauseControl part="button" schedule={schedule} items={phases.flatMap((p) => p.items)} canEdit={canEdit} onChanged={load} />
             <Button variant="ghost" size="sm" className="px-2 sm:px-3" onClick={() => navigate(`/cronogramas/${schedule.id}/visualizar`)}>
               <Network className="h-4 w-4" /> <span className="hidden sm:inline">Organograma</span>
             </Button>
