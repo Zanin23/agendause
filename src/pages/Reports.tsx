@@ -257,6 +257,30 @@ const Reports = () => {
           </div>
         </div>
 
+        <div className="flex items-center gap-2 border-b border-border">
+          {([
+            { id: "aceites", label: "Aceites" },
+            { id: "clientes", label: "Clientes" },
+          ] as const).map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => setTab(t.id)}
+              className={`px-4 py-2 text-sm font-medium -mb-px border-b-2 transition-colors ${
+                tab === t.id
+                  ? "border-primary text-foreground"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        {tab === "clientes" ? (
+          <Clients embedded />
+        ) : (
+        <>
         <WeeklyAIReport
           rangeStart={rangeStart}
           rangeEnd={rangeEnd}
