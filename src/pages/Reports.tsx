@@ -35,7 +35,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
-import Clients from "@/pages/Clients";
+import ManagementReports from "@/components/reports/ManagementReports";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -248,7 +248,7 @@ const Reports = () => {
         path="/relatorios"
       />
       <AppHeader />
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-6">
+      <main className={`${tab === "clientes" ? "max-w-7xl" : "max-w-5xl"} mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-6`}>
         <div className="flex items-end justify-between flex-wrap gap-4">
           <div className="min-w-0">
             <BackButton to="/" />
@@ -262,7 +262,7 @@ const Reports = () => {
         <div className="flex items-center gap-2 border-b border-border">
           {([
             { id: "aceites", label: "Aceites" },
-            { id: "clientes", label: "Clientes" },
+            { id: "clientes", label: "Clientes e relatórios" },
           ] as const).map((t) => (
             <button
               key={t.id}
@@ -280,7 +280,7 @@ const Reports = () => {
         </div>
 
         {tab === "clientes" ? (
-          <Clients embedded />
+          <ManagementReports />
         ) : (
         <>
         <WeeklyAIReport
