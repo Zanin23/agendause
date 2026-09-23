@@ -5,6 +5,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { WorkspaceProvider } from "@/hooks/useWorkspace";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { CommandPalette } from "@/components/CommandPalette";
 import Auth from "./pages/Auth";
 import Home from "./pages/Home";
 import HomeExperimental from "./pages/HomeExperimental";
@@ -53,6 +54,7 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <WorkspaceProvider>
+          <CommandPalette />
           <Routes>
             <Route path="/auth" element={<Auth />} />
             <Route path="/aceite/:id" element={<GuestAccept />} />
