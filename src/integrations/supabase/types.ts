@@ -334,6 +334,8 @@ export type Database = {
           modality: Database["public"]["Enums"]["schedule_modality"]
           observations: string | null
           owner_id: string
+          pause_reason: string | null
+          paused_at: string | null
           public_token: string | null
           start_date: string
           status: string
@@ -353,6 +355,8 @@ export type Database = {
           modality?: Database["public"]["Enums"]["schedule_modality"]
           observations?: string | null
           owner_id: string
+          pause_reason?: string | null
+          paused_at?: string | null
           public_token?: string | null
           start_date: string
           status?: string
@@ -372,6 +376,8 @@ export type Database = {
           modality?: Database["public"]["Enums"]["schedule_modality"]
           observations?: string | null
           owner_id?: string
+          pause_reason?: string | null
+          paused_at?: string | null
           public_token?: string | null
           start_date?: string
           status?: string
