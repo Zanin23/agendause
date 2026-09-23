@@ -35,6 +35,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
+import Clients from "@/pages/Clients";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -53,6 +54,7 @@ type TrainingRow = {
 const Reports = () => {
   const { isAdmin, hasScreenPermission, loading: roleLoading } = usePermissions();
   const [rows, setRows] = useState<TrainingRow[]>([]);
+  const [tab, setTab] = useState<"aceites" | "clientes">("aceites");
   const [query, setQuery] = useState("");
   const [filterClient, setFilterClient] = useState<string>("__all__");
   const [filterStatus, setFilterStatus] = useState<"all" | "agendado" | "cancelado" | "concluido">("all");
@@ -257,6 +259,30 @@ const Reports = () => {
           </div>
         </div>
 
+        <div className="flex items-center gap-2 border-b border-border">
+          {([
+            { id: "aceites", label: "Aceites" },
+            { id: "clientes", label: "Clientes" },
+          ] as const).map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => setTab(t.id)}
+              className={`px-4 py-2 text-sm font-medium -mb-px border-b-2 transition-colors ${
+                tab === t.id
+                  ? "border-primary text-foreground"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        {tab === "clientes" ? (
+          <Clients embedded />
+        ) : (
+        <>
         <WeeklyAIReport
           rangeStart={rangeStart}
           rangeEnd={rangeEnd}
@@ -492,6 +518,8 @@ const Reports = () => {
               ))}
             </div>
           </>
+         )}
+        </>
         )}
       </main>
     </div>
