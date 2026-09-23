@@ -432,6 +432,7 @@ const Admin = () => {
                 <div className="grid grid-cols-2 gap-3 p-3 rounded-lg border bg-muted/30">
                   {[
                     { id: 'schedules', label: 'Cronogramas' },
+                    { id: 'clients', label: 'Clientes' },
                     { id: 'reports', label: 'Relatórios' },
                     { id: 'notes', label: 'Notas' }
                   ].map((screen) => (
@@ -569,6 +570,7 @@ const Admin = () => {
               <div className="grid grid-cols-2 gap-3 p-3 rounded-lg border bg-muted/30">
                 {[
                   { id: 'schedules', label: 'Cronogramas' },
+                  { id: 'clients', label: 'Clientes' },
                   { id: 'reports', label: 'Relatórios' },
                   { id: 'notes', label: 'Notas' }
                 ].map((screen) => (

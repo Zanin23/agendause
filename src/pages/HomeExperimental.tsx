@@ -115,6 +115,7 @@ const HomeExperimental = () => {
       },
       { to: "/agenda", label: "Agenda", hint: "Calendário e visitas", icon: CalendarDays, span: "sm:col-span-3 lg:col-span-4" },
       { to: "/cronogramas", label: "Cronogramas", hint: "ERP e PDV", icon: ClipboardList, span: "sm:col-span-3 lg:col-span-4" },
+      { to: "/clientes", label: "Clientes", hint: "Histórico e prazos", icon: Building2, span: "sm:col-span-3 lg:col-span-4" },
       { to: "/cobrar", label: "A cobrar", hint: "Pendências da semana", icon: Receipt, span: "sm:col-span-2 lg:col-span-4" },
       { to: "/relatorios", label: "Aceites", hint: "Termos e impressão", icon: FileCheck2, span: "sm:col-span-2 lg:col-span-4" },
     ],
