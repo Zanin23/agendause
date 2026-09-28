@@ -566,7 +566,7 @@ const EventCard = ({
       tabIndex={0}
     >
       <div
-        className="agenda-event relative border-2 rounded-sm px-2.5 py-2 pr-7 text-[13px] leading-snug bg-white hover:brightness-[0.98]"
+        className={`agenda-event relative border-2 rounded-sm px-2.5 py-2 pr-7 text-[13px] leading-snug bg-white ${isAllDay ? "" : "hover:brightness-[0.98]"}`}
         style={{
           borderColor,
           background: isCancelled
@@ -574,7 +574,7 @@ const EventCard = ({
             : isDone
               ? "#EEF1FB"
               : isAllDay
-                ? "repeating-linear-gradient(135deg, #FFF4E8 0 8px, #FFFFFF 8px 16px)"
+                ? "#FFF4E8"
                 : "white",
           borderLeftWidth: isAllDay ? 6 : undefined,
         }}
