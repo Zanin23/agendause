@@ -29,6 +29,7 @@ export const CreateTrainingDialog = ({ open, onOpenChange, onCreated }: Props) =
   const [visitType, setVisitType] = useState<VisitType>("presencial");
   const [requiresAcceptance, setRequiresAcceptance] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [allDay, setAllDay] = useState(false);
   const [companies, setCompanies] = useState<string[]>([]);
 
   useEffect(() => {
@@ -55,7 +56,7 @@ export const CreateTrainingDialog = ({ open, onOpenChange, onCreated }: Props) =
   const reset = () => {
     setTitle(""); setClient(""); setDescription(""); setDate(""); setTime("09:00");
     setDuration(60); setLocation(""); setInternalNotes(""); setVisitType("presencial");
-    setRequiresAcceptance(true);
+    setRequiresAcceptance(true); setAllDay(false);
   };
 
   const submit = async (e: React.FormEvent) => {
@@ -177,22 +178,40 @@ export const CreateTrainingDialog = ({ open, onOpenChange, onCreated }: Props) =
                   <CalendarClock className="h-3 w-3" /> Quando
                 </Label>
                 <span className="text-[11px] tracking-[0.22em] uppercase text-muted-foreground">
-                  {prettyDate} {date && `· ${time}`}
+                  {prettyDate} {date && (allDay ? "· Dia todo" : `· ${time}`)}
                 </span>
               </div>
+              <label className="flex items-center gap-2 mb-4 text-sm cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={allDay}
+                  onChange={(e) => {
+                    const v = e.target.checked;
+                    setAllDay(v);
+                    if (v) { setTime("08:00"); setDuration(600); }
+                    else { setTime("09:00"); setDuration(60); }
+                  }}
+                  className="h-4 w-4 accent-primary"
+                />
+                Visita de dia inteiro (08:00 às 18:00)
+              </label>
               <div className="grid grid-cols-2 gap-4 items-end sm:grid-cols-3">
-                <div className="space-y-1.5">
+                <div className={`space-y-1.5 ${allDay ? "col-span-2 sm:col-span-3" : ""}`}>
                   <Label htmlFor="date" className="text-[10px] tracking-[0.22em] uppercase text-muted-foreground">Data</Label>
                   <Input id="date" type="date" value={date} onChange={(e) => setDate(e.target.value)} required className={`${underline} font-display text-base h-10`} />
                 </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="time" className="text-[10px] tracking-[0.22em] uppercase text-muted-foreground">Hora</Label>
-                  <Input id="time" type="time" value={time} onChange={(e) => setTime(e.target.value)} required className={`${underline} font-display text-base h-10`} />
-                </div>
-                <div className="space-y-1.5 col-span-2 sm:col-span-1">
-                  <Label htmlFor="dur" className="text-[10px] tracking-[0.22em] uppercase text-muted-foreground">Duração (min)</Label>
-                  <Input id="dur" type="number" min={5} value={duration} onChange={(e) => setDuration(Number(e.target.value))} className={`${underline} font-display text-base h-10`} />
-                </div>
+                {!allDay && (
+                  <>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="time" className="text-[10px] tracking-[0.22em] uppercase text-muted-foreground">Hora</Label>
+                      <Input id="time" type="time" value={time} onChange={(e) => setTime(e.target.value)} required className={`${underline} font-display text-base h-10`} />
+                    </div>
+                    <div className="space-y-1.5 col-span-2 sm:col-span-1">
+                      <Label htmlFor="dur" className="text-[10px] tracking-[0.22em] uppercase text-muted-foreground">Duração (min)</Label>
+                      <Input id="dur" type="number" min={5} value={duration} onChange={(e) => setDuration(Number(e.target.value))} className={`${underline} font-display text-base h-10`} />
+                    </div>
+                  </>
+                )}
               </div>
             </section>
 
