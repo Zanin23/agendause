@@ -545,6 +545,7 @@ const EventCard = ({
   const borderColor = isCancelled ? RED : isDone ? BLUE : ORANGE;
   const showConfirmation = !isCancelled;
   const teamConfirmed = !!t.confirmed_at;
+  const isAllDay = hour === "08:00" && t.duration_minutes >= 600;
   return (
     <div
       className="block cursor-grab active:cursor-grabbing"
@@ -568,9 +569,24 @@ const EventCard = ({
         className="agenda-event relative border-2 rounded-sm px-2.5 py-2 pr-7 text-[13px] leading-snug bg-white hover:bg-orange-50/40 transition-colors"
         style={{
           borderColor,
-          background: isCancelled ? "#FDECEC" : isDone ? "#EEF1FB" : "white",
+          background: isCancelled
+            ? "#FDECEC"
+            : isDone
+              ? "#EEF1FB"
+              : isAllDay
+                ? "repeating-linear-gradient(135deg, #FFF4E8 0 8px, #FFFFFF 8px 16px)"
+                : "white",
+          borderLeftWidth: isAllDay ? 6 : undefined,
         }}
       >
+        {isAllDay && (
+          <div
+            className="agenda-event-allday -mx-2.5 -mt-2 mb-1.5 px-2.5 py-0.5 text-[9.5px] font-bold uppercase tracking-widest flex items-center gap-1"
+            style={{ background: borderColor, color: "#fff" }}
+          >
+            <span aria-hidden>☀</span> Dia inteiro · 08:00 às 18:00
+          </div>
+        )}
         {(() => {
           const vt = getVisitType(t.visit_type);
           const Icon = vt.icon;
@@ -622,7 +638,7 @@ const EventCard = ({
               textDecoration: isCancelled ? "line-through" : "none",
             }}
           >
-            {hour} - {label}
+            {isAllDay ? label : `${hour} - ${label}`}
           </span>
         </div>
         {t.client?.trim() && t.title && t.client.trim() !== t.title && (
@@ -637,7 +653,7 @@ const EventCard = ({
           className="agenda-event-meta text-[10px] mt-0.5 text-neutral-600 flex flex-wrap gap-x-2"
           style={{ color: isCancelled ? RED : "#555" }}
         >
-          <span>{t.duration_minutes} min</span>
+          {!isAllDay && <span>{t.duration_minutes} min</span>}
           {t.location && <span>• {t.location}</span>}
         </div>
         {isResched && t.description && (
