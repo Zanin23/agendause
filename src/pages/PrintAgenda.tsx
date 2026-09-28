@@ -545,7 +545,7 @@ const EventCard = ({
   const borderColor = isCancelled ? RED : isDone ? BLUE : ORANGE;
   const showConfirmation = !isCancelled;
   const teamConfirmed = !!t.confirmed_at;
-  const isAllDay = hour === "08:00" && t.duration_minutes >= 600;
+  const isAllDay = Number(t.duration_minutes) >= 480;
   return (
     <div
       className="block cursor-grab active:cursor-grabbing"
@@ -566,7 +566,7 @@ const EventCard = ({
       tabIndex={0}
     >
       <div
-        className="agenda-event relative border-2 rounded-sm px-2.5 py-2 pr-7 text-[13px] leading-snug bg-white hover:bg-orange-50/40 transition-colors"
+        className="agenda-event relative border-2 rounded-sm px-2.5 py-2 pr-7 text-[13px] leading-snug bg-white hover:brightness-[0.98]"
         style={{
           borderColor,
           background: isCancelled

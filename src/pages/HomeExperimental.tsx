@@ -36,7 +36,7 @@ const HomeExperimental = () => {
   const [now, setNow] = useState(() => new Date());
   const heroRef = useRef<HTMLDivElement>(null);
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
-  const [cursor, setCursor] = useState<{ x: number; y: number } | null>(null);
+  const spotRef = useRef<HTMLDivElement>(null);
   const [progress, setProgress] = useState(0);
   const [sparks, setSparks] = useState<Spark[]>([]);
   const sparkId = useRef(0);
@@ -60,13 +60,24 @@ const HomeExperimental = () => {
 
   // cursor spotlight
   useEffect(() => {
-    const onMove = (e: MouseEvent) => setCursor({ x: e.clientX, y: e.clientY });
-    const onLeave = () => setCursor(null);
+    let raf = 0;
+    const onMove = (e: MouseEvent) => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        const el = spotRef.current;
+        if (!el) return;
+        el.style.left = e.clientX + "px";
+        el.style.top = e.clientY + "px";
+        el.style.opacity = "1";
+      });
+    };
+    const onLeave = () => { if (spotRef.current) spotRef.current.style.opacity = "0"; };
     window.addEventListener("mousemove", onMove);
     window.addEventListener("mouseleave", onLeave);
     return () => {
       window.removeEventListener("mousemove", onMove);
       window.removeEventListener("mouseleave", onLeave);
+      cancelAnimationFrame(raf);
     };
   }, []);
 
@@ -140,8 +151,8 @@ const HomeExperimental = () => {
         path="/inicio-experimental"
       />
       <div className="xp-progress" style={{ width: `${progress * 100}%` }} aria-hidden="true" />
-      {cursor && (
-        <div className="xp-spotlight hidden md:block" style={{ left: cursor.x, top: cursor.y }} aria-hidden="true" />
+      {true && (
+        <div ref={spotRef} className="xp-spotlight hidden md:block" style={{ opacity: 0 }} aria-hidden="true" />
       )}
       <AppHeader />
 
