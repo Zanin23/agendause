@@ -544,6 +544,25 @@ const TrainingDetail = () => {
             <Button variant="ghost" size="sm" onClick={openSchedule} className="h-6 px-2 -my-1 text-xs">
               <Pencil className="h-3 w-3" /> Editar data
             </Button>
+            <label className="flex items-center gap-1.5 text-xs cursor-pointer select-none">
+              <input
+                type="checkbox"
+                className="h-3.5 w-3.5 accent-primary"
+                checked={Number(training.duration_minutes) >= 480}
+                onChange={async (e) => {
+                  const on = e.target.checked;
+                  const d = new Date(training.scheduled_at);
+                  if (on) d.setHours(8, 0, 0, 0);
+                  const upd = { scheduled_at: d.toISOString(), duration_minutes: on ? 600 : 60 };
+                  const prev = { scheduled_at: training.scheduled_at, duration_minutes: training.duration_minutes };
+                  setTraining({ ...training, ...upd });
+                  const { error } = await supabase.from("trainings").update(upd).eq("id", training.id);
+                  if (error) { setTraining({ ...training, ...prev }); toast.error(error.message); }
+                  else toast.success(on ? "Visita marcada como dia inteiro" : "Visita voltou a ter horário (1h)");
+                }}
+              />
+              Dia inteiro (08:00–18:00)
+            </label>
           </div>
 
           <VisitTypeSelector
