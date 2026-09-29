@@ -10,11 +10,45 @@ Deno.serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
     const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-    if (!LOVABLE_API_KEY || !SUPABASE_URL || !SERVICE_KEY) {
+    const ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY');
+    if (!LOVABLE_API_KEY || !SUPABASE_URL || !SERVICE_KEY || !ANON_KEY) {
       return new Response(JSON.stringify({ error: 'Missing server configuration' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
+    }
+
+    // ---------------------------------------------------------------------
+    // AUTENTICAÇÃO OBRIGATÓRIA
+    // Antes desta função respondia a qualquer chamada anônima com os dados de
+    // TODOS os workspaces (nomes de clientes, cancelamentos e motivos).
+    // Agora exige uma sessão válida e restringe o relatório à base ativa de
+    // quem chamou — o mesmo critério que o RLS já aplica no banco.
+    // ---------------------------------------------------------------------
+    const unauthorized = (msg: string, status: number) =>
+      new Response(JSON.stringify({ error: msg }), {
+        status,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+
+    const token = (req.headers.get('Authorization') ?? '').replace('Bearer ', '').trim();
+    if (!token) return unauthorized('Não autenticado', 401);
+
+    const { data: userData, error: userErr } = await createClient(SUPABASE_URL, ANON_KEY)
+      .auth.getUser(token);
+    if (userErr || !userData?.user) return unauthorized('Sessão inválida', 401);
+    const caller = userData.user;
+
+    const service = createClient(SUPABASE_URL, SERVICE_KEY);
+    const { data: callerProfile } = await service
+      .from('profiles')
+      .select('active_workspace_id')
+      .eq('id', caller.id)
+      .maybeSingle();
+    const workspaceId = (callerProfile as { active_workspace_id?: string | null } | null)
+      ?.active_workspace_id;
+    if (!workspaceId) {
+      return unauthorized('Selecione uma base de trabalho antes de gerar o relatório', 400);
     }
 
     const body = await req.json().catch(() => ({}));
@@ -55,12 +89,16 @@ Deno.serve(async (req) => {
     }
     const periodDays = Math.max(1, Math.round((weekEnd.getTime() - weekStart.getTime()) / (24 * 60 * 60 * 1000)));
 
-    const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
+    const supabase = service;
 
     const buildStats = async (start: Date, end: Date) => {
+      // Escopo por workspace: sem este filtro a função somava as visitas de
+      // todas as bases. As tabelas de aceite abaixo já ficam restritas porque
+      // derivam dos `ids` retornados aqui.
       const { data: trainings, error: tErr } = await supabase
         .from('trainings')
         .select('id, title, client, description, scheduled_at, duration_minutes, location, status, cancellation_reason, cancelled_at')
+        .eq('workspace_id', workspaceId)
         .gte('scheduled_at', start.toISOString())
         .lt('scheduled_at', end.toISOString())
         .order('scheduled_at', { ascending: true });
@@ -221,7 +259,7 @@ ${trainingsLines || '(nenhuma visita na semana)'}
     const aiJson = await aiRes.json();
     const report = aiJson?.choices?.[0]?.message?.content ?? '';
 
-    return new Response(JSON.stringify({ stats, previousStats, comparison, report, weeks: weeksCount, period_days: periodDays }), {
+    return new Response(JSON.stringify({ stats, previousStats, comparison, report, weeks: weeksCount, period_days: periodDays, workspace_id: workspaceId }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

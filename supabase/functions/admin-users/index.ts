@@ -28,6 +28,21 @@ Deno.serve(async (req) => {
     if (userErr || !userData?.user) return json({ error: 'Sessão inválida' }, 401);
     const caller = userData.user;
 
+    // Trilha de auditoria. Grava com service_role, que ignora RLS; a tabela só
+    // pode ser lida por administradores. Falha aqui não pode derrubar a ação.
+    const audit = async (action: string, targetId?: string, detail?: unknown) => {
+      try {
+        await admin.from('admin_audit_log').insert({
+          actor_id: caller.id,
+          action,
+          target_id: targetId ?? null,
+          detail: (detail ?? null) as Record<string, unknown> | null,
+        });
+      } catch (e) {
+        console.error('audit log falhou:', e);
+      }
+    };
+
     const { data: isAdmin, error: roleErr } = await admin.rpc('has_role', {
       _user_id: caller.id,
       _role: 'admin',
@@ -89,9 +104,11 @@ Deno.serve(async (req) => {
           ? 'Esta senha é muito comum e foi bloqueada por segurança. Use uma senha mais forte (letras, números e símbolos).'
           : /at least|should be/i.test(msg)
             ? 'A senha não atende aos requisitos mínimos de segurança.'
-            : msg || 'Não foi possível atualizar a senha';
+                : msg || 'Não foi possível atualizar a senha';
         return json({ error: friendly }, 400);
       }
+      // Nunca registrar a senha, nem um trecho dela.
+      await audit('set_password', userId);
       return json({ success: true });
     }
 
@@ -128,6 +145,8 @@ Deno.serve(async (req) => {
           .eq('role', 'admin');
         if (error) throw error;
       }
+      // Promoção/rebaixamento de administrador agora fica registrado.
+      await audit(makeAdmin ? 'grant_admin' : 'revoke_admin', userId);
       return json({ success: true });
     }
 
@@ -137,18 +156,38 @@ Deno.serve(async (req) => {
       const schedules = body?.schedule_permissions || {};
       if (!userId) return json({ error: 'user_id é obrigatório' }, 400);
 
+      // BUG CORRIGIDO: o upsert gravava role:'user' fixo. Aplicado sobre um
+      // administrador, criava uma SEGUNDA linha (user_id,'user') em vez de
+      // atualizar a linha (user_id,'admin') existente — o usuário ficava com
+      // dois papéis e o usePermissions fazia o merge dos dois conjuntos de
+      // permissão. Agora descobrimos o papel real e atualizamos a linha certa.
+      const { data: existing, error: readErr } = await admin
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId);
+      if (readErr) throw readErr;
+
+      const currentRole =
+        (existing ?? []).some((r) => r.role === 'admin') ? 'admin'
+        : (existing ?? [])[0]?.role ?? 'user';
+
       const { error } = await admin
         .from('user_roles')
         .upsert(
-          { 
-            user_id: userId, 
-            role: 'user', // Default to user if not specified, usually updated by set_admin
-            screen_permissions: screens, 
-            schedule_permissions: schedules 
-          }, 
+          {
+            user_id: userId,
+            role: currentRole,
+            screen_permissions: screens,
+            schedule_permissions: schedules,
+          },
           { onConflict: 'user_id,role' }
         );
       if (error) throw error;
+      await audit('set_permissions', userId, {
+        role: currentRole,
+        screens_count: Array.isArray(screens) ? screens.length : 0,
+        schedules_count: Object.keys(schedules || {}).length,
+      });
       return json({ success: true });
     }
 
@@ -191,6 +230,13 @@ Deno.serve(async (req) => {
           schedule_permissions: role === 'admin' ? {} : schedules
         });
       if (roleError) throw roleError;
+
+      // Criar usuário já admin é o evento de maior privilégio do sistema:
+      // registrado com o papel concedido. A senha nunca vai para o log.
+      await audit('create_user', newUser.id, {
+        email,
+        granted_role: role === 'admin' ? 'admin' : 'user',
+      });
 
       return json({ success: true, user_id: newUser.id });
     }

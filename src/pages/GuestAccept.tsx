@@ -70,7 +70,7 @@ const GuestAccept = () => {
   const downloadAttachment = async (att: AttachmentRow) => {
     try {
       const { data, error } = await supabase.functions.invoke("attachment-signed-url", {
-        body: { attachment_id: att.id },
+        body: { attachment_id: att.id, training_id: id },
       });
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);

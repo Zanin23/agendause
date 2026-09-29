@@ -1,1 +1,53 @@
 project_id = "psgekwifthuzduhpreay"
+
+# =============================================================================
+# Verificação de JWT por Edge Function
+# =============================================================================
+# Este arquivo tinha apenas a linha do project_id, o que deixava o verify_jwt no
+# padrão definido pelo deploy da plataforma. Na prática três das quatro funções
+# ficaram chamáveis por qualquer pessoa na internet, sem nenhuma credencial.
+#
+# Regra adotada: verify_jwt = true em tudo, com duas exceções justificadas.
+# =============================================================================
+
+# Gestão de usuários. Já validava identidade e papel admin no próprio código.
+[functions.admin-users]
+verify_jwt = true
+
+# Relatório executivo. Passou a exigir sessão válida e a restringir os dados à
+# base ativa de quem chamou.
+[functions.weekly-report]
+verify_jwt = true
+
+# EXCEÇÃO 1 — precisa atender convidado anônimo no fluxo /aceite/:id, que não
+# tem conta no sistema. A autorização é feita DENTRO da função: o anexo precisa
+# pertencer ao treinamento informado e o chamador precisa ou ter JWT da equipe
+# na mesma base, ou o treinamento precisa ser de aceite público.
+[functions.attachment-signed-url]
+verify_jwt = false
+
+# EXCEÇÃO 2 — invocada pelo pg_cron a cada minuto, e o pg_cron não envia JWT.
+# Protegida pelo header X-Cron-Secret comparado com o segredo CRON_SECRET.
+# O job do pg_cron PRECISA ser atualizado para enviar esse header, senão os
+# lembretes param de ser disparados. Ver a migration
+# 20260928120000_security_hardening_and_indexes.sql, seção "pg_cron".
+[functions.send-billing-notifications]
+verify_jwt = false
+
+# =============================================================================
+# Segredos do projeto (NÃO ficam neste arquivo nem no repositório)
+# =============================================================================
+#   supabase secrets set CRON_SECRET="$(openssl rand -hex 32)"
+#
+#   SUPABASE_URL                 injetado pela plataforma
+#   SUPABASE_ANON_KEY            injetado pela plataforma
+#   SUPABASE_SERVICE_ROLE_KEY    injetado pela plataforma
+#   LOVABLE_API_KEY              já configurado — weekly-report
+#   VAPID_PRIVATE_KEY            já configurado — send-billing-notifications
+#   VAPID_SUBJECT                já configurado
+#   CRON_SECRET                  NOVO, obrigatório — send-billing-notifications
+#
+# Sem CRON_SECRET definido, send-billing-notifications responde 500
+# "Missing server configuration" e nenhum lembrete é enviado. Defina o segredo
+# ANTES de publicar a função.
+# =============================================================================

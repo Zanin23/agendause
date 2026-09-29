@@ -14,6 +14,7 @@ const corsHeaders = {
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const VAPID_PUBLIC =
   "BLypB4mj8qUUp6Dp-4vBMOMEZuzEYiEMap_k7_Zzbj5ZVqkqK3h5bqiTLbYcXzbNoP8sx_YcNowGBg-ozUlIao0";
 const VAPID_PRIVATE = Deno.env.get("VAPID_PRIVATE_KEY")!;
@@ -54,8 +55,53 @@ function currentWeekStart(tz = "America/Sao_Paulo") {
   return d.toISOString().slice(0, 10);
 }
 
+// Comparação em tempo constante: evitar que o segredo vaze medindo o tempo de
+// resposta caractere a caractere.
+function safeEqual(a: string, b: string): boolean {
+  if (typeof a !== "string" || typeof b !== "string" || a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+
+  const reject = (msg: string, status: number) =>
+    new Response(JSON.stringify({ error: msg }), {
+      status,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+
+  // ---------------------------------------------------------------------
+  // AUTENTICAÇÃO OBRIGATÓRIA
+  // Esta função é invocada pelo pg_cron a cada minuto, e o pg_cron não envia
+  // JWT. Por isso ela NÃO pode usar verify_jwt = true (quebraria o agendador).
+  // A proteção passa a ser um segredo compartilhado no header X-Cron-Secret.
+  //
+  // Sem isto, qualquer pessoa na internet podia chamar { "force": true } e
+  // disparar Web Push para TODOS os usuários inscritos, sem limite de
+  // frequência.
+  //
+  // Dois chamadores são aceitos:
+  //   · pg_cron   → header X-Cron-Secret confere com CRON_SECRET
+  //   · o próprio usuário logado (botão "enviar notificação de teste") → JWT
+  //     válido, e nesse caso o disparo é restrito ao user_id dele
+  // ---------------------------------------------------------------------
+  const CRON_SECRET = Deno.env.get("CRON_SECRET");
+  if (!CRON_SECRET) return reject("Missing server configuration", 500);
+
+  const isCron = safeEqual(req.headers.get("X-Cron-Secret") ?? "", CRON_SECRET);
+
+  let callerId: string | null = null;
+  if (!isCron) {
+    const token = (req.headers.get("Authorization") ?? "").replace("Bearer ", "").trim();
+    if (!token) return reject("Não autorizado", 401);
+    const { data: userData, error: userErr } = await createClient(SUPABASE_URL, ANON_KEY)
+      .auth.getUser(token);
+    if (userErr || !userData?.user) return reject("Sessão inválida", 401);
+    callerId = userData.user.id;
+  }
 
   const supabase = createClient(SUPABASE_URL, SERVICE_ROLE);
   const { hhmm, weekday } = nowInTz();
@@ -67,6 +113,14 @@ Deno.serve(async (req) => {
     body = await req.json();
   } catch (_) {}
 
+  // `force` sem `user_id` disparava para a base inteira. Agora exige alvo
+  // explícito, e um usuário autenticado só pode mirar em si mesmo.
+  const force = body?.force === true;
+  let forcedUserId: string | undefined =
+    typeof body?.user_id === "string" && body.user_id.trim() ? body.user_id.trim() : undefined;
+  if (callerId) forcedUserId = callerId;
+  if (force && !forcedUserId) return reject("force exige user_id", 400);
+
   // Find users whose settings match this minute
   const { data: settings, error: settingsErr } = await supabase
     .from("billing_notification_settings")
@@ -74,14 +128,14 @@ Deno.serve(async (req) => {
     .eq("enabled", true);
 
   if (settingsErr) {
-    return new Response(JSON.stringify({ error: settingsErr.message }), {
+    return new Response(JSON.stringify({ error: "Falha ao consultar as configurações" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 
   const targetUsers = (settings || []).filter((s: any) => {
-    if (body?.force && (!body.user_id || body.user_id === s.user_id)) return true;
+    if (force) return s.user_id === forcedUserId;
     const times: string[] = Array.isArray(s.times) ? s.times : [];
     const weekdays: number[] = Array.isArray(s.weekdays) ? s.weekdays : [];
     return times.includes(hhmm) && weekdays.includes(weekday);
