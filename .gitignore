@@ -22,3 +22,19 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Ambiente — nunca versionar, nem mesmo a chave pública anon.
+# O .env entrou no commit 1b50a22 porque esta regra não existia.
+.env
+.env.*
+!.env.example
+
+# Lockfiles de package managers que o projeto não usa.
+# Mantenha apenas package-lock.json (npm).
+bun.lockb
+yarn.lock
+pnpm-lock.yaml
+
+# Cobertura de testes
+coverage
+*.tsbuildinfo

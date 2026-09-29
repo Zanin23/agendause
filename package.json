@@ -1,14 +1,19 @@
 {
-  "name": "vite_react_shadcn_ts",
+  "name": "treinacheck",
+  "version": "0.1.0",
   "private": true,
-  "version": "0.0.0",
+  "description": "Agenda de visitas e treinamentos, cronogramas de implantação, aceite assinado pelo cliente e solicitações a cobrar — Use Sistemas.",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "build:dev": "vite build --mode development",
+    "preview": "vite preview",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "lint:fix": "eslint . --fix",
+    "typecheck": "tsc -p tsconfig.app.json --noEmit",
+    "check": "npm run lint && npm run typecheck && npm run build",
+    "audit:high": "npm audit --audit-level=high"
   },
   "dependencies": {
     "@hello-pangea/dnd": "^18.0.1",
@@ -27,6 +32,7 @@
     "@tanstack/react-query": "^5.83.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "date-fns": "^3.6.0",
     "html2canvas": "^1.4.1",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.8",
@@ -61,6 +67,5 @@
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.38.0",
     "vite": "^5.4.19"
-  },
-  "packageManager": "yarn@4.10.3+sha512.c38cafb5c7bb273f3926d04e55e1d8c9dfa7d9c3ea1f36a4868fa028b9e5f72298f0b7f401ad5eb921749eb012eb1c3bb74bf7503df3ee43fd600d14a018266f"
+  }
 }
