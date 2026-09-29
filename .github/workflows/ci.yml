@@ -1,0 +1,133 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  qualidade:
+    name: Lint · Typecheck · Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Instalar dependências
+        run: npm ci
+
+      # -------------------------------------------------------------------
+      # O lint hoje falha com 203 erros herdados (195 são `any` explícito).
+      # Entrar com continue-on-error permite ligar o CI imediatamente sem
+      # bloquear o trabalho. Remova a flag assim que o número chegar a zero —
+      # acompanhe pelo resumo impresso no final deste job.
+      # -------------------------------------------------------------------
+      - name: Lint
+        id: lint
+        continue-on-error: true
+        run: npm run lint 2>&1 | tee /tmp/lint.txt
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build
+        run: npm run build
+
+      - name: Auditoria de dependências
+        continue-on-error: true
+        run: npm audit --audit-level=high
+
+      # -------------------------------------------------------------------
+      # Guardas de higiene. Cada um destes já foi um problema real neste repo.
+      # -------------------------------------------------------------------
+      - name: Bloquear .env versionado
+        run: |
+          if git ls-files | grep -qE '^\.env$'; then
+            echo "::error::.env está versionado. Rode 'git rm --cached .env'."
+            exit 1
+          fi
+          echo "ok: .env não está versionado"
+
+      - name: Bloquear lockfile duplicado
+        run: |
+          ERRO=0
+          for f in bun.lockb yarn.lock pnpm-lock.yaml; do
+            if git ls-files | grep -q "^$f$"; then
+              echo "::error::$f está versionado. O projeto usa npm — mantenha só package-lock.json."
+              ERRO=1
+            fi
+          done
+          [ "$ERRO" -eq 0 ] && echo "ok: lockfile único"
+
+      - name: Bloquear dependência fantasma
+        run: |
+          # Toda biblioteca importada em src/ precisa estar declarada em
+          # package.json. date-fns era importada sem ser declarada e só
+          # resolvia por vir transitivamente via react-day-picker.
+          node - <<'NODE'
+          const fs = require('fs');
+          const path = require('path');
+          const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+          const declaradas = new Set([
+            ...Object.keys(pkg.dependencies || {}),
+            ...Object.keys(pkg.devDependencies || {}),
+          ]);
+          const externas = new Set();
+          const walk = (dir) => {
+            for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+              const p = path.join(dir, e.name);
+              if (e.isDirectory()) walk(p);
+              else if (/\.(ts|tsx)$/.test(e.name)) {
+                const src = fs.readFileSync(p, 'utf8');
+                for (const m of src.matchAll(/from\s+["']([^"'./][^"']*)["']/g)) {
+                  let nome = m[1];
+                  if (nome.startsWith('@/')) continue;
+                  if (nome.startsWith('node:')) continue;
+                  const partes = nome.split('/');
+                  externas.add(nome.startsWith('@') ? partes.slice(0, 2).join('/') : partes[0]);
+                }
+              }
+            }
+          };
+          walk('src');
+          const faltando = [...externas].filter((n) => !declaradas.has(n)).sort();
+          if (faltando.length) {
+            console.log('::error::Importadas mas não declaradas em package.json: ' + faltando.join(', '));
+            process.exit(1);
+          }
+          console.log('ok: ' + externas.size + ' dependências externas, todas declaradas');
+          NODE
+
+      - name: Orçamento de bundle
+        run: |
+          MAIOR=$(ls -S dist/assets/*.js | head -1)
+          KB=$(( $(gzip -c "$MAIOR" | wc -c) / 1024 ))
+          echo "Maior chunk: $MAIOR — ${KB} kB gzip"
+          # Hoje são ~674 kB. O alarme dispara acima de 750 kB para pegar
+          # regressão sem bloquear o estado atual. Reduza o limite conforme
+          # o code-splitting por rota for entrando (meta: 250 kB).
+          if [ "$KB" -gt 750 ]; then
+            echo "::error::Chunk de ${KB} kB gzip acima do orçamento de 750 kB. Use React.lazy por rota."
+            exit 1
+          fi
+
+      - name: Resumo
+        if: always()
+        run: |
+          echo "### Resultado do CI" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.lint.outcome }}" = "failure" ]; then
+            TOTAL=$(grep -oE '[0-9]+ problems?' /tmp/lint.txt | tail -1 || echo "desconhecido")
+            echo "- ⚠️ Lint: **$TOTAL** (não bloqueante por enquanto)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- ✅ Lint limpo — remova o continue-on-error do passo de lint" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "- Typecheck e Build: verificados nos passos acima" >> $GITHUB_STEP_SUMMARY
