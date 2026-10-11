@@ -45,6 +45,17 @@ const Auth = () => {
   };
 
   const handleGoogle = async () => {
+    // Fora dos domínios Lovable (ex.: Vercel), usa o Google OAuth nativo do Supabase.
+    const host = window.location.hostname;
+    const onLovable = /(^|\.)(lovable\.app|lovableproject\.com|lovableproject-dev\.com)$/.test(host);
+    if (!onLovable) {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: window.location.origin },
+      });
+      if (error) toast.error("Erro ao entrar com Google");
+      return;
+    }
     const result = await lovable.auth.signInWithOAuth("google", {
       redirect_uri: window.location.origin,
     });
