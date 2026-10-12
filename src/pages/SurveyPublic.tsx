@@ -138,7 +138,7 @@ export default function SurveyPublic() {
           <p className="text-sm text-muted-foreground">{survey.client_name}</p>
           {survey.intro && <p className="text-sm">{survey.intro}</p>}
           {done && (
-            <Badge className="bg-emerald-600 text-white hover:bg-emerald-600">
+            <Badge className="bg-emerald-700 text-white hover:bg-emerald-700">
               <CheckCircle2 className="h-3 w-3 mr-1" /> Respostas enviadas
             </Badge>
           )}

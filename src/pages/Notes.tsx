@@ -303,9 +303,9 @@ const Notes = () => {
           <hr className="vintage-rule mt-6" />
         </header>
 
-        <div className="grid lg:grid-cols-[300px_1fr] gap-8 lg:gap-10">
+        <div className="grid min-w-0 grid-cols-1 gap-8 lg:grid-cols-[minmax(0,300px)_minmax(0,1fr)] lg:gap-10">
           {/* Sidebar empresas — directory style */}
-          <aside className="space-y-4 lg:sticky lg:top-6 lg:self-start">
+          <aside className="min-w-0 space-y-4 lg:sticky lg:top-6 lg:self-start">
             <div className="flex items-center justify-between">
               <span className="text-[11px] tracking-[0.28em] uppercase text-muted-foreground">
                 Diretório
@@ -326,8 +326,9 @@ const Notes = () => {
                   </DialogHeader>
                   <form onSubmit={addCompany} className="space-y-4">
                     <div className="space-y-1.5">
-                      <Label>Nome da empresa</Label>
+                      <Label htmlFor="note-new-company">Nome da empresa</Label>
                       <Input
+                        id="note-new-company"
                         autoFocus
                         value={newCompanyName}
                         onChange={(e) => setNewCompanyName(e.target.value)}
@@ -351,6 +352,7 @@ const Notes = () => {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
               <Input
+                aria-label="Buscar empresa"
                 placeholder="Buscar empresa…"
                 value={filter}
                 onChange={(e) => setFilter(e.target.value)}
@@ -358,7 +360,7 @@ const Notes = () => {
               />
             </div>
 
-            <ul className="max-h-[60vh] overflow-y-auto -mx-2 pr-1">
+            <ul className="max-h-[60vh] min-w-0 overflow-y-auto -mx-2 pr-1">
               {filteredCompanies.length === 0 && (
                 <li className="px-2 py-3 text-sm text-muted-foreground italic">
                   Nenhuma empresa ainda.
@@ -371,7 +373,7 @@ const Notes = () => {
                   <li key={c}>
                     <button
                       onClick={() => setSelectedCompany(c)}
-                      className={`group w-full text-left px-2 py-2.5 flex items-center gap-3 border-b border-border/50 transition-colors ${
+                      className={`group min-w-0 w-full text-left px-2 py-2.5 flex items-center gap-3 border-b border-border/50 transition-colors ${
                         active ? "text-primary" : "hover:text-foreground text-muted-foreground"
                       }`}
                     >
@@ -420,19 +422,23 @@ const Notes = () => {
               </div>
 
               <form onSubmit={submit} className="relative space-y-5">
-                <div className="grid sm:grid-cols-[1fr_180px] gap-4">
-                  <div className="space-y-1.5">
-                    <Label className="text-[11px] tracking-[0.22em] uppercase text-muted-foreground">
+                <div className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-[minmax(0,1fr)_180px]">
+                  <div className="min-w-0 space-y-1.5">
+                    <Label
+                      htmlFor={companies.length > 0 ? "note-company-select" : "note-company-input"}
+                      className="text-[11px] tracking-[0.22em] uppercase text-muted-foreground"
+                    >
                       Empresa
                     </Label>
                     {companies.length > 0 && (
                       <select
+                        id="note-company-select"
                         value={selectedCompany}
                         onChange={(e) => {
                           setSelectedCompany(e.target.value);
                           setCompanyInput("");
                         }}
-                        className="flex h-10 w-full bg-transparent border-x-0 border-t-0 border-b border-border rounded-none px-0 text-base font-display focus-visible:outline-none focus-visible:border-primary"
+                        className="flex h-10 w-full min-w-0 max-w-full bg-transparent border-x-0 border-t-0 border-b border-border rounded-none px-0 text-base font-display focus-visible:outline-none focus-visible:border-primary"
                       >
                         <option value="">— Nova empresa —</option>
                         {companies.map((c) => (
@@ -442,6 +448,8 @@ const Notes = () => {
                     )}
                     {!selectedCompany && (
                       <Input
+                        id="note-company-input"
+                        aria-label="Nome da nova empresa"
                         placeholder="Nome da empresa"
                         value={companyInput}
                         onChange={(e) => setCompanyInput(e.target.value)}
@@ -450,10 +458,11 @@ const Notes = () => {
                     )}
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-[11px] tracking-[0.22em] uppercase text-muted-foreground">
+                    <Label htmlFor="note-date" className="text-[11px] tracking-[0.22em] uppercase text-muted-foreground">
                       Dia
                     </Label>
                     <Input
+                      id="note-date"
                       type="date"
                       value={noteDate}
                       onChange={(e) => setNoteDate(e.target.value)}
@@ -462,10 +471,11 @@ const Notes = () => {
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-[11px] tracking-[0.22em] uppercase text-muted-foreground">
+                  <Label htmlFor="note-content" className="text-[11px] tracking-[0.22em] uppercase text-muted-foreground">
                     Anotação
                   </Label>
                   <Textarea
+                    id="note-content"
                     rows={3}
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
@@ -481,7 +491,8 @@ const Notes = () => {
                       <input
                         type="file"
                         multiple
-                        className="hidden"
+                        aria-label="Adicionar anexos à nova anotação"
+                        className="sr-only"
                         onChange={(e) => {
                           const files = e.target.files ? Array.from(e.target.files) : [];
                           setPendingFiles((p) => [...p, ...files]);
@@ -516,7 +527,7 @@ const Notes = () => {
                           type="button"
                           onClick={() => setPendingFiles((p) => p.filter((_, idx) => idx !== i))}
                           className="h-5 w-5 inline-flex items-center justify-center rounded-full hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
-                          title="Remover"
+                          aria-label={`Remover anexo pendente ${f.name}`}
                         >
                           <X className="h-3 w-3" />
                         </button>
@@ -548,11 +559,11 @@ const Notes = () => {
               </div>
             ) : (
               <div className="space-y-10">
-                <div className="flex items-baseline justify-between">
-                  <h2 className="font-display text-3xl leading-none">
+                <div className="flex min-w-0 items-baseline justify-between gap-3">
+                  <h2 className="min-w-0 flex-1 break-words font-display text-2xl leading-tight sm:text-3xl">
                     {selectedCompany}
                   </h2>
-                  <span className="text-[11px] tracking-[0.22em] uppercase text-muted-foreground">
+                  <span className="shrink-0 text-[11px] tracking-[0.22em] uppercase text-muted-foreground">
                     {visibleNotes.length} {visibleNotes.length === 1 ? "entrada" : "entradas"}
                   </span>
                 </div>
@@ -589,11 +600,13 @@ const Notes = () => {
                                 <div className="space-y-2">
                                   <Input
                                     type="date"
+                                    aria-label="Data da anotação"
                                     value={editDate}
                                     onChange={(e) => setEditDate(e.target.value)}
                                   />
                                   <Textarea
                                     rows={3}
+                                    aria-label="Texto da anotação"
                                     value={editContent}
                                     onChange={(e) => setEditContent(e.target.value)}
                                   />
@@ -645,7 +658,7 @@ const Notes = () => {
                                                   type="button"
                                                   onClick={() => removeAttachment(a)}
                                                   className="h-5 w-5 inline-flex items-center justify-center rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                                                  title="Remover anexo"
+                                                  aria-label={`Remover anexo ${a.file_name}`}
                                                 >
                                                   <X className="h-3 w-3" />
                                                 </button>
@@ -673,14 +686,27 @@ const Notes = () => {
                                         <input
                                           type="file"
                                           multiple
-                                          className="hidden"
+                                          aria-label={`Adicionar anexo à anotação de ${n.company}`}
+                                          className="sr-only"
                                           onChange={(e) => addFilesToExistingNote(n.id, e.target.files)}
                                         />
                                       </label>
-                                      <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => startEdit(n)}>
+                                      <Button
+                                        size="icon"
+                                        variant="ghost"
+                                        className="h-8 w-8"
+                                        onClick={() => startEdit(n)}
+                                        aria-label={`Editar anotação de ${n.company}, ${formatDateLong(n.note_date)}`}
+                                      >
                                         <Pencil className="h-4 w-4" />
                                       </Button>
-                                      <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => remove(n.id)}>
+                                      <Button
+                                        size="icon"
+                                        variant="ghost"
+                                        className="h-8 w-8 text-destructive"
+                                        onClick={() => remove(n.id)}
+                                        aria-label={`Remover anotação de ${n.company}, ${formatDateLong(n.note_date)}`}
+                                      >
                                         <Trash2 className="h-4 w-4" />
                                       </Button>
                                     </div>

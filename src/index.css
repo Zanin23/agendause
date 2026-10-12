@@ -21,8 +21,8 @@
     --color-popover: oklch(22% 0.05 255);
     --color-popover-foreground: oklch(96% 0.02 75);
 
-    /* Primary: burnt orange ~#E85D2F */
-    --color-primary: oklch(64% 0.19 38);
+    /* Primary: accessible burnt orange, tuned for cream text and paper backgrounds */
+    --color-primary: oklch(50% 0.18 38);
     --color-primary-foreground: oklch(98% 0.015 75);
 
     /* Secondary: deep wine red ~#7A1F1A */
@@ -41,7 +41,7 @@
 
     --color-border: oklch(32% 0.05 255);
     --color-input: oklch(32% 0.05 255);
-    --color-ring: oklch(64% 0.19 38);
+    --color-ring: oklch(50% 0.18 38);
 
     --radius: 1.2rem;
 
@@ -52,7 +52,7 @@
 
     --editorial-text: oklch(96% 0.02 75);
     --editorial-text-light: oklch(72% 0.03 70);
-    --editorial-tag: oklch(64% 0.19 38);
+    --editorial-tag: oklch(50% 0.18 38);
     --editorial-tag-bg: oklch(26% 0.04 255);
     --editorial-hover: oklch(24% 0.05 255);
 
@@ -96,7 +96,7 @@
     --color-popover-foreground: oklch(96% 0.005 255);
 
     --color-primary: oklch(68% 0.17 255);
-    --color-primary-foreground: oklch(100% 0 0);
+    --color-primary-foreground: oklch(12% 0.012 255.5);
 
     --color-secondary: oklch(78% 0.18 338);
     --color-secondary-foreground: oklch(19.5% 0.012 255.5);
@@ -167,7 +167,7 @@
     --color-popover: oklch(98% 0.02 75);
     --color-popover-foreground: oklch(22% 0.05 255);
 
-    --color-primary: oklch(60% 0.2 38);
+    --color-primary: oklch(50% 0.18 38);
     --color-primary-foreground: oklch(98% 0.02 75);
 
     --color-secondary: oklch(88% 0.05 70);
@@ -177,22 +177,22 @@
     --color-accent-foreground: oklch(96% 0.02 75);
 
     --color-muted: oklch(91% 0.03 75);
-    --color-muted-foreground: oklch(40% 0.04 255);
+    --color-muted-foreground: oklch(37% 0.04 255);
 
     --color-destructive: oklch(52% 0.22 25);
     --color-destructive-foreground: oklch(98% 0.01 75);
 
     --color-border: oklch(85% 0.04 70);
     --color-input: oklch(85% 0.04 70);
-    --color-ring: oklch(60% 0.2 38);
+    --color-ring: oklch(50% 0.18 38);
 
     --primary-light: oklch(72% 0.17 45);
     --primary-glow: oklch(80% 0.15 60);
     --accent-red: oklch(50% 0.2 25);
 
     --editorial-text: oklch(22% 0.05 255);
-    --editorial-text-light: oklch(40% 0.04 255);
-    --editorial-tag: oklch(60% 0.2 38);
+    --editorial-text-light: oklch(37% 0.04 255);
+    --editorial-tag: oklch(50% 0.18 38);
     --editorial-tag-bg: oklch(91% 0.04 75);
     --editorial-hover: oklch(93% 0.03 75);
 
@@ -967,13 +967,13 @@ html.a11y-bold body b {
   font-weight: 800 !important;
 }
 html.a11y-contrast {
-  --muted-foreground: var(--foreground);
+  --color-muted-foreground: var(--color-foreground);
 }
 html.a11y-contrast body {
   letter-spacing: 0.01em;
 }
 html.a11y-contrast .text-muted-foreground {
-  color: hsl(var(--foreground) / 0.92) !important;
+  color: var(--color-foreground) !important;
 }
 html.a11y-contrast a,
 html.a11y-contrast button,
@@ -981,7 +981,7 @@ html.a11y-contrast [role="button"] {
   text-decoration-thickness: 2px;
 }
 html.a11y-contrast *:focus-visible {
-  outline: 3px solid hsl(var(--primary)) !important;
+  outline: 3px solid var(--color-ring) !important;
   outline-offset: 2px !important;
 }
 

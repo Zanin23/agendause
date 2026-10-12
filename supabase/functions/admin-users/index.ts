@@ -142,7 +142,7 @@ Deno.serve(async (req) => {
         .upsert(
           { 
             user_id: userId, 
-            role: 'user', // Default to user if not specified, usually updated by set_admin
+            role: 'member', // Keep in sync with public.app_role: admin | member
             screen_permissions: screens, 
             schedule_permissions: schedules 
           }, 
@@ -186,7 +186,7 @@ Deno.serve(async (req) => {
         .from('user_roles')
         .insert({ 
           user_id: newUser.id, 
-          role: role === 'admin' ? 'admin' : 'user',
+          role: role === 'admin' ? 'admin' : 'member',
           screen_permissions: role === 'admin' ? [] : screens,
           schedule_permissions: role === 'admin' ? {} : schedules
         });

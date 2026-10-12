@@ -1,6 +1,7 @@
 import { Helmet } from "react-helmet-async";
 
 const SITE_URL = "https://agendause.lovable.app";
+const SITE_IMAGE = `${SITE_URL}/logo-use-sistemas.png`;
 
 interface SEOProps {
   title: string;
@@ -18,8 +19,12 @@ export function SEO({ title, description, path }: SEOProps) {
       <meta property="og:title" content={title} />
       <meta property="og:description" content={description} />
       <meta property="og:url" content={url} />
+      <meta property="og:image" content={SITE_IMAGE} />
+      <meta property="og:image:alt" content="Logo da Use Sistemas" />
       <meta name="twitter:title" content={title} />
       <meta name="twitter:description" content={description} />
+      <meta name="twitter:image" content={SITE_IMAGE} />
+      <meta name="twitter:image:alt" content="Logo da Use Sistemas" />
     </Helmet>
   );
 }

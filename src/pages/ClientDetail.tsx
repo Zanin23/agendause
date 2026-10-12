@@ -468,7 +468,7 @@ export default function ClientDetail() {
                           </div>
                           <div className="flex flex-wrap items-center gap-2">
                             {pending && (
-                              <Badge className="bg-amber-500 text-white hover:bg-amber-500">
+                              <Badge className="bg-amber-500 text-amber-950 hover:bg-amber-500">
                                 Data pedida{t.requested_by ? ` por ${t.requested_by}` : " pelo cliente"}
                               </Badge>
                             )}
@@ -640,35 +640,35 @@ export default function ClientDetail() {
             </div>
           </div>
 
-          <div className="grid gap-2">
+          <div className="grid min-w-0 gap-2">
             {phases.map((p) => {
               const total = p.items.length;
               const done = p.items.filter((i) => i.status === "done").length;
               const today = new Date();
               today.setHours(0, 0, 0, 0);
               return (
-                <Card key={p.id} className="print:break-inside-avoid">
-                  <CardContent className="p-4 space-y-2">
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="font-medium text-sm">
+                <Card key={p.id} className="min-w-0 print:break-inside-avoid">
+                  <CardContent className="min-w-0 p-4 space-y-2">
+                    <div className="flex min-w-0 items-center justify-between gap-3">
+                      <div className="min-w-0 flex-1 break-words font-medium text-sm">
                         {p.position}. {p.title}
                       </div>
-                      <span className="text-xs text-muted-foreground tabular-nums">
+                      <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
                         {done}/{total}
                       </span>
                     </div>
-                    <div className="grid gap-1">
+                    <div className="grid min-w-0 gap-1">
                       {p.items.map((it) => {
                         const d = parseDateOnly(it.planned_date);
                         const late = it.status !== "done" && d && daysBetween(today, d) > 0;
                         return (
                           <div
                             key={it.id}
-                            className={`flex items-center justify-between gap-3 text-xs rounded-lg px-2 py-1.5 ${
+                            className={`flex min-w-0 items-center justify-between gap-3 text-xs rounded-lg px-2 py-1.5 ${
                               late ? "bg-destructive/10 text-destructive" : "text-muted-foreground"
                             }`}
                           >
-                            <span className="truncate">{it.title}</span>
+                            <span className="min-w-0 flex-1 truncate">{it.title}</span>
                             <span className="shrink-0 tabular-nums">
                               {it.status === "done"
                                 ? `Concluída ${

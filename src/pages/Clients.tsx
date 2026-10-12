@@ -304,7 +304,7 @@ export default function Clients({ embedded = false }: { embedded?: boolean }) {
             value={stats.warn}
             hint="Etapas nos próximos 7 dias"
             icon={CalendarClock}
-            tone="text-amber-500"
+            tone="text-amber-700"
             active={filter === "warn"}
             onClick={() => setFilter("warn")}
           />
@@ -321,7 +321,7 @@ export default function Clients({ embedded = false }: { embedded?: boolean }) {
             value={stats.approvals}
             hint="Aguardando aprovação"
             icon={BellRing}
-            tone="text-amber-500"
+            tone="text-amber-700"
             active={filter === "approval"}
             onClick={() => setFilter("approval")}
           />
@@ -403,7 +403,7 @@ export default function Clients({ embedded = false }: { embedded?: boolean }) {
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
                       {r.pendingApprovals > 0 && (
-                        <Badge className="bg-amber-500 text-white hover:bg-amber-500">
+                        <Badge className="bg-amber-500 text-amber-950 hover:bg-amber-500">
                           {r.pendingApprovals} data(s) do cliente
                         </Badge>
                       )}
@@ -425,7 +425,7 @@ export default function Clients({ embedded = false }: { embedded?: boolean }) {
                           <span className="text-destructive font-medium"> · {r.overdue} atrasadas</span>
                         )}
                         {r.dueSoon > 0 && (
-                          <span className="text-amber-600 dark:text-amber-400 font-medium">
+                          <span className="text-amber-700 dark:text-amber-400 font-medium">
                             {" "}
                             · {r.dueSoon} vencendo
                           </span>

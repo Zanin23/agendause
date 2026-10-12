@@ -253,7 +253,7 @@ export function SurveyTab({
             </div>
             <div className="flex items-center gap-2 flex-wrap">
               {submitted ? (
-                <Badge className="bg-emerald-600 text-white hover:bg-emerald-600">
+                <Badge className="bg-emerald-700 text-white hover:bg-emerald-700">
                   <CheckCircle2 className="h-3 w-3 mr-1" /> Respondido
                 </Badge>
               ) : survey.status === "sent" ? (
