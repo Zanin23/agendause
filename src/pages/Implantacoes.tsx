@@ -13,6 +13,7 @@ import {
   ExternalLink,
   Eye,
   History,
+  LayoutGrid,
   ListChecks,
   Loader2,
   Pause,
@@ -137,6 +138,44 @@ const SITUACAO_ITEM: Record<string, { label: string; cls: string }> = {
   pendente: { label: "Pendente", cls: "text-muted-foreground" },
   "": { label: "—", cls: "text-muted-foreground" },
 };
+
+/* as cinco fases da matriz do relatório, com os mesmos rótulos e estados do site */
+const FASES = ["Cadastros básicos", "Produtos & Estoque", "Comercial / Vendas", "Financeiro & PCP", "Fiscal / Cloud"];
+
+const ESTADOS_FASE = ["done", "now", "pend", "na"] as const;
+
+const FASE_ESTADO: Record<string, { label: string; cls: string; ponto: string }> = {
+  done: {
+    label: "Concluído",
+    cls: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30",
+    ponto: "bg-emerald-500",
+  },
+  now: {
+    label: "Em andamento",
+    cls: "bg-sky-500/10 text-sky-700 dark:text-sky-400 border-sky-500/30",
+    ponto: "bg-sky-500",
+  },
+  pend: {
+    label: "Pendente",
+    cls: "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30",
+    ponto: "bg-amber-500",
+  },
+  na: {
+    label: "Não previsto",
+    cls: "bg-muted text-muted-foreground border-border",
+    ponto: "bg-muted-foreground/40",
+  },
+};
+
+/* mesma normalização do site: sempre 5 pares [estado, detalhe] */
+const normalizarFases = (v?: unknown): [string, string][] =>
+  FASES.map((_, i) => {
+    const f = Array.isArray(v) ? (v as unknown[])[i] : null;
+    const par = Array.isArray(f) ? (f as unknown[]) : null;
+    const estado = par && typeof par[0] === "string" && FASE_ESTADO[par[0]] ? (par[0] as string) : "na";
+    const detalhe = par && par[1] ? String(par[1]).slice(0, 60) : "";
+    return [estado, detalhe];
+  });
 
 const TIPOS = ["Nova implantação", "Reimplantação", "Migração Cloud", "Treinamento", "Suporte / ajustes", "Outro"];
 
@@ -470,8 +509,8 @@ const Implantacoes = () => {
                       </div>
                     </div>
 
-                    {/* barras */}
-                    <div className="px-4 sm:px-5 pb-4 grid sm:grid-cols-2 gap-3">
+                    {/* barras + matriz de fases */}
+                    <div className="px-4 sm:px-5 pb-4 grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
                       <div>
                         <div className="h-1.5 rounded-full bg-muted overflow-hidden">
                           <div className="h-full bg-primary" style={{ width: `${l.progresso_relatorio ?? 0}%` }} />
@@ -487,6 +526,29 @@ const Implantacoes = () => {
                           {(l.itens_atrasados || 0) > 0 ? ` · ${l.itens_atrasados} atrasado(s)` : ""}
                         </p>
                       </div>
+                      <button
+                        type="button"
+                        onClick={() => setEditando(l)}
+                        title="Editar a matriz de fases do relatório"
+                        className="text-left group/mx"
+                      >
+                        <div className="flex gap-1">
+                          {normalizarFases(l.relatorio?.fases).map((f, i) => {
+                            const est = FASE_ESTADO[f[0]];
+                            return (
+                              <span
+                                key={FASES[i]}
+                                title={`${FASES[i]}: ${est.label}${f[1] ? ` · ${f[1]}` : ""}`}
+                                className={`h-1.5 flex-1 rounded-full transition-opacity group-hover/mx:opacity-80 ${est.ponto}`}
+                              />
+                            );
+                          })}
+                        </div>
+                        <p className="text-[11px] text-muted-foreground mt-1 flex items-center gap-1">
+                          matriz de fases do relatório
+                          <Pencil className="h-2.5 w-2.5 opacity-0 transition-opacity group-hover/mx:opacity-100" />
+                        </p>
+                      </button>
                     </div>
 
                     {/* linha de visitas */}
@@ -510,48 +572,82 @@ const Implantacoes = () => {
                     </div>
 
                     {expandido && (
-                      <div className="border-t border-border bg-muted/30 p-4 sm:p-5 grid lg:grid-cols-3 gap-5">
-                        <div className="lg:col-span-2 space-y-4">
-                          <div>
+                      <div className="border-t border-border bg-muted/30 p-4 sm:p-5 space-y-5">
+                        {/* matriz de fases: os mesmos cinco quadros do relatório */}
+                        <div>
+                          <div className="flex flex-wrap items-center justify-between gap-2">
                             <h3 className="text-sm font-semibold flex items-center gap-2">
-                              <ListChecks className="h-4 w-4 text-primary" /> Cronograma ({crono.length} itens)
+                              <LayoutGrid className="h-4 w-4 text-primary" /> Matriz de fases do relatório
                             </h3>
-                            {crono.length === 0 ? (
-                              <p className="text-sm text-muted-foreground mt-2">
-                                Nenhum item publicado. {l.schedule_id ? "Confira o cronograma e clique em “Publicar cronogramas”." : "Esta empresa ainda não tem cronograma na agenda."}
-                              </p>
-                            ) : (
-                              <div className="mt-3 space-y-3">
-                                {Object.entries(fases).map(([fase, itens]) => (
-                                  <div key={fase}>
-                                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{fase}</p>
-                                    <ul className="mt-1 divide-y divide-border/60">
-                                      {itens.map((item, i) => {
-                                        const s = SITUACAO_ITEM[item.status || ""] || SITUACAO_ITEM[""];
-                                        return (
-                                          <li key={item.id || `${fase}-${i}`} className="py-1.5 flex items-start gap-2 text-sm">
-                                            <span className={`text-xs font-medium w-24 shrink-0 ${s.cls}`}>{s.label}</span>
-                                            <span className="min-w-0 flex-1">
-                                              {item.atividade}
-                                              {item.categoria === "visita" && (
-                                                <Badge variant="outline" className="ml-2 text-[10px]">visita</Badge>
-                                              )}
-                                              <span className="block text-[11px] text-muted-foreground">
-                                                {item.data ? `previsto ${diaCurto(item.data)}` : "sem data prevista"}
-                                                {item.visitaData ? ` · visita ${diaCurto(item.visitaData)}${item.hora ? ` ${item.hora}` : ""}` : ""}
-                                                {item.concluidoEm ? ` · concluído ${diaCurto(item.concluidoEm)}` : ""}
-                                                {item.responsavel ? ` · ${item.responsavel}` : ""}
-                                              </span>
-                                            </span>
-                                          </li>
-                                        );
-                                      })}
-                                    </ul>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
+                            <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setEditando(l)}>
+                              <Pencil className="h-3 w-3 mr-1.5" /> Editar matriz
+                            </Button>
                           </div>
+                          <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+                            {normalizarFases(l.relatorio?.fases).map((f, i) => {
+                              const est = FASE_ESTADO[f[0]];
+                              return (
+                                <div
+                                  key={FASES[i]}
+                                  className={`rounded-xl border px-2.5 py-2 ${est.cls}`}
+                                  title={f[1] ? `${FASES[i]}: ${est.label} · ${f[1]}` : `${FASES[i]}: ${est.label}`}
+                                >
+                                  <p className="text-[10px] font-medium uppercase tracking-wide opacity-80 leading-tight">
+                                    {FASES[i]}
+                                  </p>
+                                  <p className="text-xs font-semibold mt-1 flex items-center gap-1.5">
+                                    <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${est.ponto}`} />
+                                    {est.label}
+                                  </p>
+                                  <p className="text-[10px] opacity-80 truncate">{f[1] || "—"}</p>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        <div className="grid lg:grid-cols-3 gap-5">
+                          <div className="lg:col-span-2 space-y-4">
+                            <div>
+                              <h3 className="text-sm font-semibold flex items-center gap-2">
+                                <ListChecks className="h-4 w-4 text-primary" /> Cronograma ({crono.length} itens)
+                              </h3>
+                              {crono.length === 0 ? (
+                                <p className="text-sm text-muted-foreground mt-2">
+                                  Nenhum item publicado. {l.schedule_id ? "Confira o cronograma e clique em “Publicar cronogramas”." : "Esta empresa ainda não tem cronograma na agenda."}
+                                </p>
+                              ) : (
+                                <div className="mt-3 space-y-3">
+                                  {Object.entries(fases).map(([fase, itens]) => (
+                                    <div key={fase}>
+                                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{fase}</p>
+                                      <ul className="mt-1 divide-y divide-border/60">
+                                        {itens.map((item, i) => {
+                                          const s = SITUACAO_ITEM[item.status || ""] || SITUACAO_ITEM[""];
+                                          return (
+                                            <li key={item.id || `${fase}-${i}`} className="py-1.5 flex items-start gap-2 text-sm">
+                                              <span className={`text-xs font-medium w-24 shrink-0 ${s.cls}`}>{s.label}</span>
+                                              <span className="min-w-0 flex-1">
+                                                {item.atividade}
+                                                {item.categoria === "visita" && (
+                                                  <Badge variant="outline" className="ml-2 text-[10px]">visita</Badge>
+                                                )}
+                                                <span className="block text-[11px] text-muted-foreground">
+                                                  {item.data ? `previsto ${diaCurto(item.data)}` : "sem data prevista"}
+                                                  {item.visitaData ? ` · visita ${diaCurto(item.visitaData)}${item.hora ? ` ${item.hora}` : ""}` : ""}
+                                                  {item.concluidoEm ? ` · concluído ${diaCurto(item.concluidoEm)}` : ""}
+                                                  {item.responsavel ? ` · ${item.responsavel}` : ""}
+                                                </span>
+                                              </span>
+                                            </li>
+                                          );
+                                        })}
+                                      </ul>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
                         </div>
 
                         <div className="space-y-4">
@@ -581,18 +677,6 @@ const Implantacoes = () => {
                               <p className="text-sm text-muted-foreground mt-1">{(l.relatorio?.grupo || []).join(" · ")}</p>
                             </div>
                           )}
-                          <div>
-                            <h3 className="text-sm font-semibold">Matriz de fases do relatório</h3>
-                            <div className="mt-1 flex gap-1">
-                              {(l.relatorio?.fases || []).map((f, i) => {
-                                const cor =
-                                  f[0] === "done" ? "bg-emerald-500" :
-                                  f[0] === "now" ? "bg-amber-500" :
-                                  f[0] === "pend" ? "bg-slate-400" : "bg-muted";
-                                return <span key={i} title={`${["Cadastros básicos", "Produtos & Estoque", "Comercial / Vendas", "Financeiro & PCP", "Fiscal / Cloud"][i]}: ${f[1] || f[0]}`} className={`h-2 flex-1 rounded-full ${cor}`} />;
-                              })}
-                            </div>
-                          </div>
                           {l.relatorio?.observacao && (
                             <div>
                               <h3 className="text-sm font-semibold">Observação</h3>
@@ -618,6 +702,7 @@ const Implantacoes = () => {
                               Ver no relatório completo <ArrowUpRight className="h-3.5 w-3.5 ml-1" />
                             </a>
                           </Button>
+                        </div>
                         </div>
                       </div>
                     )}
@@ -655,6 +740,7 @@ const EditarRelatorio = ({
   const [falta, setFalta] = useState(texto(dados.falta));
   const [grupo, setGrupo] = useState(texto(dados.grupo));
   const [observacao, setObservacao] = useState(dados.observacao || "");
+  const [fases, setFases] = useState<[string, string][]>(() => normalizarFases(dados.fases));
   const [salvando, setSalvando] = useState(false);
 
   useEffect(() => {
@@ -667,7 +753,11 @@ const EditarRelatorio = ({
     setFalta(texto(d.falta));
     setGrupo(texto(d.grupo));
     setObservacao(d.observacao || "");
+    setFases(normalizarFases(d.fases));
   }, [linha]);
+
+  const mudarFase = (i: number, estado: string, detalhe: string) =>
+    setFases((atual) => atual.map((f, j) => (j === i ? [estado, detalhe] : f)) as [string, string][]);
 
   if (!linha) return null;
 
@@ -677,12 +767,14 @@ const EditarRelatorio = ({
     try {
       const prog = Math.max(0, Math.min(100, Number(progresso.replace("%", "")) || 0));
       const anterior = (linha.relatorio || {}) as DadosRelatorio;
+      const fasesNovas = normalizarFases(fases);
+      const matrizMudou = JSON.stringify(fasesNovas) !== JSON.stringify(normalizarFases(anterior.fases));
       const historico = [
         {
           data: format(new Date(), "yyyy-MM-dd"),
           progresso: prog,
           status,
-          texto: "Atualizado pelo TreinaCheck",
+          texto: matrizMudou ? "Matriz de fases atualizada pelo TreinaCheck" : "Atualizado pelo TreinaCheck",
         },
         ...(anterior.historico || []),
       ].slice(0, 30);
@@ -698,6 +790,7 @@ const EditarRelatorio = ({
         feito: linhas(feito),
         falta: linhas(falta),
         grupo: linhas(grupo),
+        fases: fasesNovas,
         observacao: observacao.trim(),
         atualizado: format(new Date(), "yyyy-MM-dd"),
         historico,
@@ -764,6 +857,61 @@ const EditarRelatorio = ({
           <div className="sm:col-span-2">
             <Label htmlFor="statusText">Status atual (a frase que aparece no topo do card)</Label>
             <Input id="statusText" value={statusText} onChange={(e) => setStatusText(e.target.value)} maxLength={400} />
+          </div>
+
+          <div className="sm:col-span-2 rounded-xl border border-border bg-muted/30 p-3">
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <div>
+                <p className="text-sm font-semibold flex items-center gap-2">
+                  <LayoutGrid className="h-4 w-4 text-primary" /> Matriz de fases
+                </p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  Os cinco quadros do relatório. O que mudar aqui aparece no site do relatório — é o mesmo banco.
+                </p>
+              </div>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="h-7 text-xs"
+                onClick={() => setFases(FASES.map(() => ["na", ""] as [string, string]))}
+              >
+                limpar tudo
+              </Button>
+            </div>
+
+            <div className="mt-3 space-y-2">
+              {FASES.map((nome, i) => {
+                const [estado, detalhe] = fases[i];
+                const est = FASE_ESTADO[estado] || FASE_ESTADO.na;
+                return (
+                  <div key={nome} className="grid sm:grid-cols-[minmax(0,1fr)_10rem_minmax(0,1.1fr)] items-center gap-2">
+                    <span className="text-xs font-medium flex items-center gap-1.5">
+                      <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${est.ponto}`} />
+                      {nome}
+                    </span>
+                    <select
+                      value={estado}
+                      aria-label={`Estado da fase ${nome}`}
+                      onChange={(e) => mudarFase(i, e.target.value, detalhe)}
+                      className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
+                    >
+                      {ESTADOS_FASE.map((k) => (
+                        <option key={k} value={k}>{FASE_ESTADO[k].label}</option>
+                      ))}
+                    </select>
+                    <Input
+                      value={detalhe}
+                      maxLength={60}
+                      aria-label={`Detalhe da fase ${nome}`}
+                      placeholder="detalhe (opcional, ex.: 3/5 itens)"
+                      onChange={(e) => mudarFase(i, estado, e.target.value)}
+                      className="h-9"
+                    />
+                  </div>
+                );
+              })}
+            </div>
           </div>
           <div>
             <Label htmlFor="feito">O que já foi feito (uma linha por item)</Label>

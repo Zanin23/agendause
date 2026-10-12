@@ -9,6 +9,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { CommandPalette } from "@/components/CommandPalette";
 
 const Auth = lazy(() => import("./pages/Auth"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const Home = lazy(() => import("./pages/Home"));
 const HomeExperimental = lazy(() => import("./pages/HomeExperimental"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
@@ -71,6 +72,7 @@ const App = () => (
             <Suspense fallback={<PageLoading />}>
               <Routes>
                 <Route path="/auth" element={<Auth />} />
+                <Route path="/redefinir-senha" element={<ResetPassword />} />
                 <Route path="/aceite/:id" element={<GuestAccept />} />
                 <Route path="/c/:token" element={<SchedulePublic />} />
                 <Route path="/q/:token" element={<SurveyPublic />} />

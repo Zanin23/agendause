@@ -127,9 +127,10 @@ const HomeExperimental = () => {
       },
       { to: "/agenda", label: "Agenda", hint: "Calendário e visitas", icon: CalendarDays, span: "sm:col-span-3 lg:col-span-4" },
       { to: "/cronogramas", label: "Cronogramas", hint: "ERP e PDV", icon: ClipboardList, span: "sm:col-span-3 lg:col-span-4" },
-      { to: "/cobrar", label: "A cobrar", hint: "Pendências da semana", icon: Receipt, span: "sm:col-span-2 lg:col-span-4" },
-      { to: "/relatorios", label: "Aceites e clientes", hint: "Termos, histórico e prazos", icon: FileCheck2, span: "sm:col-span-2 lg:col-span-4" },
-      { to: "/implantacoes", label: "Implantações", hint: "Cronogramas + relatório", icon: Building2, span: "sm:col-span-2 lg:col-span-4" },
+      { to: "/cobrar", label: "A cobrar", hint: "Pendências da semana", icon: Receipt, span: "sm:col-span-3 lg:col-span-4" },
+      { to: "/relatorios", label: "Aceites e clientes", hint: "Termos, histórico e prazos", icon: FileCheck2, span: "sm:col-span-3 lg:col-span-4" },
+      // fecha a grade ocupando a largura toda: sem o buraco que deixava este atalho sozinho na última linha
+      { to: "/implantacoes", label: "Implantações", hint: "Cronogramas + relatório", icon: Building2, span: "sm:col-span-6 lg:col-span-12" },
     ],
     []
   );

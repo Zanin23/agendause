@@ -11,15 +11,20 @@ outros dois não têm onde gravar.
 
 ## Passo 0 — Levar o código para o sistema publicado (1 clique)
 
-O que eu construí (a migração, a tela **Implantações**) está na branch
-`arena/0b379185-agendause`, ainda **não** na `main`. Ou seja: o TreinaCheck que
-está no ar ainda não tem a tela nova.
+A migração e a tela **Implantações** já estão na `main` (PR #2, mesclado). O que
+ainda pode estar só na branch é o ajuste da **matriz de fases editável**, a
+**grade da tela inicial** e a **recuperação de acesso** (`Esqueci minha senha` +
+`/redefinir-senha` + `Verificar o acesso`), na branch
+`arena/ae6ebd81-agendause` (PR aberto).
 
 - Se você trabalha com PR: abra o pull request dessa branch e clique em
-  **Merge**. (Se quiser, eu abro o PR para você.)
+  **Merge**. (Se quiser, eu mesclo para você.)
 - Se preferir testar antes: nada impede fazer os passos 1 a 3 primeiro — o
   banco e o site do relatório funcionam mesmo sem a tela nova. A tela é só a
   janela nova para olhar os dados.
+- Depois do merge, confira em **Vercel → Deployments** se um novo deploy de
+  produção começou. Se não começar em alguns minutos, use **Redeploy** no
+  último deploy de produção.
 
 **Como saber que deu certo:** depois do deploy, abrir o TreinaCheck e ver o
 cartão **“Implantações — Cronogramas + relatório”** na tela inicial (e o item
@@ -133,8 +138,7 @@ No seu computador:
 
 ```bash
 git clone https://github.com/Zanin23/agendause.git
-cd agendause
-git checkout arena/0b379185-agendause     # a branch com a integração
+cd agendause                              # a main já tem a integração
 node -v                                   # precisa aparecer v18 ou maior
 ```
 
