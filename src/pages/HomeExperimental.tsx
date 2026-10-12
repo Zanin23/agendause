@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  Building2,
   CalendarDays,
   CalendarPlus,
   FileCheck2,
@@ -128,6 +129,7 @@ const HomeExperimental = () => {
       { to: "/cronogramas", label: "Cronogramas", hint: "ERP e PDV", icon: ClipboardList, span: "sm:col-span-3 lg:col-span-4" },
       { to: "/cobrar", label: "A cobrar", hint: "Pendências da semana", icon: Receipt, span: "sm:col-span-2 lg:col-span-4" },
       { to: "/relatorios", label: "Aceites e clientes", hint: "Termos, histórico e prazos", icon: FileCheck2, span: "sm:col-span-2 lg:col-span-4" },
+      { to: "/implantacoes", label: "Implantações", hint: "Cronogramas + relatório", icon: Building2, span: "sm:col-span-2 lg:col-span-4" },
     ],
     []
   );
