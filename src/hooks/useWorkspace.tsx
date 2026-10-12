@@ -10,6 +10,7 @@ type WorkspaceContextValue = {
   activeId: string | null;
   active: Workspace | null;
   loading: boolean;
+  error: string | null;
   refresh: () => Promise<void>;
   setActive: (id: string) => Promise<void>;
 };
@@ -19,6 +20,7 @@ const WorkspaceContext = createContext<WorkspaceContextValue>({
   activeId: null,
   active: null,
   loading: true,
+  error: null,
   refresh: async () => {},
   setActive: async () => {},
 });
@@ -33,6 +35,7 @@ export const WorkspaceProvider = ({ children }: { children: ReactNode }) => {
     return localStorage.getItem("active_workspace_id");
   });
   const [loading, setLoading] = useState(true);
+  const [erro, setErro] = useState<string | null>(null);
 
   const setActiveId = useCallback((id: string | null) => {
     setActiveIdState(id);
@@ -48,33 +51,50 @@ export const WorkspaceProvider = ({ children }: { children: ReactNode }) => {
     if (!userId) {
       setWorkspaces([]);
       setActiveId(null);
+      setErro(null);
       setLoading(false);
       return;
     }
     // Only block the UI on the very first load for this user. Later refreshes
     // (focus / token refresh) must never unmount the current screen.
     if (loadedForRef.current !== userId) setLoading(true);
-    const [{ data: ws }, { data: prof }] = await Promise.all([
-      supabase.from("workspaces").select("id,slug,name").order("name"),
-      supabase.from("profiles").select("active_workspace_id").eq("id", userId).maybeSingle(),
-    ]);
-    const list = (ws as Workspace[]) || [];
-    setWorkspaces(list);
-    const profileActive = (prof as any)?.active_workspace_id ?? null;
-    const cached = typeof window !== "undefined" ? localStorage.getItem("active_workspace_id") : null;
-    let resolved: string | null = profileActive;
-    if (!resolved && cached && list.some((w) => w.id === cached)) {
-      // restore from cache and persist back to profile
-      resolved = cached;
-      await supabase.from("profiles").update({ active_workspace_id: cached } as any).eq("id", userId);
+    try {
+      const [resWs, resProf] = await Promise.all([
+        supabase.from("workspaces").select("id,slug,name").order("name"),
+        supabase.from("profiles").select("active_workspace_id").eq("id", userId).maybeSingle(),
+      ]);
+      // Sem a lista de bases não há como decidir nada: falha explícita, com
+      // caminho de volta (a tela mostra "Tentar de novo"), em vez de girar
+      // para sempre em "Carregando...".
+      if (resWs.error) throw resWs.error;
+
+      const list = (resWs.data as Workspace[]) || [];
+      setWorkspaces(list);
+      const profileActive = (resProf.data as any)?.active_workspace_id ?? null;
+      const cached = typeof window !== "undefined" ? localStorage.getItem("active_workspace_id") : null;
+      let resolved: string | null = profileActive;
+      if (!resolved && cached && list.some((w) => w.id === cached)) {
+        // restore from cache and persist back to profile
+        resolved = cached;
+        await supabase.from("profiles").update({ active_workspace_id: cached } as any).eq("id", userId);
+      }
+      if (!resolved && list.length === 1) {
+        resolved = list[0].id;
+        await supabase.from("profiles").update({ active_workspace_id: resolved } as any).eq("id", userId);
+      }
+      setActiveId(resolved);
+      loadedForRef.current = userId;
+      setErro(null);
+    } catch (e) {
+      const bruto = (e as Error)?.message || String(e);
+      setErro(
+        /failed to fetch|network|load failed|fetch failed|timeout/i.test(bruto)
+          ? "Não foi possível falar com o banco de dados. Verifique a internet; se o projeto Supabase estiver pausado, ele precisa ser reativado no painel."
+          : bruto,
+      );
+    } finally {
+      setLoading(false);
     }
-    if (!resolved && list.length === 1) {
-      resolved = list[0].id;
-      await supabase.from("profiles").update({ active_workspace_id: resolved } as any).eq("id", userId);
-    }
-    setActiveId(resolved);
-    loadedForRef.current = userId;
-    setLoading(false);
   }, [userId, setActiveId]);
 
   useEffect(() => {
@@ -95,7 +115,7 @@ export const WorkspaceProvider = ({ children }: { children: ReactNode }) => {
   const active = workspaces.find((w) => w.id === activeId) || null;
 
   return (
-    <WorkspaceContext.Provider value={{ workspaces, activeId, active, loading, refresh: load, setActive }}>
+    <WorkspaceContext.Provider value={{ workspaces, activeId, active, loading, error: erro, refresh: load, setActive }}>
       {children}
     </WorkspaceContext.Provider>
   );
