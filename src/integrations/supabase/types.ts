@@ -344,6 +344,9 @@ export type Database = {
       }
       implementation_schedules: {
         Row: {
+          kind: string
+          subject: string | null
+          title: string | null
           accepted_at: string | null
           accepted_by: string | null
           accepted_ip: string | null
@@ -369,6 +372,9 @@ export type Database = {
           accepted_by?: string | null
           accepted_ip?: string | null
           cadence?: Database["public"]["Enums"]["schedule_cadence"]
+          kind?: string
+          subject?: string | null
+          title?: string | null
           client_email?: string | null
           client_name: string
           created_at?: string
@@ -390,6 +396,9 @@ export type Database = {
           accepted_by?: string | null
           accepted_ip?: string | null
           cadence?: Database["public"]["Enums"]["schedule_cadence"]
+          kind?: string
+          subject?: string | null
+          title?: string | null
           client_email?: string | null
           client_name?: string
           created_at?: string

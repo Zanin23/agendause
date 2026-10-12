@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Plus, ClipboardList, ExternalLink, Trash2, Send, CheckCircle2, Network } from "lucide-react";
+import { Plus, ClipboardList, ExternalLink, Trash2, Send, CheckCircle2, Network, ListPlus, Building2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BackButton } from "@/components/BackButton";
+import { ehCronogramaLivre, tituloDoCronograma } from "@/lib/schedule";
 
 const STATUS_LABELS: Record<string, string> = {
   draft: "Rascunho",
@@ -42,6 +43,9 @@ const statusVariant = (s: string) => STATUS_VARIANTS[s] ?? "outline";
 type Row = {
   id: string;
   client_name: string;
+  kind?: string | null;
+  title?: string | null;
+  subject?: string | null;
   start_date: string;
   status: string;
   cadence: string;
@@ -58,12 +62,13 @@ export default function Schedules() {
   const navigate = useNavigate();
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filtro, setFiltro] = useState<"todos" | "implantacao" | "livre">("todos");
 
   const load = async () => {
     setLoading(true);
     let query = supabase
       .from("implementation_schedules")
-      .select("id,client_name,start_date,status,cadence,modality,accepted_at");
+      .select("id,client_name,kind,title,subject,start_date,status,cadence,modality,accepted_at");
     
     // If not admin and doesn't have general 'schedules' screen permission, 
     // we should only fetch those he has specific permission for.
@@ -138,8 +143,8 @@ export default function Schedules() {
   return (
     <div className="min-h-screen bg-background">
       <SEO
-        title="Cronogramas de implantação — TreinaCheck"
-        description="Gerencie cronogramas de implantação do sistema ERP USE para seus clientes."
+        title="Cronogramas — TreinaCheck"
+        description="Cronogramas de implantação do ERP USE e cronogramas livres para qualquer outro planejamento."
         path="/cronogramas"
       />
       <AppHeader />
@@ -151,13 +156,35 @@ export default function Schedules() {
               <ClipboardList className="h-7 w-7 text-primary" /> Cronogramas
             </h1>
             <p className="text-muted-foreground mt-1 text-sm">
-              Cronogramas de implantação do ERP USE — criados a partir do template padrão e totalmente editáveis.
+              Cronogramas de implantação do ERP USE e cronogramas livres — para obra, evento, manutenção ou qualquer
+              outra coisa que você queira planejar e preencher à mão.
             </p>
           </div>
           <Button onClick={() => navigate("/cronogramas/novo")}>
             <Plus className="h-4 w-4" /> Novo cronograma
           </Button>
         </div>
+
+        {!loading && rows.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2">
+            {([
+              { id: "todos", rotulo: `Todos (${rows.length})` },
+              { id: "implantacao", rotulo: `Implantações (${rows.filter((r) => !ehCronogramaLivre(r)).length})` },
+              { id: "livre", rotulo: `Livres (${rows.filter((r) => ehCronogramaLivre(r)).length})` },
+            ] as const).map((f) => (
+              <button
+                key={f.id}
+                type="button"
+                onClick={() => setFiltro(f.id)}
+                className={`px-3 h-8 rounded-full border text-sm transition-colors ${
+                  filtro === f.id ? "border-primary bg-primary/10 text-foreground" : "border-border text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {f.rotulo}
+              </button>
+            ))}
+          </div>
+        )}
 
         {loading ? (
           <Card><CardContent className="py-10 text-center text-sm text-muted-foreground">Carregando…</CardContent></Card>
@@ -173,16 +200,36 @@ export default function Schedules() {
           </Card>
         ) : (
           <div className="grid gap-3">
-            {rows.filter(r => hasSchedulePermission(r.id)).map((r) => (
+            {rows
+              .filter((r) => hasSchedulePermission(r.id))
+              .filter((r) =>
+                filtro === "todos" ? true : filtro === "livre" ? ehCronogramaLivre(r) : !ehCronogramaLivre(r),
+              )
+              .map((r) => (
               <Card key={r.id} className="hover:border-primary/50 transition-colors">
                 <CardContent className="p-4 sm:p-5 space-y-3">
                   <div className="flex items-center justify-between gap-4 flex-wrap">
                     <Link to={`/cronogramas/${r.id}`} className="min-w-0 flex-1">
-                      <h3 className="font-semibold break-words">{r.client_name}</h3>
+                      <h3 className="font-semibold break-words flex items-center gap-2">
+                        {tituloDoCronograma(r)}
+                        {ehCronogramaLivre(r) ? (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-violet-500/10 text-violet-700 dark:text-violet-300">
+                            <ListPlus className="h-3 w-3" /> Livre{r.subject ? ` · ${r.subject}` : ""}
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                            <Building2 className="h-3 w-3" /> Implantação
+                          </span>
+                        )}
+                      </h3>
                       <div className="text-xs text-muted-foreground mt-1 flex flex-wrap gap-3">
                         <span>Início: {format(new Date(r.start_date), "d MMM yyyy", { locale: ptBR })}</span>
-                        <span>Cadência: {r.cadence}</span>
-                        <span>Modalidade: {r.modality}</span>
+                        {!ehCronogramaLivre(r) && (
+                          <>
+                            <span>Cadência: {r.cadence}</span>
+                            <span>Modalidade: {r.modality}</span>
+                          </>
+                        )}
                       </div>
                     </Link>
                     <div className="flex items-center gap-2">

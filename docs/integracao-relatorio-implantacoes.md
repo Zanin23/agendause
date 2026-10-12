@@ -35,6 +35,8 @@ agenda nela e uma view que junta as duas visões.
 | Arquivo | O que é |
 | --- | --- |
 | `supabase/migrations/20261012120000_integracao_relatorio_implantacoes.sql` | Cria `documentos`, a RLS aberta dessa tabela, o tempo real, as funções `rel_*` e a view `vw_relatorio_implantacoes`. **É o coração da integração.** |
+| `supabase/migrations/20261013120000_cronogramas_livres.sql` | Acrescenta `kind`/`title`/`subject` aos cronogramas e regrava a função de sincronização **e** a view para publicar só `kind = 'implantacao'` — cronograma livre (obra, evento, manutenção) não vira empresa no relatório. |
+| `src/pages/EmpresasPerdidas.tsx` + `src/lib/relatorioEmpresas.ts` | Tela e regras da recuperação: leem o banco antigo/arquivo, comparam com `documentos` pelo id e pelo nome normalizado e restauram só o que faltava. Detalhes em [`docs/cronogramas-livres-e-empresas-perdidas.md`](./cronogramas-livres-e-empresas-perdidas.md). |
 | `src/pages/Implantacoes.tsx` | Tela nova do TreinaCheck (rota `/implantacoes`): carteira com as duas visões, cronograma por fase, edição dos campos do relatório (incluindo a **matriz de fases**), publicação manual e tempo real. |
 | `scripts/migrar-documentos.mjs` | Traz as empresas que já existem no projeto antigo do relatório (ou de um backup JSON) para o banco do TreinaCheck. |
 | `integracao/relatorio-de-implantacoes/` | Arquivos para copiar no **outro repositório**: `sync-config.js` (aponta para o banco do TreinaCheck) e `sync-agenda.js` (chama a sincronização quando o site abre). |
@@ -53,6 +55,10 @@ agenda nela e uma view que junta as duas visões.
 3. Confira: `select public.rel_sincronizar_agenda();` deve devolver
    `{"criados": N, "atualizados": M, ...}` e
    `select * from public.vw_relatorio_implantacoes;` deve listar sua carteira.
+4. Faça o mesmo com
+   `supabase/migrations/20261013120000_cronogramas_livres.sql` — é o que cria os
+   **cronogramas livres** e garante que eles **não** entrem no relatório. Pode
+   rodar antes ou depois do passo 2; os dois arquivos são idempotentes.
 
 ### Passo 2 — levar as empresas que já estão no relatório
 
@@ -141,6 +147,11 @@ lados reconhecem a mesma empresa sem duplicar. Isso é testado linha a linha.
 | `tipo`, `status`, `progresso`, `statusText`, `fases`, `historico` | semente da agenda | **relatório** (a agenda nunca mais toca) |
 | `feito`, `falta`, `grupo`, `observacao` | vazio | **relatório** (a agenda nunca escreve) |
 
+Só entram na sincronização os cronogramas de implantação (`implementation_schedules.kind = 'implantacao'`).
+Cronogramas livres — obra, evento, manutenção, rotina — vivem só na agenda: não viram empresa, não
+mexem em `documentos` e não aparecem na tela Implantações. (Para promover um deles a cliente:
+`update public.implementation_schedules set kind = 'implantacao' where id = '...';` e publique de novo.)
+
 A **matriz de fases** (`fases`, sempre 5 pares `[estado, detalhe]` — Cadastros
 básicos, Produtos & Estoque, Comercial / Vendas, Financeiro & PCP, Fiscal /
 Cloud; estados `done`, `now`, `pend`, `na`) nasce do cronograma, mas depois é
@@ -224,6 +235,8 @@ Nada é destrutivo. Para voltar atrás:
 | Sintoma | Causa provável | Saída |
 | --- | --- | --- |
 | A tela Implantações mostra “Integração pendente” | a migração ainda não foi rodada | Passo 1 |
+| Faltou empresa na carteira de agora | ela só existe no banco antigo/backup | abra **Implantações → Empresas perdidas** (ou `node scripts/empresas-perdidas.mjs`) e restaure |
+| Cronograma livre não aparece no relatório | é o comportamento esperado | o relatório é só de implantação de cliente |
 | Empresa aparece duplicada no relatório | ela foi criada antes com id diferente (nome digitado de outro jeito) | o `sync.js` do relatório junta duplicatas pelo nome no primeiro boot; ou apague a linha extra em `documentos` |
 | Cronograma aparece vazio no relatório | a empresa existe em `documentos` mas não tem cronograma na agenda | crie o cronograma no TreinaCheck ou clique em **Publicar cronogramas** |
 | `function rel_sincronizar_agenda does not exist` | migração não publicada, ou o cache do PostgREST | rode o SQL e aguarde alguns segundos |

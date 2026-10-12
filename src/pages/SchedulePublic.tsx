@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import logoAsset from "@/assets/logo-use-sistemas.png.asset.json";
-import { STATUS_LABELS, STATUS_COLORS } from "@/lib/schedule";
+import { STATUS_LABELS, STATUS_COLORS, tituloDoCronograma } from "@/lib/schedule";
 
 type PublicNodeData = {
   kind: "phase" | "item";
@@ -247,8 +247,8 @@ export default function SchedulePublic() {
 
   return (
     <div className="min-h-screen bg-background">
-      <SEO title={`Cronograma — ${schedule.client_name}`}
-        description={`Cronograma de implantação ERP USE para ${schedule.client_name}.`}
+      <SEO title={`Cronograma — ${tituloDoCronograma(schedule)}`}
+        description={`Cronograma para ${tituloDoCronograma(schedule)}.`}
         path={`/c/${token}`} />
       <header className="border-b border-border bg-card/40 backdrop-blur sticky top-0 z-30">
         <div className="max-w-6xl mx-auto px-4 h-14 flex items-center gap-3">
@@ -259,7 +259,7 @@ export default function SchedulePublic() {
       <main className="max-w-6xl mx-auto px-4 py-8 space-y-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h1 className="text-2xl font-semibold">{schedule.client_name}</h1>
+            <h1 className="text-2xl font-semibold">{tituloDoCronograma(schedule)}</h1>
             <p className="text-sm text-muted-foreground mt-1">
               Início: {format(new Date(schedule.start_date), "d 'de' MMMM 'de' yyyy", { locale: ptBR })}
               {" · "}{schedule.modality}{" · "}{schedule.cadence}

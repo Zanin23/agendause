@@ -3,6 +3,102 @@ import { addDays } from "date-fns";
 export type TemplatePhase = { title: string; items: string[] };
 export type TemplateContent = { observations: string; phases: TemplatePhase[] };
 
+/* ---------------------------------------------------------------------------
+   Dois tipos de cronograma (coluna `implementation_schedules.kind`):
+     · implantacao — cliente do relatório de implantações (o de sempre);
+     · livre       — "outras coisas": obra, evento, manutenção, rotina interna…
+                     Nasce em branco e quem preenche é você, à mão.
+   O cronograma livre NÃO entra no relatório de implantações (a função
+   `rel_sincronizar_agenda()` e a view filtram por kind = 'implantacao').
+--------------------------------------------------------------------------- */
+export type ScheduleKind = "implantacao" | "livre";
+
+export type CronogramaNomeavel = {
+  kind?: string | null;
+  title?: string | null;
+  subject?: string | null;
+  client_name?: string | null;
+};
+
+export const ehCronogramaLivre = (s?: CronogramaNomeavel | null) => s?.kind === "livre";
+
+/** Nome que aparece na tela: título (cronograma livre) ou cliente (implantação). */
+export function tituloDoCronograma(s?: CronogramaNomeavel | null): string {
+  const titulo = (s?.title || "").trim();
+  const cliente = (s?.client_name || "").trim();
+  return ehCronogramaLivre(s) ? titulo || cliente : cliente || titulo;
+}
+
+/** Sugestões de "assunto" do cronograma livre — o campo aceita qualquer texto. */
+export const ASSUNTOS_SUGERIDOS = [
+  "Obra",
+  "Evento",
+  "Manutenção",
+  "Treinamento interno",
+  "Implantação interna",
+  "Rotina / checklist",
+  "Outro",
+];
+
+export type LinhaItemColado = {
+  title: string;
+  planned_date: string | null;
+  assignee: string | null;
+};
+
+/** Aceita 12/10/2026, 12/10, 12-10-2026 e 2026-10-12. */
+export function dataColada(valor: string): string | null {
+  const t = (valor || "").trim();
+  if (!t) return null;
+  const iso = /^(\d{4})-(\d{2})-(\d{2})$/.exec(t);
+  if (iso) return t;
+  const br = /^(\d{1,2})[/.-](\d{1,2})(?:[/.-](\d{2,4}))?$/.exec(t);
+  if (!br) return null;
+  const dia = br[1].padStart(2, "0");
+  const mes = br[2].padStart(2, "0");
+  let ano = br[3] || String(new Date().getFullYear());
+  if (ano.length === 2) ano = `20${ano}`;
+  return `${ano}-${mes}-${dia}`;
+}
+
+/**
+ * Lê a lista colada para preencher o cronograma à mão: uma atividade por linha,
+ * com campos opcionais separados por "|" ou ";".
+ *   Título | responsável | 12/10/2026
+ *   Título | 12/10
+ *   Título
+ */
+export function lerLinhasDeItens(texto: string): { itens: LinhaItemColado[]; ignoradas: number } {
+  const itens: LinhaItemColado[] = [];
+  let ignoradas = 0;
+  texto
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter(Boolean)
+    .forEach((linha) => {
+      const partes = linha.split(/\s*[|;]\s*/).map((p) => p.trim());
+      const titulo = partes[0];
+      if (!titulo) {
+        ignoradas++;
+        return;
+      }
+      const resto = partes.slice(1);
+      let data: string | null = null;
+      const responsaveis: string[] = [];
+      resto.forEach((campo) => {
+        if (!campo) return;
+        const d = dataColada(campo);
+        if (d && !data) {
+          data = d;
+          return;
+        }
+        responsaveis.push(campo);
+      });
+      itens.push({ title: titulo.slice(0, 240), planned_date: data, assignee: responsaveis.join(", ") || null });
+    });
+  return { itens, ignoradas };
+}
+
 export const STATUS_LABELS: Record<string, string> = {
   pending: "Pendente",
   in_progress: "Em andamento",
