@@ -22,7 +22,7 @@ import { SEO } from "@/components/SEO";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
-import { STATUS_COLORS, STATUS_LABELS } from "@/lib/schedule";
+import { STATUS_COLORS, STATUS_LABELS, tituloDoCronograma } from "@/lib/schedule";
 import { cn } from "@/lib/utils";
 
 type Filter = "all" | "visits" | "pending" | "done";
@@ -211,7 +211,7 @@ export default function ScheduleVisual() {
         } as ScheduleItem;
       });
 
-      setClientName(schedule.client_name);
+      setClientName(tituloDoCronograma(schedule));
       setPhases(nextPhases);
       setItems(normalizedItems);
       setLoading(false);

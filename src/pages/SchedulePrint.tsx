@@ -8,7 +8,7 @@ import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { SEO } from "@/components/SEO";
 import logoAsset from "@/assets/logo-use-sistemas.png.asset.json";
-import { STATUS_LABELS } from "@/lib/schedule";
+import { STATUS_LABELS, ehCronogramaLivre, tituloDoCronograma } from "@/lib/schedule";
 import { useSearchParams } from "react-router-dom";
 
 // Datas "YYYY-MM-DD" precisam ser lidas como locais, senão o fuso puxa um dia pra trás
@@ -63,10 +63,12 @@ export default function SchedulePrint() {
 
   if (!data) return <div className="p-10 text-sm text-muted-foreground">Carregando…</div>;
   const { schedule, phases } = data;
+  const livre = ehCronogramaLivre(schedule);
+  const nome = tituloDoCronograma(schedule);
 
   return (
     <div className="min-h-screen bg-white text-black p-8 print:p-0">
-      <SEO title={`Cronograma — ${schedule.client_name}`} description="Cronograma de implantação ERP USE." path={`/cronogramas/${id}/imprimir`} />
+      <SEO title={`Cronograma — ${nome}`} description={livre ? "Cronograma de atividades." : "Cronograma de implantação ERP USE."} path={`/cronogramas/${id}/imprimir`} />
       <style>{`@media print { @page { size: A4; margin: 14mm; } body { background: white; } .no-print { display: none } }`}</style>
       <div className="no-print max-w-[210mm] mx-auto mb-4 flex items-center justify-between">
         <BackButton to={`/cronogramas/${id}`} />
@@ -77,14 +79,26 @@ export default function SchedulePrint() {
       <div className="max-w-[210mm] mx-auto space-y-4">
         <header className="flex items-start justify-between border-b border-black/20 pb-4">
           <div>
-            <h1 className="text-2xl font-bold uppercase tracking-wide">Cronograma de Implantação</h1>
-            <p className="text-sm text-black/70">Planejamento e execução das etapas de implantação do sistema USE</p>
+            <h1 className="text-2xl font-bold uppercase tracking-wide">
+              {livre ? `Cronograma${schedule.subject ? ` de ${schedule.subject}` : ""}` : "Cronograma de Implantação"}
+            </h1>
+            <p className="text-sm text-black/70">
+              {livre
+                ? "Planejamento e acompanhamento das atividades"
+                : "Planejamento e execução das etapas de implantação do sistema USE"}
+            </p>
             <div className="mt-3 text-sm">
-              <div><strong>Cliente:</strong> {schedule.client_name}</div>
+              {livre ? (
+                <div><strong>Cronograma:</strong> {nome}</div>
+              ) : (
+                <div><strong>Cliente:</strong> {nome}</div>
+              )}
               {showDates && schedule.start_date && <div><strong>Início:</strong> {fmtDate(schedule.start_date, "d 'de' MMMM 'de' yyyy")}</div>}
-              
-              <div><strong>Modalidade:</strong> {schedule.modality} · <strong>Cadência:</strong> {schedule.cadence}</div>
-              {schedule.use_team?.length > 0 && <div><strong>Equipe Use Sistemas:</strong> {schedule.use_team.join(", ")}</div>}
+              {!livre && (
+                <div><strong>Modalidade:</strong> {schedule.modality} · <strong>Cadência:</strong> {schedule.cadence}</div>
+              )}
+              {schedule.use_team?.length > 0 && <div><strong>{livre ? "Responsáveis" : "Equipe Use Sistemas"}:</strong> {schedule.use_team.join(", ")}</div>}
+              {livre && schedule.observations && <div className="text-black/70">{schedule.observations}</div>}
             </div>
           </div>
           <img src={logoAsset.url} alt="Use Sistemas" className="h-16 w-auto" />

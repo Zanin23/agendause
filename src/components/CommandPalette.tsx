@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/useAuth";
 import {
   Search, Home, CalendarDays, ClipboardList, FileCheck2, Building2, Receipt,
-  StickyNote, Settings, ShieldCheck, Database, Printer, CalendarPlus,
+  StickyNote, Settings, ShieldCheck, Database, Printer, CalendarPlus, ListPlus, History,
 } from "lucide-react";
 
 const ITEMS = [
@@ -13,6 +13,8 @@ const ITEMS = [
   { label: "Imprimir agenda", to: "/agenda/imprimir", icon: Printer, keys: "pdf" },
   { label: "Cronogramas", to: "/cronogramas", icon: ClipboardList, keys: "implantacao etapas" },
   { label: "Novo cronograma", to: "/cronogramas/novo", icon: CalendarPlus, keys: "criar" },
+  { label: "Novo cronograma livre", to: "/cronogramas/novo?tipo=livre", icon: ListPlus, keys: "criar livre outros obra evento manutencao" },
+  { label: "Empresas perdidas", to: "/implantacoes/perdidas", icon: History, keys: "recuperar restaurar json antigo relatorio perdidas" },
   { label: "Aceites e relatórios", to: "/relatorios", icon: FileCheck2, keys: "termos relatorios aceite" },
   { label: "Implantações (relatório)", to: "/implantacoes", icon: Building2, keys: "implantacoes relatorio carteira cronograma agenda integracao" },
   { label: "Clientes", to: "/clientes", icon: Building2, keys: "empresas saude" },

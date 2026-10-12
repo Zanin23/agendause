@@ -10,6 +10,7 @@ import {
   CheckCircle2,
   ChevronDown,
   ClipboardList,
+  CalendarPlus,
   ExternalLink,
   Eye,
   History,
@@ -357,6 +358,11 @@ const Implantacoes = () => {
               Publicar cronogramas
             </Button>
             <Button asChild variant="outline">
+              <Link to="/implantacoes/perdidas">
+                <History className="h-4 w-4 mr-2" /> Empresas perdidas
+              </Link>
+            </Button>
+            <Button asChild variant="outline">
               <a href={SITE_RELATORIO} target="_blank" rel="noreferrer">
                 <ExternalLink className="h-4 w-4 mr-2" /> Abrir relatório
               </a>
@@ -428,7 +434,15 @@ const Implantacoes = () => {
         ) : lista.length === 0 ? (
           <Card>
             <CardContent className="p-10 text-center text-muted-foreground">
-              Nada por aqui. {dados.length === 0 ? "Crie um cronograma na agenda e clique em “Publicar cronogramas”." : "Ajuste a busca ou o filtro."}
+              Nada por aqui.{" "}
+              {dados.length === 0 ? (
+                <>
+                  Crie um cronograma na agenda e clique em “Publicar cronogramas”. Se faltar alguma empresa que existia
+                  antes, veja <Link to="/implantacoes/perdidas" className="underline">Empresas perdidas</Link>.
+                </>
+              ) : (
+                "Ajuste a busca ou o filtro."
+              )}
             </CardContent>
           </Card>
         ) : (
@@ -493,10 +507,16 @@ const Implantacoes = () => {
                           <Button size="sm" variant="outline" onClick={() => setEditando(l)}>
                             <Pencil className="h-3.5 w-3.5 mr-1.5" /> Editar relatório
                           </Button>
-                          {l.schedule_id && (
+                          {l.schedule_id ? (
                             <Button size="sm" variant="outline" asChild>
                               <Link to={`/cronogramas/${l.schedule_id}`}>
                                 <ClipboardList className="h-3.5 w-3.5 mr-1.5" /> Cronograma
+                              </Link>
+                            </Button>
+                          ) : (
+                            <Button size="sm" variant="outline" asChild title="Criar um cronograma de implantação para esta empresa">
+                              <Link to={`/cronogramas/novo?cliente=${encodeURIComponent(l.nome || "")}`}>
+                                <CalendarPlus className="h-3.5 w-3.5 mr-1.5" /> Criar cronograma
                               </Link>
                             </Button>
                           )}

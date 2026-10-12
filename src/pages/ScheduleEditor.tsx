@@ -6,7 +6,7 @@ import { ptBR } from "date-fns/locale";
 import {
   ArrowUp, ArrowDown, Plus, Trash2, Copy, Printer, Link2, Download, Save,
   ChevronDown, ChevronRight, CheckCircle2, Circle, Clock, Ban, CalendarClock, Settings2,
-  CalendarDays, Flag, Unlink, Handshake, FileText, Network
+  CalendarDays, Flag, Unlink, Handshake, FileText, Network, ListPlus, ClipboardPaste
 } from "lucide-react";
 import { toast } from "sonner";
 import { PhaseReorderDialog } from "@/components/PhaseReorderDialog";
@@ -23,13 +23,27 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { STATUS_LABELS, STATUS_COLORS } from "@/lib/schedule";
+import {
+  STATUS_LABELS,
+  STATUS_COLORS,
+  ehCronogramaLivre,
+  lerLinhasDeItens,
+  tituloDoCronograma,
+} from "@/lib/schedule";
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
   DropdownMenuItem, 
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 type Item = {
   id: string; phase_id: string; position: number; title: string;
@@ -40,6 +54,7 @@ type Item = {
 type Phase = { id: string; schedule_id: string; position: number; title: string; description: string | null; items: Item[] };
 type Schedule = {
   id: string; client_name: string; client_email: string | null; start_date: string;
+  kind?: string | null; title?: string | null; subject?: string | null;
   cadence: string; modality: string; use_team: string[]; status: string;
   paused_at?: string | null; pause_reason?: string | null;
   observations: string | null; public_token: string | null; accepted_at: string | null; accepted_by: string | null;
@@ -60,6 +75,7 @@ export default function ScheduleEditor() {
   const [showSettings, setShowSettings] = useState(false);
   const [trainings, setTrainings] = useState<TrainingLite[]>([]);
   const [tab, setTab] = useState<"cronograma" | "levantamento">("cronograma");
+  const [colarAberto, setColarAberto] = useState(false);
 
   const load = async () => {
     if (!id) return;
@@ -198,6 +214,57 @@ export default function ScheduleEditor() {
   };
 
   // --- Items ---
+  /**
+   * Preenche o cronograma à mão, de uma vez: cada linha colada vira uma
+   * atividade. Se a fase escrita ainda não existe, ela é criada na hora.
+   * Formato: "Atividade | responsável | 12/10/2026" (responsável e data opcionais).
+   */
+  const colarAtividades = async (
+    destino: { faseId?: string; tituloFase: string },
+    linhas: { title: string; planned_date: string | null; assignee: string | null }[],
+  ) => {
+    if (!canEdit) {
+      toast.error("Sem permissão para alterar este cronograma");
+      return;
+    }
+    if (!schedule || linhas.length === 0) return;
+
+    let alvo = phases.find((p) => p.id === destino.faseId);
+    if (!alvo) {
+      const maxPos = phases.length > 0 ? Math.max(...phases.map((p) => p.position)) + 1 : 0;
+      const titulo = destino.tituloFase.trim() || "Etapas";
+      const { data, error } = await supabase
+        .from("schedule_phases")
+        .insert(({ schedule_id: schedule.id, position: maxPos, title: titulo }) as never)
+        .select("*")
+        .single();
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+      alvo = { ...(data as unknown as Phase), items: [] };
+      setPhases((prev) => [...prev, alvo as Phase]);
+    }
+
+    const base = alvo.items.length > 0 ? Math.max(...alvo.items.map((i) => i.position)) + 1 : 0;
+    const novas = linhas.map((l, i) => ({
+      phase_id: alvo!.id,
+      position: base + i,
+      title: l.title,
+      planned_date: l.planned_date,
+      assignee: l.assignee,
+    }));
+    const { data, error } = await supabase.from("schedule_items").insert(novas as never).select("*");
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    const criadas = (data as unknown as Item[]) || [];
+    setPhases((prev) => prev.map((p) => (p.id === alvo!.id ? { ...p, items: [...p.items, ...criadas] } : p)));
+    setActivePhaseId(alvo.id);
+    toast.success(`${criadas.length} atividade(s) adicionada(s) em “${alvo.title}”`);
+  };
+
   const addItem = async (phase: Phase) => {
     if (!canEdit) return toast.error("Sem permissão para alterar este cronograma");
     const maxPos = phase.items.length > 0 ? Math.max(...phase.items.map(i => i.position)) + 1 : 0;
@@ -279,7 +346,7 @@ export default function ScheduleEditor() {
     const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url; a.download = `cronograma-${schedule.client_name}.csv`; a.click();
+    a.href = url; a.download = `cronograma-${tituloDoCronograma(schedule)}.csv`; a.click();
     URL.revokeObjectURL(url);
   };
 
@@ -308,11 +375,18 @@ export default function ScheduleEditor() {
     );
   }
 
+  const livre = ehCronogramaLivre(schedule);
+  const nome = tituloDoCronograma(schedule);
+
   return (
     <div className="min-h-screen bg-background">
       <SEO
-        title={`Cronograma — ${schedule.client_name}`}
-        description={`Cronograma de implantação ERP USE para ${schedule.client_name}.`}
+        title={`${nome} — cronograma TreinaCheck`}
+        description={
+          livre
+            ? `Cronograma de ${schedule.subject || "atividades"} — ${nome}.`
+            : `Cronograma de implantação ERP USE para ${nome}.`
+        }
         path={`/cronogramas/${schedule.id}`}
       />
       <AppHeader />
@@ -323,9 +397,17 @@ export default function ScheduleEditor() {
           <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
             <BackButton to="/cronogramas" />
             <div className="min-w-0">
-              <h1 className="text-base sm:text-lg font-semibold truncate">{schedule.client_name}</h1>
+              <h1 className="text-base sm:text-lg font-semibold truncate flex items-center gap-2">
+                {livre && (
+                  <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-violet-500/10 text-violet-700 dark:text-violet-300 shrink-0">
+                    <ListPlus className="h-3 w-3" /> Livre{schedule.subject ? ` · ${schedule.subject}` : ""}
+                  </span>
+                )}
+                <span className="truncate">{nome}</span>
+              </h1>
               <p className="text-[11px] sm:text-xs text-muted-foreground truncate">
-                {format(new Date(schedule.start_date + "T00:00"), "d MMM yyyy", { locale: ptBR })} · {schedule.cadence} · {schedule.modality}
+                {format(new Date(schedule.start_date + "T00:00"), "d MMM yyyy", { locale: ptBR })}
+                {!livre && <> · {schedule.cadence} · {schedule.modality}</>}
               </p>
             </div>
           </div>
@@ -335,13 +417,20 @@ export default function ScheduleEditor() {
               <Network className="h-4 w-4" /> <span className="hidden sm:inline">Organograma</span>
             </Button>
             {canEdit && (
+              <Button variant="ghost" size="sm" className="px-2 sm:px-3" onClick={() => setColarAberto(true)}>
+                <ClipboardPaste className="h-4 w-4" /> <span className="hidden sm:inline">Colar lista</span>
+              </Button>
+            )}
+            {canEdit && (
               <Button variant="ghost" size="sm" className="px-2 sm:px-3" onClick={() => setShowSettings((s) => !s)}>
                 <Settings2 className="h-4 w-4" /> <span className="hidden sm:inline">Detalhes</span>
               </Button>
             )}
-            <Button variant="ghost" size="sm" className="px-2 sm:px-3" onClick={copyPublicLink}>
-              <Link2 className="h-4 w-4" /> <span className="hidden sm:inline">Link</span>
-            </Button>
+            {!livre && (
+              <Button variant="ghost" size="sm" className="px-2 sm:px-3" onClick={copyPublicLink}>
+                <Link2 className="h-4 w-4" /> <span className="hidden sm:inline">Link</span>
+              </Button>
+            )}
             <Button variant="ghost" size="sm" className="px-2 sm:px-3" onClick={exportCsv}>
               <Download className="h-4 w-4" /> <span className="hidden sm:inline">CSV</span>
             </Button>
@@ -363,17 +452,19 @@ export default function ScheduleEditor() {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            <Link to={`/cronogramas/${schedule.id}/termo`}>
-              <Button
-                variant={progress.pct === 100 ? "default" : "ghost"}
-                size="sm"
-                className="px-2 sm:px-3"
-                title="Termo de passagem para o Suporte"
-              >
-                <Handshake className="h-4 w-4" />
-                <span className="hidden sm:inline">Termo p/ Suporte</span>
-              </Button>
-            </Link>
+            {!livre && (
+              <Link to={`/cronogramas/${schedule.id}/termo`}>
+                <Button
+                  variant={progress.pct === 100 ? "default" : "ghost"}
+                  size="sm"
+                  className="px-2 sm:px-3"
+                  title="Termo de passagem para o Suporte"
+                >
+                  <Handshake className="h-4 w-4" />
+                  <span className="hidden sm:inline">Termo p/ Suporte</span>
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
 
@@ -397,10 +488,30 @@ export default function ScheduleEditor() {
         {showSettings && (
           <Card>
             <CardContent className="p-5 grid sm:grid-cols-2 gap-4">
-              <div className="space-y-1.5 sm:col-span-2">
-                <label className="text-xs uppercase tracking-wider text-muted-foreground">Cliente</label>
-                <Input value={schedule.client_name} onChange={(e) => updateSchedule({ client_name: e.target.value })} />
-              </div>
+              {livre ? (
+                <>
+                  <div className="space-y-1.5">
+                    <label className="text-xs uppercase tracking-wider text-muted-foreground">Título do cronograma</label>
+                    <Input
+                      value={schedule.title || ""}
+                      onChange={(e) => updateSchedule({ title: e.target.value, client_name: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs uppercase tracking-wider text-muted-foreground">Assunto</label>
+                    <Input
+                      value={schedule.subject || ""}
+                      onChange={(e) => updateSchedule({ subject: e.target.value })}
+                      placeholder="Obra, Evento, Manutenção…"
+                    />
+                  </div>
+                </>
+              ) : (
+                <div className="space-y-1.5 sm:col-span-2">
+                  <label className="text-xs uppercase tracking-wider text-muted-foreground">Cliente</label>
+                  <Input value={schedule.client_name} onChange={(e) => updateSchedule({ client_name: e.target.value })} />
+                </div>
+              )}
               <div className="space-y-1.5">
                 <label className="text-xs uppercase tracking-wider text-muted-foreground">Início</label>
                 <Input type="date" value={schedule.start_date} onChange={(e) => updateSchedule({ start_date: e.target.value })} />
@@ -452,14 +563,16 @@ export default function ScheduleEditor() {
           >
             <ListChecks className="h-4 w-4" /> Cronograma
           </button>
-          <button
-            onClick={() => setTab("levantamento")}
-            className={`px-3 py-2 text-sm font-medium border-b-2 -mb-px flex items-center gap-1.5 transition-colors ${
-              tab === "levantamento" ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <ClipboardList className="h-4 w-4" /> Levantamento
-          </button>
+          {!livre && (
+            <button
+              onClick={() => setTab("levantamento")}
+              className={`px-3 py-2 text-sm font-medium border-b-2 -mb-px flex items-center gap-1.5 transition-colors ${
+                tab === "levantamento" ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <ClipboardList className="h-4 w-4" /> Levantamento
+            </button>
+          )}
         </div>
 
         {tab === "levantamento" && (
@@ -560,9 +673,14 @@ export default function ScheduleEditor() {
               })}
             </nav>
             {canEdit && (
-              <Button onClick={addPhase} variant="outline" size="sm" className="w-full">
-                <Plus className="h-4 w-4" /> Nova fase
-              </Button>
+              <>
+                <Button onClick={addPhase} variant="outline" size="sm" className="w-full">
+                  <Plus className="h-4 w-4" /> Nova fase
+                </Button>
+                <Button onClick={() => setColarAberto(true)} variant="ghost" size="sm" className="w-full">
+                  <ClipboardPaste className="h-4 w-4" /> Colar várias atividades
+                </Button>
+              </>
             )}
           </aside>
 
@@ -572,8 +690,22 @@ export default function ScheduleEditor() {
               const phase = phases.find((p) => p.id === activePhaseId);
               const pi = phases.findIndex((p) => p.id === activePhaseId);
               if (!phase) return (
-                <Card><CardContent className="p-10 text-center text-sm text-muted-foreground">
-                  Selecione ou crie uma fase.
+                <Card><CardContent className="p-10 text-center space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    {ehCronogramaLivre(schedule)
+                      ? "Cronograma em branco — nada aqui ainda. Crie a primeira fase (bloco de etapas) e vá preenchendo."
+                      : "Selecione ou crie uma fase."}
+                  </p>
+                  {canEdit && (
+                    <div className="flex flex-wrap justify-center gap-2">
+                      <Button onClick={addPhase} variant="outline" size="sm">
+                        <Plus className="h-4 w-4" /> Criar primeira fase
+                      </Button>
+                      <Button onClick={() => setColarAberto(true)} variant="ghost" size="sm">
+                        <ClipboardPaste className="h-4 w-4" /> Colar lista de atividades
+                      </Button>
+                    </div>
+                  )}
                 </CardContent></Card>
               );
               return (
@@ -781,6 +913,113 @@ export default function ScheduleEditor() {
         </div>
         </>)}
       </main>
+
+      <ColarListaDialog
+        open={colarAberto}
+        onOpenChange={setColarAberto}
+        fases={phases}
+        fasePadrao={phases.find((p) => p.id === activePhaseId)?.title || ""}
+        onConfirm={colarAtividades}
+      />
     </div>
+  );
+}
+
+/* ---------------------------------------------------------------------------
+   "Colar lista" — preenche o cronograma à mão, em lote:
+   uma atividade por linha, com responsável e data opcionais,
+   separados por "|" ou ";"  →  "Conferir medidas | João | 14/10".
+--------------------------------------------------------------------------- */
+function ColarListaDialog({
+  open,
+  onOpenChange,
+  fases,
+  fasePadrao,
+  onConfirm,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  fases: Phase[];
+  fasePadrao: string;
+  onConfirm: (
+    destino: { faseId?: string; tituloFase: string },
+    linhas: { title: string; planned_date: string | null; assignee: string | null }[],
+  ) => Promise<void> | void;
+}) {
+  const [fase, setFase] = useState(fasePadrao);
+  const [texto, setTexto] = useState("");
+  const [gravando, setGravando] = useState(false);
+  const { itens, ignoradas } = useMemo(() => lerLinhasDeItens(texto), [texto]);
+
+  useEffect(() => {
+    if (open) {
+      setFase(fasePadrao);
+      setTexto("");
+    }
+  }, [open, fasePadrao]);
+
+  const confirmar = async () => {
+    if (!itens.length) return;
+    setGravando(true);
+    try {
+      const existente = fases.find((f) => f.title.trim().toLowerCase() === fase.trim().toLowerCase());
+      await onConfirm({ faseId: existente?.id, tituloFase: fase }, itens);
+      onOpenChange(false);
+    } finally {
+      setGravando(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-xl">
+        <DialogHeader>
+          <DialogTitle>Colar lista de atividades</DialogTitle>
+          <DialogDescription>
+            Uma atividade por linha. Opcionalmente: <code className="text-xs">Atividade | responsável | 12/10</code>.
+            Datas em 12/10, 12/10/2026 ou 2026-10-12.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-3">
+          <div className="space-y-1.5">
+            <label className="text-xs uppercase tracking-wider text-muted-foreground">Fase</label>
+            <Input
+              list="fases-do-cronograma"
+              value={fase}
+              onChange={(e) => setFase(e.target.value)}
+              placeholder="Ex.: Execução (se não existir, a fase é criada)"
+            />
+            <datalist id="fases-do-cronograma">
+              {fases.map((f) => (
+                <option key={f.id} value={f.title} />
+              ))}
+            </datalist>
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs uppercase tracking-wider text-muted-foreground">Atividades</label>
+            <Textarea
+              rows={8}
+              value={texto}
+              onChange={(e) => setTexto(e.target.value)}
+              placeholder={"Conferir medidas | João | 14/10\\nComprar material\\nIniciar execução | 21/10"}
+              className="font-mono text-xs"
+            />
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {itens.length === 0
+              ? "Nada reconhecido ainda."
+              : `${itens.length} atividade(s) reconhecida(s)${ignoradas ? ` · ${ignoradas} linha(s) ignorada(s)` : ""}.`}
+          </p>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+          <Button onClick={() => void confirmar()} disabled={!itens.length || gravando}>
+            {gravando ? "Adicionando…" : `Adicionar ${itens.length} atividade(s)`}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
