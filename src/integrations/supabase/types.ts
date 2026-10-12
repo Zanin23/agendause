@@ -201,6 +201,27 @@ export type Database = {
           },
         ]
       }
+      documentos: {
+        Row: {
+          atualizado_em: string
+          dados: Json
+          id: string
+          ordem: number
+        }
+        Insert: {
+          atualizado_em?: string
+          dados?: Json
+          id: string
+          ordem?: number
+        }
+        Update: {
+          atualizado_em?: string
+          dados?: Json
+          id?: string
+          ordem?: number
+        }
+        Relationships: []
+      }
       guest_acceptances: {
         Row: {
           accepted_at: string
@@ -1229,7 +1250,45 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      vw_relatorio_implantacoes: {
+        Row: {
+          agenda_progresso: number | null
+          agenda_status: string | null
+          atualizado_agenda: string | null
+          atualizado_relatorio: string | null
+          cadencia: string | null
+          cronograma: Json | null
+          equipe: string[] | null
+          id: string | null
+          inicio: string | null
+          itens_abertos: number | null
+          itens_atrasados: number | null
+          itens_concluidos: number | null
+          itens_total: number | null
+          modalidade: string | null
+          motivo_pausa: string | null
+          nome: string | null
+          nome_agenda: string | null
+          ordem: number | null
+          origem: string | null
+          pausado: boolean | null
+          progresso_relatorio: number | null
+          proxima_visita_data: string | null
+          proxima_visita_hora: string | null
+          proxima_visita_titulo: string | null
+          relatorio: Json | null
+          schedule_id: string | null
+          status_relatorio: string | null
+          status_text: string | null
+          tipo: string | null
+          visitas_agendadas: number | null
+          visitas_canceladas: number | null
+          visitas_realizadas: number | null
+          visitas_total: number | null
+          workspace_id: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       accept_handoff_as_support: {
@@ -1316,6 +1375,10 @@ export type Database = {
           _uploaded_by_name: string
         }
         Returns: string
+      }
+      rel_sincronizar_agenda: {
+        Args: { p_forcar_status?: boolean; p_workspace?: string }
+        Returns: Json
       }
       request_schedule_visit: {
         Args: {

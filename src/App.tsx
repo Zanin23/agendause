@@ -13,6 +13,7 @@ const Home = lazy(() => import("./pages/Home"));
 const HomeExperimental = lazy(() => import("./pages/HomeExperimental"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Reports = lazy(() => import("./pages/Reports"));
+const Implantacoes = lazy(() => import("./pages/Implantacoes"));
 const TrainingDetail = lazy(() => import("./pages/TrainingDetail"));
 const PrintAgenda = lazy(() => import("./pages/PrintAgenda"));
 const TrainingTerm = lazy(() => import("./pages/TrainingTerm"));
@@ -85,6 +86,7 @@ const App = () => (
                 <Route path="/blog/:slug" element={<ProtectedRoute><Article /></ProtectedRoute>} />
                 <Route path="/agenda" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
                 <Route path="/relatorios" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
+                <Route path="/implantacoes" element={<ProtectedRoute><Implantacoes /></ProtectedRoute>} />
                 <Route path="/treinamento/:id" element={<ProtectedRoute><TrainingDetail /></ProtectedRoute>} />
                 <Route path="/treinamento/:id/termo" element={<ProtectedRoute><TrainingTerm /></ProtectedRoute>} />
                 <Route path="/agenda/imprimir" element={<ProtectedRoute><PrintAgenda /></ProtectedRoute>} />

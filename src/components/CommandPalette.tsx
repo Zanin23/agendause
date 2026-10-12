@@ -14,6 +14,7 @@ const ITEMS = [
   { label: "Cronogramas", to: "/cronogramas", icon: ClipboardList, keys: "implantacao etapas" },
   { label: "Novo cronograma", to: "/cronogramas/novo", icon: CalendarPlus, keys: "criar" },
   { label: "Aceites e relatórios", to: "/relatorios", icon: FileCheck2, keys: "termos relatorios aceite" },
+  { label: "Implantações (relatório)", to: "/implantacoes", icon: Building2, keys: "implantacoes relatorio carteira cronograma agenda integracao" },
   { label: "Clientes", to: "/clientes", icon: Building2, keys: "empresas saude" },
   { label: "Solicitações a cobrar", to: "/cobrar", icon: Receipt, keys: "cobrar pendencias" },
   { label: "Anotações por empresa", to: "/anotacoes", icon: StickyNote, keys: "notas" },
