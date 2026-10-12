@@ -329,18 +329,19 @@ export default function BillingRequests() {
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
-          <div className="inline-flex items-center gap-1 rounded-md border border-border bg-card p-1">
+          <div className="flex w-full min-w-0 items-center gap-1 rounded-md border border-border bg-card p-1 sm:w-auto">
             <Button
               variant="ghost"
               size="sm"
-              className="h-7 w-7 p-0"
+              className="h-7 w-7 shrink-0 p-0"
               onClick={() => shiftWeek(-1)}
               aria-label="Semana anterior"
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
             <select
-              className="h-7 bg-transparent text-sm px-1 outline-none min-w-[180px]"
+              aria-label="Filtrar por semana"
+              className="h-7 min-w-0 flex-1 bg-transparent px-1 text-sm outline-none sm:min-w-[180px] sm:flex-none"
               value={selectedWeek}
               onChange={(e) => setSelectedWeek(e.target.value as any)}
             >
@@ -352,7 +353,7 @@ export default function BillingRequests() {
             <Button
               variant="ghost"
               size="sm"
-              className="h-7 w-7 p-0"
+              className="h-7 w-7 shrink-0 p-0"
               onClick={() => shiftWeek(1)}
               aria-label="Próxima semana"
             >
@@ -361,16 +362,18 @@ export default function BillingRequests() {
             <Button
               variant="ghost"
               size="sm"
-              className="h-7 px-2 text-xs"
+              className="h-7 shrink-0 px-2 text-xs"
               onClick={() => setSelectedWeek(toISODate(startOfWeek(new Date())))}
               title="Ir para esta semana"
+              aria-label="Ir para esta semana"
             >
-              <CalendarDays className="h-3.5 w-3.5 mr-1" />
-              Hoje
+              <CalendarDays className="mr-1 h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Hoje</span>
             </Button>
           </div>
           <select
-            className="h-9 rounded-md border border-border bg-card px-3 text-sm"
+            aria-label="Filtrar por cliente"
+            className="h-9 w-full max-w-full rounded-md border border-border bg-card px-3 text-sm sm:w-auto"
             value={filterClient}
             onChange={(e) => setFilterClient(e.target.value)}
           >

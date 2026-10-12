@@ -8,6 +8,7 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
+    allowedHosts: [".e2b.app"],
   },
   plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
   resolve: {

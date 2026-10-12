@@ -302,6 +302,7 @@ const Reports = () => {
             <div className="relative flex-1 min-w-[220px] max-w-md">
               <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <Input
+                aria-label="Buscar treinamentos"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Buscar por título, cliente ou local..."
@@ -330,8 +331,9 @@ const Reports = () => {
           {filtersOpen && (
             <div className="rounded-lg border bg-muted/20 p-4 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Cliente</label>
+                <label htmlFor="report-filter-client" className="text-xs font-medium text-muted-foreground">Cliente</label>
                 <select
+                  id="report-filter-client"
                   value={filterClient}
                   onChange={(e) => setFilterClient(e.target.value)}
                   className="w-full h-9 px-2 rounded-md border border-input bg-background text-sm"
@@ -343,8 +345,9 @@ const Reports = () => {
                 </select>
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Status</label>
+                <label htmlFor="report-filter-status" className="text-xs font-medium text-muted-foreground">Status</label>
                 <select
+                  id="report-filter-status"
                   value={filterStatus}
                   onChange={(e) => setFilterStatus(e.target.value as any)}
                   className="w-full h-9 px-2 rounded-md border border-input bg-background text-sm"
@@ -356,8 +359,9 @@ const Reports = () => {
                 </select>
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Local contém</label>
+                <label htmlFor="report-filter-location" className="text-xs font-medium text-muted-foreground">Local contém</label>
                 <Input
+                  id="report-filter-location"
                   value={filterLocation}
                   onChange={(e) => setFilterLocation(e.target.value)}
                   placeholder="Ex: matriz, online..."
@@ -365,8 +369,9 @@ const Reports = () => {
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">De</label>
+                <label htmlFor="report-filter-from" className="text-xs font-medium text-muted-foreground">De</label>
                 <Input
+                  id="report-filter-from"
                   type="date"
                   value={filterFrom}
                   onChange={(e) => setFilterFrom(e.target.value)}
@@ -374,8 +379,9 @@ const Reports = () => {
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Até</label>
+                <label htmlFor="report-filter-to" className="text-xs font-medium text-muted-foreground">Até</label>
                 <Input
+                  id="report-filter-to"
                   type="date"
                   value={filterTo}
                   onChange={(e) => setFilterTo(e.target.value)}
@@ -492,22 +498,18 @@ const Reports = () => {
 
                             {/* Actions */}
                             <div className="flex items-center gap-1 shrink-0">
-                              <Link to={`/treinamento/${t.id}`} aria-label="Detalhes">
-                                <Button variant="ghost" size="sm" className="h-9 px-2 sm:px-3">
+                              <Button asChild variant="ghost" size="sm" className="h-9 px-2 sm:px-3">
+                                <Link to={`/treinamento/${t.id}`} aria-label={`Detalhes de ${t.title}`}>
                                   <span className="hidden sm:inline">Detalhes</span>
                                   <ChevronRight className="h-4 w-4 sm:hidden" />
-                                </Button>
-                              </Link>
-                              <Link to={`/treinamento/${t.id}/termo`} aria-label="Termo">
-                                <Button
-                                  variant={hasAcc ? "default" : "outline"}
-                                  size="sm"
-                                  className="h-9 px-2 sm:px-3"
-                                >
+                                </Link>
+                              </Button>
+                              <Button asChild variant={hasAcc ? "default" : "outline"} size="sm" className="h-9 px-2 sm:px-3">
+                                <Link to={`/treinamento/${t.id}/termo`} aria-label={`Termo de aceite de ${t.title}`}>
                                   <FileText className="h-4 w-4" />
                                   <span className="hidden sm:inline">Termo</span>
-                                </Button>
-                              </Link>
+                                </Link>
+                              </Button>
                             </div>
                           </li>
                         );
@@ -627,8 +629,9 @@ const WeeklyAIReport = ({
           </div>
           <div className="flex items-end gap-2 flex-wrap w-full sm:w-auto">
             <div className="flex flex-col gap-1">
-              <label className="text-[10px] uppercase tracking-wider text-muted-foreground">De</label>
+              <label htmlFor="weekly-report-start" className="text-[10px] uppercase tracking-wider text-muted-foreground">De</label>
               <Input
+                id="weekly-report-start"
                 type="date"
                 value={rangeStart}
                 onChange={(e) => setRangeStart(e.target.value)}
@@ -637,8 +640,9 @@ const WeeklyAIReport = ({
               />
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-[10px] uppercase tracking-wider text-muted-foreground">Até</label>
+              <label htmlFor="weekly-report-end" className="text-[10px] uppercase tracking-wider text-muted-foreground">Até</label>
               <Input
+                id="weekly-report-end"
                 type="date"
                 value={rangeEnd}
                 onChange={(e) => setRangeEnd(e.target.value)}

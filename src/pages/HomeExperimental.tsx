@@ -41,9 +41,9 @@ const HomeExperimental = () => {
   const [sparks, setSparks] = useState<Spark[]>([]);
   const sparkId = useRef(0);
 
-  // clock ticking every second (seconds visible, so it must be 1s)
+  // Atualiza o relógio uma vez por minuto para evitar renderizações desnecessárias.
   useEffect(() => {
-    const id = setInterval(() => setNow(new Date()), 1000);
+    const id = setInterval(() => setNow(new Date()), 60_000);
     return () => clearInterval(id);
   }, []);
 
@@ -133,7 +133,7 @@ const HomeExperimental = () => {
   );
 
   const dateLabel = now.toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" });
-  const timeLabel = now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  const timeLabel = now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 
   const onHeroMove = (e: React.MouseEvent) => {
     const r = heroRef.current?.getBoundingClientRect();
@@ -146,16 +146,16 @@ const HomeExperimental = () => {
   return (
     <div className="min-h-screen bg-background overflow-x-hidden">
       <SEO
-        title="TreinaCheck — Início experimental"
-        description="Nova interface experimental do TreinaCheck: acesso rápido à agenda, cronogramas, cobranças e relatórios."
-        path="/inicio-experimental"
+        title="TreinaCheck — Início"
+        description="Acesse a agenda, os cronogramas, as cobranças e os relatórios do TreinaCheck."
+        path="/"
       />
       <div className="xp-progress" style={{ width: `${progress * 100}%` }} aria-hidden="true" />
       {true && (
         <div ref={spotRef} className="xp-spotlight hidden md:block" style={{ opacity: 0 }} aria-hidden="true" />
       )}
       <AppHeader />
-
+      <main id="main-content">
       {/* HERO */}
       <section
         ref={heroRef}
@@ -181,7 +181,7 @@ const HomeExperimental = () => {
         <div className="relative max-w-6xl mx-auto px-4 sm:px-6 pt-14 pb-16 sm:pt-24 sm:pb-24">
           <div className="xp-rise flex flex-wrap items-center gap-3 text-[10px] uppercase tracking-[0.34em] text-primary font-bold">
             <Sparkles className="h-3.5 w-3.5 xp-float" />
-            Interface experimental
+            Visão geral
             <span className="text-muted-foreground font-mono tabular-nums">/ {timeLabel}</span>
             {active && <span className="text-muted-foreground">/ base {active.name}</span>}
           </div>
@@ -228,7 +228,7 @@ const HomeExperimental = () => {
       </section>
 
       {/* BENTO */}
-      <main className="relative max-w-6xl mx-auto px-4 sm:px-6 py-12 sm:py-20">
+      <div className="relative max-w-6xl mx-auto px-4 sm:px-6 py-12 sm:py-20">
         <div className="grid grid-cols-1 sm:grid-cols-6 lg:grid-cols-12 auto-rows-[minmax(9rem,auto)] gap-3 sm:gap-4">
           {tiles.map(({ icon: Icon, label, hint, to, onClick, span }, i) => {
             const body = (
@@ -293,12 +293,13 @@ const HomeExperimental = () => {
 
         <div className="mt-12 flex flex-wrap items-center gap-4">
           <Link
-            to="/"
+            to="/inicio-classico"
             className="story-link text-[10px] uppercase tracking-[0.3em] text-muted-foreground hover:text-foreground"
           >
-            Voltar para a tela inicial atual
+            Abrir a versão clássica da tela inicial
           </Link>
         </div>
+      </div>
       </main>
 
       <CreateTrainingDialog open={open} onOpenChange={setOpen} onCreated={() => setOpen(false)} />

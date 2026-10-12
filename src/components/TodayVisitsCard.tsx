@@ -160,7 +160,7 @@ export const TodayVisitsCard = ({ className = "" }: { className?: string }) => {
                           {v.location}
                         </span>
                       )}
-                      <span style={{ color: vt.color }}>{vt.short}</span>
+                      <span className="text-foreground">{vt.short}</span>
                     </span>
                   </span>
                   <ArrowUpRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:-translate-y-0.5 group-hover:text-primary" />
@@ -173,7 +173,7 @@ export const TodayVisitsCard = ({ className = "" }: { className?: string }) => {
                         type="button"
                         disabled={busy === v.id}
                         onClick={() => finalize(v.id)}
-                        className="group/btn relative inline-flex items-center gap-1.5 overflow-hidden rounded-xl bg-emerald-500 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide text-white shadow-sm shadow-emerald-500/25 transition-all hover:-translate-y-0.5 hover:shadow-md hover:shadow-emerald-500/30 active:translate-y-0 disabled:opacity-60"
+                        className="group/btn relative inline-flex items-center gap-1.5 overflow-hidden rounded-xl bg-emerald-700 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide text-white shadow-sm shadow-emerald-500/25 transition-all hover:-translate-y-0.5 hover:shadow-md hover:shadow-emerald-500/30 active:translate-y-0 disabled:opacity-60"
                       >
                         <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/25 to-transparent transition-transform group-hover/btn:translate-x-full" />
                         <Check className="h-3.5 w-3.5" />
@@ -185,7 +185,7 @@ export const TodayVisitsCard = ({ className = "" }: { className?: string }) => {
                         type="button"
                         disabled={busy === v.id}
                         onClick={() => cancel(v.id)}
-                        className="group/btn relative inline-flex items-center gap-1.5 overflow-hidden rounded-xl bg-rose-500 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide text-white shadow-sm shadow-rose-500/25 transition-all hover:-translate-y-0.5 hover:shadow-md hover:shadow-rose-500/30 active:translate-y-0 disabled:opacity-60"
+                        className="group/btn relative inline-flex items-center gap-1.5 overflow-hidden rounded-xl bg-rose-700 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide text-white shadow-sm shadow-rose-500/25 transition-all hover:-translate-y-0.5 hover:shadow-md hover:shadow-rose-500/30 active:translate-y-0 disabled:opacity-60"
                       >
                         <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/25 to-transparent transition-transform group-hover/btn:translate-x-full" />
                         <X className="h-3.5 w-3.5" />

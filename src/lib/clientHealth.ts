@@ -9,8 +9,8 @@ export const HEALTH_LABELS: Record<HealthLevel, string> = {
 
 // Classes semânticas (tokens do index.css / paleta tailwind do projeto)
 export const HEALTH_CLASSES: Record<HealthLevel, string> = {
-  ok: "border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
-  warn: "border-amber-500/40 bg-amber-500/10 text-amber-600 dark:text-amber-400",
+  ok: "border-emerald-500/40 bg-emerald-500/10 text-emerald-800 dark:text-emerald-400",
+  warn: "border-amber-500/40 bg-amber-500/10 text-amber-800 dark:text-amber-400",
   late: "border-destructive/40 bg-destructive/10 text-destructive",
   done: "border-primary/40 bg-primary/10 text-primary",
 };

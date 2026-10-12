@@ -216,8 +216,8 @@ const Dashboard = () => {
                     "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground font-bold shadow-lg shadow-primary/30 ring-1 ring-primary-foreground/20 scale-110 hover:scale-110",
                   day_today:
                     "border border-primary/50 bg-primary/5 text-foreground font-semibold",
-                  day_outside: "text-muted-foreground/30 opacity-60",
-                  day_disabled: "text-muted-foreground/30 opacity-40",
+                  day_outside: "text-muted-foreground",
+                  day_disabled: "text-muted-foreground",
                 }}
               />
             </CardContent>

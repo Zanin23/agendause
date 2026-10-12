@@ -58,9 +58,9 @@ const pct = (a: number, b: number) => (b ? Math.round((a / b) * 100) : 0);
 
 const STATE_LABEL: Record<Activity["state"], string> = { done: "Concluída", late: "Atrasada", progress: "Em andamento", pending: "Pendente", cancelled: "Cancelada" };
 const STATE_CLS: Record<Activity["state"], string> = {
-  done: "bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/30",
+  done: "bg-sky-500/10 text-sky-800 dark:text-sky-400 border-sky-500/30",
   late: "bg-destructive/10 text-destructive border-destructive/30",
-  progress: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30",
+  progress: "bg-amber-500/10 text-amber-800 dark:text-amber-400 border-amber-500/30",
   pending: "bg-muted text-muted-foreground border-border",
   cancelled: "bg-muted text-muted-foreground border-border line-through",
 };
@@ -68,11 +68,11 @@ type ProjHealth = "ok" | "warn" | "late" | "idle" | "done" | "paused";
 const PH_LABEL: Record<ProjHealth, string> = { ok: "Dentro do prazo", warn: "Atenção", late: "Em atraso", idle: "Não iniciada", done: "Concluída", paused: "Pausada / aguardando cliente" };
 const PH_BAR: Record<ProjHealth, string> = { ok: "bg-emerald-500", warn: "bg-amber-500", late: "bg-destructive", idle: "bg-slate-400", done: "bg-sky-500", paused: "bg-slate-400" };
 const PH_CLS: Record<ProjHealth, string> = {
-  ok: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30",
-  warn: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30",
+  ok: "bg-emerald-500/10 text-emerald-800 dark:text-emerald-400 border-emerald-500/30",
+  warn: "bg-amber-500/10 text-amber-800 dark:text-amber-400 border-amber-500/30",
   late: "bg-destructive/10 text-destructive border-destructive/30",
   idle: "bg-muted text-muted-foreground border-border",
-  done: "bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/30",
+  done: "bg-sky-500/10 text-sky-800 dark:text-sky-400 border-sky-500/30",
   paused: "bg-muted text-muted-foreground border-border",
 };
 const TR_LABEL: Record<string, string> = { agendado: "Agendado", concluido: "Realizado", cancelado: "Cancelado", reagendado: "Reagendado" };
@@ -324,7 +324,7 @@ export default function ManagementReports() {
               <Sel label="Situação das solicitações" value={draft.devStatus} onChange={(v) => setDraft({ ...draft, devStatus: v })} options={Object.entries(DEV_LABEL)} />
               <div className="flex items-end gap-2">
                 <Button size="sm" className="flex-1" onClick={apply}>Aplicar</Button>
-                <Button size="sm" variant="ghost" onClick={clear}><X className="h-4 w-4" /></Button>
+                <Button size="sm" variant="ghost" onClick={clear} aria-label="Limpar filtros"><X className="h-4 w-4" /></Button>
               </div>
             </div>
           </div>
@@ -657,7 +657,7 @@ function Kpi({ icon: Icon, title, big, sub, rows, trend }: {
 }
 
 function Mini({ label, value, tone, onClick }: { label: string; value: number; tone?: "bad" | "good" | "warn" | "info"; onClick?: () => void }) {
-  const c = tone === "bad" ? "text-destructive" : tone === "good" ? "text-emerald-600 dark:text-emerald-400" : tone === "warn" ? "text-amber-600 dark:text-amber-400" : tone === "info" ? "text-sky-600 dark:text-sky-400" : "text-foreground";
+  const c = tone === "bad" ? "text-destructive" : tone === "good" ? "text-emerald-800 dark:text-emerald-400" : tone === "warn" ? "text-amber-800 dark:text-amber-400" : tone === "info" ? "text-sky-800 dark:text-sky-400" : "text-foreground";
   return (
     <button onClick={onClick} disabled={!onClick} className={`rounded-lg border border-border bg-card/60 p-3 text-left ${onClick ? "hover:border-primary/40" : "cursor-default"}`}>
       <div className={`text-2xl font-semibold tabular-nums ${c}`}>{value}</div>
@@ -668,8 +668,8 @@ function Mini({ label, value, tone, onClick }: { label: string; value: number; t
 
 function Panel({ title, children, className = "" }: { title: string; children: React.ReactNode; className?: string }) {
   return (
-    <section className={`rounded-xl border border-border bg-card/60 p-4 break-inside-avoid ${className}`}>
-      <h3 className="text-sm font-semibold mb-3">{title}</h3>{children}
+    <section className={`w-full min-w-0 rounded-xl border border-border bg-card/60 p-4 break-inside-avoid ${className}`}>
+      <h3 className="mb-3 break-words text-sm font-semibold">{title}</h3>{children}
     </section>
   );
 }
@@ -759,19 +759,19 @@ function Donut({ data }: { data: { label: string; value: number; cls: string; on
   let acc = 0;
   const r = 40, c = 2 * Math.PI * r;
   return (
-    <div className="flex items-center gap-6">
-      <svg viewBox="0 0 100 100" className="h-32 w-32 shrink-0 -rotate-90">
+    <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-center sm:gap-6">
+      <svg viewBox="0 0 100 100" className="mx-auto h-32 w-32 shrink-0 -rotate-90 sm:mx-0">
         <circle cx="50" cy="50" r={r} fill="none" className="stroke-muted" strokeWidth="14" />
         {total > 0 && data.map((d) => {
           const len = (d.value / total) * c; const off = acc; acc += len;
           return d.value ? <circle key={d.label} cx="50" cy="50" r={r} fill="none" strokeWidth="14" strokeDasharray={`${len} ${c - len}`} strokeDashoffset={-off} className={`${COLORS[d.cls] || "stroke-primary"} cursor-pointer hover:opacity-80`} onClick={d.onClick}><title>{`${d.label}: ${d.value}`}</title></circle> : null;
         })}
       </svg>
-      <div className="flex-1 space-y-1.5">
+      <div className="w-full min-w-0 flex-1 space-y-1.5">
         {data.map((d) => (
-          <button key={d.label} onClick={d.onClick} className="w-full flex items-center justify-between text-xs hover:text-primary">
-            <span className="flex items-center gap-2"><span className={`h-2.5 w-2.5 rounded-sm ${d.cls}`} />{d.label}</span>
-            <span className="tabular-nums font-medium">{d.value} <span className="text-muted-foreground">({pct(d.value, total)}%)</span></span>
+          <button key={d.label} onClick={d.onClick} className="flex w-full min-w-0 items-center justify-between gap-2 text-xs hover:text-primary">
+            <span className="flex min-w-0 items-center gap-2"><span className={`h-2.5 w-2.5 shrink-0 rounded-sm ${d.cls}`} /><span className="min-w-0 truncate">{d.label}</span></span>
+            <span className="shrink-0 tabular-nums font-medium">{d.value} <span className="text-muted-foreground">({pct(d.value, total)}%)</span></span>
           </button>
         ))}
       </div>
