@@ -35,7 +35,7 @@ agenda nela e uma view que junta as duas visões.
 | Arquivo | O que é |
 | --- | --- |
 | `supabase/migrations/20261012120000_integracao_relatorio_implantacoes.sql` | Cria `documentos`, a RLS aberta dessa tabela, o tempo real, as funções `rel_*` e a view `vw_relatorio_implantacoes`. **É o coração da integração.** |
-| `src/pages/Implantacoes.tsx` | Tela nova do TreinaCheck (rota `/implantacoes`): carteira com as duas visões, cronograma por fase, edição dos campos do relatório, publicação manual e tempo real. |
+| `src/pages/Implantacoes.tsx` | Tela nova do TreinaCheck (rota `/implantacoes`): carteira com as duas visões, cronograma por fase, edição dos campos do relatório (incluindo a **matriz de fases**), publicação manual e tempo real. |
 | `scripts/migrar-documentos.mjs` | Traz as empresas que já existem no projeto antigo do relatório (ou de um backup JSON) para o banco do TreinaCheck. |
 | `integracao/relatorio-de-implantacoes/` | Arquivos para copiar no **outro repositório**: `sync-config.js` (aponta para o banco do TreinaCheck) e `sync-agenda.js` (chama a sincronização quando o site abre). |
 | `src/App.tsx`, `src/pages/HomeExperimental.tsx`, `src/integrations/supabase/types.ts` | Rota, atalho na tela inicial e tipos. |
@@ -96,7 +96,8 @@ os cronogramas da agenda antes de mostrar a tela.
 ### Passo 4 — usar
 
 - **TreinaCheck → Implantações** (`/implantacoes`): carteira completa, cronograma
-  item por item, visitas, atrasados, e os campos do relatório editáveis.
+  item por item, visitas, atrasados, os campos do relatório editáveis e a
+  **matriz de fases** — abra os detalhes do card e clique em **Editar matriz**.
 - **Site do relatório**: como sempre foi, agora com o cronograma vindo da agenda.
 
 ---
@@ -137,8 +138,16 @@ lados reconhecem a mesma empresa sem duplicar. Isso é testado linha a linha.
 | Campo | Na criação | Depois |
 | --- | --- | --- |
 | `nome`, `cronograma`, `atualizado` | agenda | **agenda** (sempre refeito) |
-| `tipo`, `status`, `progresso`, `statusText`, `fases`, `historico` | semente da agenda | **relatório** (não é mais tocado) |
+| `tipo`, `status`, `progresso`, `statusText`, `fases`, `historico` | semente da agenda | **relatório** (a agenda nunca mais toca) |
 | `feito`, `falta`, `grupo`, `observacao` | vazio | **relatório** (a agenda nunca escreve) |
+
+A **matriz de fases** (`fases`, sempre 5 pares `[estado, detalhe]` — Cadastros
+básicos, Produtos & Estoque, Comercial / Vendas, Financeiro & PCP, Fiscal /
+Cloud; estados `done`, `now`, `pend`, `na`) nasce do cronograma, mas depois é
+editada à mão nos dois lados: no site do relatório (campo “Fases” do editor) ou
+na tela **Implantações** do TreinaCheck — botão **Editar matriz**, no card da
+empresa. Os dois gravam direto em `documentos.dados`, então o que muda de um
+lado aparece no outro (no TreinaCheck, na hora, pelo tempo real).
 
 - Rodar a função duas vezes seguidas não duplica nada (é idempotente).
 - Se você **quiser** que a agenda mande também na situação e no progresso
