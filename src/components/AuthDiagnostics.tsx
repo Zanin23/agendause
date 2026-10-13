@@ -3,6 +3,7 @@ import { CheckCircle2, Copy, Loader2, RefreshCw, TriangleAlert, XCircle } from "
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { ehStatusDeInfra, mensagemServidorFora } from "@/lib/authErrors";
 
 /* ---------------------------------------------------------------------------
    Diagnóstico de acesso — responde, em português, por que o login não passa:
@@ -22,7 +23,14 @@ const PROJETO =
 
 type Nivel = "ok" | "aviso" | "erro";
 
-type Checagem = { chave: string; rotulo: string; nivel: Nivel; detalhe: string };
+type Checagem = {
+  chave: string;
+  rotulo: string;
+  nivel: Nivel;
+  detalhe: string;
+  /** Link de ação (ex.: painel do Supabase para retomar o projeto). */
+  acao?: { href: string; texto: string };
+};
 
 const buscar = async (url: string, ms = 8000) => {
   const ctrl = new AbortController();
@@ -39,6 +47,23 @@ const buscar = async (url: string, ms = 8000) => {
 
 const porqueFalhou = (e: unknown) =>
   (e as Error)?.name === "AbortError" ? "sem resposta em 8s" : (e as Error)?.message || "falha de rede";
+
+const PAINEL = PROJETO && PROJETO !== "—" ? `https://supabase.com/dashboard/project/${PROJETO}` : "https://supabase.com/dashboard";
+
+const postar = async (url: string, corpo: unknown, ms = 8000) => {
+  const ctrl = new AbortController();
+  const alarme = setTimeout(() => ctrl.abort(), ms);
+  try {
+    return await fetch(url, {
+      method: "POST",
+      signal: ctrl.signal,
+      headers: { apikey: CHAVE, Authorization: `Bearer ${CHAVE}`, "Content-Type": "application/json" },
+      body: JSON.stringify(corpo),
+    });
+  } finally {
+    clearTimeout(alarme);
+  }
+};
 
 const AuthDiagnostics = () => {
   const [rodando, setRodando] = useState(true);
@@ -63,11 +88,14 @@ const AuthDiagnostics = () => {
           : {
               chave: "login",
               rotulo: "Servidor de login",
-              nivel: r.status === 401 || r.status === 403 ? "erro" : "aviso",
+              nivel: r.status === 401 || r.status === 403 ? "erro" : ehStatusDeInfra(r.status) ? "erro" : "aviso",
               detalhe:
                 r.status === 401 || r.status === 403
                   ? `respondeu ${r.status} — a chave pública do app não é aceita por este projeto`
-                  : `respondeu ${r.status} (instável)`,
+                  : ehStatusDeInfra(r.status)
+                    ? mensagemServidorFora(r.status, { projeto: PROJETO })
+                    : `respondeu ${r.status} (instável)`,
+              acao: ehStatusDeInfra(r.status) ? { href: PAINEL, texto: "Abrir o painel do Supabase" } : undefined,
             },
       );
     } catch (e) {
@@ -76,6 +104,59 @@ const AuthDiagnostics = () => {
         rotulo: "Servidor de login",
         nivel: "erro",
         detalhe: `${porqueFalhou(e)} — sem isso, ninguém entra. Confira a internet e se o projeto ${PROJETO} está ativo no Supabase (projeto pausado derruba tudo).`,
+        acao: { href: PAINEL, texto: "Abrir o painel do Supabase" },
+      });
+    }
+
+    // 1b) teste real de login: tenta entrar com uma conta de mentira.
+    //     400/invalid_grant = servidor funcionando (quem recusou foi a conta de teste).
+    //     5xx = servidor fora / projeto pausado — e é isso que explica o erro "{}" na tela.
+    try {
+      const r = await postar(`${URL_BASE}/auth/v1/token?grant_type=password`, {
+        email: "diagnostico@treinacheck.invalid",
+        password: "diagnostico-treinacheck",
+      });
+      const corpo = await r.text().catch(() => "");
+      const semDetalhe = !corpo.trim() || corpo.trim() === "{}";
+      if (ehStatusDeInfra(r.status) || semDetalhe) {
+        out.push({
+          chave: "login-teste",
+          rotulo: "Teste real de login",
+          nivel: "erro",
+          detalhe: semDetalhe && !ehStatusDeInfra(r.status)
+            ? `o servidor respondeu ${r.status} sem nenhuma explicação — é o mesmo caso do erro "{}" na tela: quem está falhando é o servidor, não a senha de quem tenta entrar`
+            : mensagemServidorFora(r.status, { projeto: PROJETO }),
+          acao: { href: PAINEL, texto: "Abrir o painel do Supabase" },
+        });
+      } else if (r.status === 429) {
+        out.push({
+          chave: "login-teste",
+          rotulo: "Teste real de login",
+          nivel: "aviso",
+          detalhe: "o servidor respondeu 429 (muitas tentativas seguidas). Espere alguns minutos antes de tentar entrar.",
+        });
+      } else if (/invalid_grant|invalid login credentials|invalid_credentials/i.test(corpo)) {
+        out.push({
+          chave: "login-teste",
+          rotulo: "Teste real de login",
+          nivel: "ok",
+          detalhe: "o servidor recusou a conta de teste (e-mail/senha inválidos), como esperado — o login está funcionando",
+        });
+      } else {
+        out.push({
+          chave: "login-teste",
+          rotulo: "Teste real de login",
+          nivel: "aviso",
+          detalhe: `respondeu ${r.status}: ${corpo.slice(0, 140) || "sem corpo"}`,
+        });
+      }
+    } catch (e) {
+      out.push({
+        chave: "login-teste",
+        rotulo: "Teste real de login",
+        nivel: "erro",
+        detalhe: `${porqueFalhou(e)} — o navegador não conseguiu completar o pedido de login`,
+        acao: { href: PAINEL, texto: "Abrir o painel do Supabase" },
       });
     }
 
@@ -173,6 +254,14 @@ const AuthDiagnostics = () => {
             <span className="min-w-0">
               <span className="font-medium">{c.rotulo}: </span>
               <span className="text-muted-foreground break-words">{c.detalhe}</span>
+              {c.acao && (
+                <>
+                  {" "}
+                  <a className="underline whitespace-nowrap" href={c.acao.href} target="_blank" rel="noreferrer">
+                    {c.acao.texto}
+                  </a>
+                </>
+              )}
             </span>
           </li>
         ))}

@@ -19,6 +19,30 @@ Guia de acesso do TreinaCheck. Vale para o site publicado
 
 ---
 
+## 1B. O erro na tela aparece como `{}` (ou "servidor fora do ar")?
+
+Isso **não** é a sua senha. É como o sistema mostrava o erro de **infraestrutura**
+do Supabase: quando o servidor de login responde 5xx (500, 503, 520…), o cliente
+monta a mensagem com o objeto vazio e a tela exibia `{}`. Agora essa mensagem é
+traduzida — mas a causa continua sendo uma destas:
+
+| O que aparece | Causa provável | O que fazer |
+| --- | --- | --- |
+| `{}` / “erro 503” / “fora do ar” | **Projeto pausado** no Supabase (o plano gratuito pausa depois de dias sem uso) | Abra o painel do Supabase, confira se o projeto aparece como **Paused** e clique em **Restore/Resume**. Enquanto estiver pausado, ninguém entra |
+| “erro 500/502/520–530” | Instabilidade momentânea do Supabase | Tente de novo em alguns minutos; confira o status do Supabase |
+| `Invalid API key` | Chave pública errada no `.env` da Vercel | Confira `VITE_SUPABASE_URL` e `VITE_SUPABASE_PUBLISHABLE_KEY` e faça um novo deploy |
+
+Para confirmar em 10 segundos: tela de login → **Não consigo entrar** →
+**Verificar o acesso**. O item **Teste real de login** tenta entrar com uma conta
+de mentira:
+
+- “o servidor recusou a conta de teste … o login está funcionando” → o servidor
+  está de pé; o problema é a conta/senha de quem tenta entrar;
+- “erro 503 …” → o servidor está fora (projeto pausado). O diagnóstico já traz o
+  link do painel do Supabase.
+
+---
+
 ## 2. A causa mais provável (troca de banco em 11/10/2026)
 
 O sistema mudou de banco nessa data:
@@ -43,8 +67,10 @@ banco novo.** A seção 4 traz os três caminhos para resolver.
 ## 3. Primeiro, descubra qual é o problema (2 minutos)
 
 1. Abra a tela de login e clique em **“Não consigo entrar”** → **Verificar o
-   acesso**. Ela testa, com a chave pública, quatro coisas:
+   acesso**. Ela testa, com a chave pública:
    - **Servidor de login** responde? (se não, é internet ou projeto pausado)
+   - **Teste real de login** — tenta entrar com uma conta de mentira para separar
+     “servidor fora do ar” de “e-mail/senha não conferem”;
    - **Banco de dados** responde?
    - **Integração do relatório** (tabela `documentos`) já foi publicada?
    - Existe **sessão** salva neste navegador?
@@ -198,6 +224,7 @@ banco”*, o passo 1 ainda não foi feito — entre com e-mail e senha enquanto 
 | Entro mas fico em “Escolha sua base” vazio | **4E** (vínculo com a base) |
 | Entro mas não vejo **Admin** | **4G** (`user_roles`) |
 | Nada carrega / “não foi possível falar com o banco” | **4F** (rede, projeto pausado, chave) |
+| Login mostra `{}` ou “servidor fora do ar” | **1B** (projeto pausado no Supabase) |
 | Quero entrar com Google | **4H** (habilitar provedor no Supabase) |
 
 Ferramenta de apoio em qualquer um dos casos: tela de login → **Não consigo
