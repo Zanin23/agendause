@@ -18,7 +18,7 @@
  * Pública por natureza: vai no HTML do site, de qualquer forma.
  * Enquanto estiver vazia, o app AVISA mas não troca nada sozinho (não quebra).
  */
-export const CHAVE_PUBLICA = "";
+export const CHAVE_PUBLICA = "sb_publishable_vz9REAkToghXmd1R0adsTw_J8PYkZmz";
 
 /** Projeto oficial — espelha o `.env` do repositório (há teste conferindo). */
 export const PROJETO_ATUAL = {

@@ -58,7 +58,7 @@ precisam ser os do `.env` do repositório, **do Agendause**:
 | --- | --- |
 | `VITE_SUPABASE_URL` | `https://pnaupodddxrbqbjilhft.supabase.co` |
 | `VITE_SUPABASE_PROJECT_ID` | `pnaupodddxrbqbjilhft` |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | a chave `publishable`/`anon` do **Agendause** (Supabase → Project Settings → API keys) |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | a chave `publishable`/`anon` do **Agendause** — a mesma que está no `.env` deste repositório (`sb_publishable_…`, Supabase → Project Settings → API keys) |
 
 Depois de salvar, faça **Deployments → Redeploy** (as variáveis só entram no
 build seguinte). Como conferir: tela de login → **Não consigo entrar** →

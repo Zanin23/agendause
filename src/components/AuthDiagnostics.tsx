@@ -184,14 +184,33 @@ const AuthDiagnostics = () => {
       });
     }
 
-    // 2) banco de dados (PostgREST)
+    // 2) banco de dados (PostgREST) — sonda uma tabela de verdade, não a raiz:
+    //    o endereço-raiz `/rest/v1/` devolve 401 até com chave válida (chaves
+    //    publishable novas), e isso já apareceu como falso alarme no diagnóstico.
     try {
-      const r = await buscar(`${URL_BASE}/rest/v1/`);
-      out.push(
-        r.ok
-          ? { chave: "banco", rotulo: "Banco de dados", nivel: "ok", detalhe: `respondeu (${r.status})` }
-          : { chave: "banco", rotulo: "Banco de dados", nivel: "aviso", detalhe: `respondeu ${r.status}` },
-      );
+      const r = await buscar(`${URL_BASE}/rest/v1/workspaces?select=id&limit=1`);
+      if (r.ok) {
+        out.push({ chave: "banco", rotulo: "Banco de dados", nivel: "ok", detalhe: `leitura respondeu (${r.status})` });
+      } else if (r.status === 401 || r.status === 403) {
+        out.push({
+          chave: "banco",
+          rotulo: "Banco de dados",
+          nivel: "aviso",
+          detalhe:
+            `respondeu ${r.status} — a chave pública do site não está sendo aceita para ler os dados. ` +
+            `Confira se ela é a do projeto ${PROJETO_ATUAL.ref} (${PROJETO_ATUAL.url})`,
+          acao: { href: "https://vercel.com/dashboard", texto: "Abrir a Vercel" },
+        });
+      } else if (r.status === 404) {
+        out.push({
+          chave: "banco",
+          rotulo: "Banco de dados",
+          nivel: "aviso",
+          detalhe: "a tabela `workspaces` não foi encontrada — as migrações do banco não foram publicadas neste projeto?",
+        });
+      } else {
+        out.push({ chave: "banco", rotulo: "Banco de dados", nivel: "aviso", detalhe: `respondeu ${r.status}` });
+      }
     } catch (e) {
       out.push({ chave: "banco", rotulo: "Banco de dados", nivel: "erro", detalhe: porqueFalhou(e) });
     }
