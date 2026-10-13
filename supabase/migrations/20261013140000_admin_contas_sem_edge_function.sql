@@ -17,7 +17,7 @@
 -- A Edge Function continua válida: se ela estiver publicada, o app usa a RPC
 -- primeiro e só cai nela quando a RPC ainda não existe no banco.
 --
--- Publicação: SQL Editor do projeto psgekwifthuzduhpreay → cole este arquivo.
+-- Publicação: SQL Editor do projeto pnaupodddxrbqbjilhft → cole este arquivo.
 -- É idempotente (pode rodar de novo sem estragar nada).
 -- ============================================================================
 

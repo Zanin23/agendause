@@ -16,7 +16,7 @@ Duas coisas novas, feitas para o dia a dia:
 ## 0. Antes de usar: publicar o SQL (uma vez só)
 
 O cronograma livre depende de três colunas novas na tabela dos cronogramas.
-No projeto Supabase do TreinaCheck (`psgekwifthuzduhpreay`):
+No projeto Supabase do TreinaCheck (`pnaupodddxrbqbjilhft`):
 
 1. **SQL Editor → New query**
 2. Cole o conteúdo inteiro de

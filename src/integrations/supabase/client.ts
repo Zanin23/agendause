@@ -2,9 +2,25 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 import { brokeredPreviewStorage } from './previewAuthStorage';
+import { resolverProjeto } from '@/lib/projetoAtual';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+// O resolvedor garante que o site nunca fale com um projeto que o sistema não
+// usa (instruções antigas apontavam para outro banco e o login virava erro 500).
+// Configuração válida é respeitada; só um projeto aposentado/vazio é corrigido.
+const projeto = resolverProjeto(
+  import.meta.env.VITE_SUPABASE_URL,
+  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+  import.meta.env.VITE_SUPABASE_PROJECT_ID,
+);
+const SUPABASE_URL = projeto.url;
+const SUPABASE_PUBLISHABLE_KEY = projeto.chave;
+if (projeto.situacao !== "ok") {
+  console.warn(
+    `[TreinaCheck] Projeto configurado: "${projeto.refDeclarada ?? "nenhum"}". ` +
+      `Projeto oficial: "${projeto.refOficial}". Situação: ${projeto.situacao}. ` +
+      "Atualize as variáveis VITE_SUPABASE_* (Vercel) com os valores do .env do repositório.",
+  );
+}
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";

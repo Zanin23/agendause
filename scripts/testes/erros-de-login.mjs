@@ -23,7 +23,7 @@ import {
   mensagemServidorFora,
 } from "../../src/lib/authErrors.ts";
 
-const ctx = { projeto: "psgekwifthuzduhpreay", painel: "https://supabase.com/dashboard/project/psgekwifthuzduhpreay" };
+const ctx = { projeto: "pnaupodddxrbqbjilhft", painel: "https://supabase.com/dashboard/project/pnaupodddxrbqbjilhft" };
 
 /* Erro real do cliente do Supabase quando o servidor responde 5xx:
    nome AuthRetryableFetchError, mensagem JSON.stringify(Response) = "{}". */
@@ -37,7 +37,7 @@ test('o caso da tela: 503 com mensagem "{}" vira explicação e nunca mostra {}'
   assert.match(msg, /não da sua senha/i);
   assert.match(msg, /pausado/i);
   assert.match(msg, /Restore\/Resume/);
-  assert.match(msg, /psgekwifthuzduhpreay/);
+  assert.match(msg, /pnaupodddxrbqbjilhft/);
   assert.match(msg, /Verificar o acesso/);
 });
 
@@ -124,7 +124,7 @@ test("helpers de mensagem inútil/JSON", () => {
 
 test("mensagemServidorFora cita o painel e o projeto quando recebe o contexto", () => {
   const msg = mensagemServidorFora(503, ctx);
-  assert.match(msg, /https:\/\/supabase\.com\/dashboard\/project\/psgekwifthuzduhpreay/);
+  assert.match(msg, /https:\/\/supabase\.com\/dashboard\/project\/pnaupodddxrbqbjilhft/);
   const semCtx = mensagemServidorFora(undefined);
   assert.match(semCtx, /painel do Supabase/);
   assert.ok(!semCtx.includes("undefined"));

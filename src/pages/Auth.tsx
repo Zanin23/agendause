@@ -15,6 +15,7 @@ import { LifeBuoy, Stethoscope, Mail, LockKeyhole, Eye, EyeOff, ArrowRight, Load
 
 import { AuthWelcome } from "@/components/AuthWelcome";
 import { ehStatusDeInfra, explicarErroDeLogin, extrairErroAuth } from "@/lib/authErrors";
+import { avisoDeProjetoAntigo, painelDoProjeto, resolverProjeto } from "@/lib/projetoAtual";
 import "@/styles/auth.css";
 
 /* ---------------------------------------------------------------------------
@@ -24,10 +25,16 @@ import "@/styles/auth.css";
    o banco está respondendo (projeto pausado, sem internet, integração pendente).
 --------------------------------------------------------------------------- */
 
-const PROJETO =
-  (import.meta.env.VITE_SUPABASE_PROJECT_ID as string | undefined) ||
-  ((import.meta.env.VITE_SUPABASE_URL as string | undefined)?.replace(/^https?:\/\//, "").split(".")[0] ?? "");
-const PAINEL = PROJETO ? `https://supabase.com/dashboard/project/${PROJETO}` : "https://supabase.com/dashboard";
+/* Projeto em uso (com a correção automática, quando necessária) e aviso
+   visível quando o site foi publicado apontando para o projeto errado. */
+const PROJETO_RESOLVIDO = resolverProjeto(
+  import.meta.env.VITE_SUPABASE_URL as string | undefined,
+  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined,
+  import.meta.env.VITE_SUPABASE_PROJECT_ID as string | undefined,
+);
+const PROJETO = PROJETO_RESOLVIDO.ref || PROJETO_RESOLVIDO.refOficial;
+const PAINEL = painelDoProjeto(PROJETO);
+const AVISO_PROJETO = avisoDeProjetoAntigo(PROJETO_RESOLVIDO);
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -114,6 +121,11 @@ const Auth = () => {
         <div className="auth-form-panel">
           <div className="auth-mobile-brand"><span className="auth-logo"><img src={logoAsset.url} alt="Use Sistemas" /></span>TreinaCheck</div>
           <div className="auth-form-inner space-y-4">
+        {AVISO_PROJETO && (
+          <p role="alert" className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-foreground">
+            {AVISO_PROJETO}
+          </p>
+        )}
         <Card className="auth-form-card">
           <CardHeader className="auth-form-heading space-y-2">
             <p className="auth-form-kicker">{mode === "signin" ? "SEU ESPAÇO DE TRABALHO" : "VAMOS RECUPERAR SEU ACESSO"}</p>

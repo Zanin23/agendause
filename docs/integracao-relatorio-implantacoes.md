@@ -3,7 +3,7 @@
 Dois sistemas, **um banco só**. O TreinaCheck (agenda, cronogramas, visitas) e o
 [Relatório de Implantações](https://github.com/Zanin23/Relat-rio-de-implanta-es)
 (dashboard da carteira) passam a ler e escrever no **mesmo projeto Supabase** —
-o do TreinaCheck (`psgekwifthuzduhpreay`). Não existe sincronização entre dois
+o do TreinaCheck (`pnaupodddxrbqbjilhft`). Não existe sincronização entre dois
 bancos: existe uma tabela compartilhada, uma função que publica o cronograma da
 agenda nela e uma view que junta as duas visões.
 
@@ -48,7 +48,7 @@ agenda nela e uma view que junta as duas visões.
 
 ### Passo 1 — publicar o SQL no Supabase do TreinaCheck
 
-1. Abra o projeto `psgekwifthuzduhpreay` → **SQL Editor** → **New query**.
+1. Abra o projeto `pnaupodddxrbqbjilhft` → **SQL Editor** → **New query**.
 2. Cole o conteúdo inteiro de
    `supabase/migrations/20261012120000_integracao_relatorio_implantacoes.sql` e
    clique **Run**. É idempotente: rodar de novo não estraga nada.

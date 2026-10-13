@@ -1,4 +1,4 @@
-project_id = "psgekwifthuzduhpreay"
+project_id = "pnaupodddxrbqbjilhft"
 
 [functions.admin-users]
 # A função valida o JWT via auth.getUser e exige has_role(..., 'admin').
