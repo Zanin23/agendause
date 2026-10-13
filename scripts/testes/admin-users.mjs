@@ -2,7 +2,7 @@
 // node --experimental-strip-types scripts/testes/admin-users.mjs
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { loadAdminUsers, adminFunctionError, adminRpcError, callAdminAction } from '../../src/lib/adminUsers.ts';
+import { loadAdminUsers, adminFunctionError, adminRpcError, callAdminAction, checkAdminPublication, SQL_LISTA, SQL_CONTAS } from '../../src/lib/adminUsers.ts';
 
 const payload = { users: [{ id: 'me' }, { id: 'another' }], all_schedules: [] };
 const client = (result, legacy) => ({
@@ -190,6 +190,93 @@ test('função ausente sem Edge Function publicada explica o caminho da migraç�
     rpc: () => ({ data: null, error: { code: 'PGRST202', message: 'not found' } }),
     edge: () => ({ data: null, error: { name: 'FunctionsFetchError', message: 'Failed to send a request to the Edge Function' } }),
   });
-  await assert.rejects(callAdminAction(c, novoUsuario), /20261013140000_admin_contas_sem_edge_function\.sql/);
-  await assert.rejects(callAdminAction(c, novoUsuario), /SQL Editor/);
+  await assert.rejects(callAdminAction(c, novoUsuario), /Conferir publicação no Supabase/);
+  await assert.rejects(callAdminAction(c, novoUsuario), /admin-users/);
+});
+
+/* ---------- conferência de publicação (o que a tela mostra ao admin) ---------- */
+
+const clientePublicacao = ({ rpcs = {}, funcao } = {}) => ({
+  rpc: async (name) => (rpcs[name] ? rpcs[name] : { data: null, error: { code: 'PGRST202', message: 'Could not find the function' } }),
+  functions: {
+    invoke: async () => {
+      if (funcao === 'lanca') throw new Error('Failed to send a request to the Edge Function');
+      return funcao ?? { data: null, error: { name: 'FunctionsFetchError', message: 'Failed to send a request to the Edge Function' } };
+    },
+  },
+});
+
+const acha = (itens, chave) => itens.find((i) => i.chave === chave);
+
+test('banco sem nada publicado: aponta os dois SQLs e a Edge Function', async () => {
+  const itens = await checkAdminPublication(clientePublicacao({}));
+  assert.equal(itens.length, 6);
+  assert.equal(itens.filter((i) => i.nivel === 'faltando').length, 5, 'só as 5 funções do banco são exigidas');
+  assert.equal(acha(itens, 'criar').arquivo, SQL_CONTAS);
+  assert.equal(acha(itens, 'senha').arquivo, SQL_CONTAS);
+  assert.equal(acha(itens, 'admin').arquivo, SQL_CONTAS);
+  assert.equal(acha(itens, 'permissoes').arquivo, SQL_CONTAS);
+  assert.equal(acha(itens, 'listar').arquivo, SQL_LISTA);
+  assert.equal(acha(itens, 'funcao').nivel, 'opcional');
+  assert.match(acha(itens, 'funcao').detalhe, /não faz falta/);
+});
+
+test('banco publicado: tudo ok, inclusive com a Edge Function ausente', async () => {
+  const itens = await checkAdminPublication(
+    clientePublicacao({
+      rpcs: {
+        // provas que recusam dentro da função = função publicada e funcionando
+        admin_create_user: { data: null, error: { code: '22023', message: 'Informe um e-mail válido.' } },
+        admin_set_password: { data: null, error: { code: '22023', message: 'A senha deve ter pelo menos 6 caracteres.' } },
+        admin_set_admin: { data: null, error: { code: '22023', message: 'user_id é obrigatório' } },
+        admin_set_permissions: { data: null, error: { code: '22023', message: 'user_id é obrigatório' } },
+        admin_list_users: { data: { users: [], all_schedules: [] }, error: null },
+      },
+    }),
+  );
+  assert.equal(acha(itens, 'criar').nivel, 'ok');
+  assert.match(acha(itens, 'criar').detalhe, /Informe um e-mail válido/);
+  assert.equal(acha(itens, 'listar').nivel, 'ok');
+  assert.equal(acha(itens, 'funcao').nivel, 'opcional', 'a Edge Function não é exigida');
+  assert.equal(itens.filter((i) => i.nivel === 'faltando').length, 0, 'nada pendente quando o banco está publicado');
+  assert.equal(itens.filter((i) => i.nivel === 'erro').length, 0);
+});
+
+test('Edge Function publicada também é reconhecida', async () => {
+  const itens = await checkAdminPublication(
+    clientePublicacao({ rpcs: { admin_create_user: { data: null, error: { code: '22023', message: 'Informe um e-mail válido.' } } }, funcao: { data: { users: [] }, error: null } }),
+  );
+  assert.equal(acha(itens, 'funcao').nivel, 'ok');
+});
+
+test('sessão de quem não é admin não é confundida com "não publicado"', async () => {
+  const itens = await checkAdminPublication(
+    clientePublicacao({
+      rpcs: {
+        admin_create_user: { data: null, error: { code: '42501', message: 'Acesso restrito a administradores.' } },
+        admin_set_password: { data: null, error: { code: '42501', message: 'Sua sessão expirou. Saia e entre novamente.' } },
+      },
+    }),
+  );
+  assert.equal(acha(itens, 'criar').nivel, 'erro');
+  assert.equal(acha(itens, 'criar').arquivo, undefined);
+  assert.match(acha(itens, 'senha').detalhe, /sessão expirou/i);
+  assert.equal(acha(itens, 'listar').nivel, 'faltando', 'as outras continuam sendo conferidas');
+});
+
+test('erro de rede na Edge Function não derruba a conferência', async () => {
+  const itens = await checkAdminPublication(
+    clientePublicacao({ rpcs: { admin_list_users: { data: { users: [], all_schedules: [] }, error: null } }, funcao: 'lanca' }),
+  );
+  assert.equal(acha(itens, 'listar').nivel, 'ok');
+  assert.equal(acha(itens, 'funcao').nivel, 'opcional');
+});
+
+test('a mensagem final de pendência ensina onde copiar o SQL', async () => {
+  const c = clienteAcao({
+    rpc: () => ({ data: null, error: { code: 'PGRST202', message: 'not found' } }),
+    edge: () => ({ data: null, error: { name: 'FunctionsFetchError', message: 'Failed to send a request to the Edge Function' } }),
+  });
+  await assert.rejects(callAdminAction(c, novoUsuario), /Conferir publicação no Supabase/);
+  await assert.rejects(callAdminAction(c, novoUsuario), /admin-users/);
 });

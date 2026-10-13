@@ -66,8 +66,96 @@ const RPC_AUSENTE = ["PGRST202", "42883"];
 
 /** Nem a RPC nova nem a Edge Function responderam: falta publicar uma das duas. */
 const MENSAGEM_PENDENTE =
-  "A gestão de contas ainda não está publicada neste banco. Aplique supabase/migrations/20261013140000_admin_contas_sem_edge_function.sql no SQL Editor do projeto Supabase (ou publique a Edge Function admin-users).";
+  "A gestão de contas ainda não está publicada neste banco. Em “Conferir publicação no Supabase”, logo acima nesta tela, o botão copia o SQL e abre o editor: cole, clique em Run e confira de novo (ou publique a Edge Function admin-users).";
 const PENDENTE_DE_PUBLICACAO = /não está publicada|não foi possível acessar a função|Verifique a conexão|Failed to send a request/i;
+
+export const SQL_LISTA = "20261013130000_admin_list_users.sql";
+export const SQL_CONTAS = "20261013140000_admin_contas_sem_edge_function.sql";
+
+export type PublicacaoNivel = "ok" | "opcional" | "faltando" | "erro";
+export type PublicacaoItem = {
+  chave: string;
+  rotulo: string;
+  nivel: PublicacaoNivel;
+  detalhe: string;
+  /** Arquivo SQL que resolve a pendência (quando existe um). */
+  arquivo?: string;
+};
+
+/**
+ * Confere, com a própria sessão do administrador, o que está publicado neste
+ * banco: cada RPC do Controle de Acessos e a Edge Function `admin-users`.
+ *
+ * As "provas" chamam as RPCs com dados de propósito inválidos (e-mail sem
+ * domínio, user_id nulo). Se a função existe, ela responde com erro de
+ * validação ANTES de gravar qualquer coisa — então nada é criado, apagado ou
+ * alterado por esta conferência.
+ */
+export async function checkAdminPublication(client: AdminActionClient): Promise<PublicacaoItem[]> {
+  const itens: PublicacaoItem[] = [];
+
+  const avaliar = (chave: string, rotulo: string, arquivo: string, error: ApiError | null): PublicacaoItem => {
+    if (!error) return { chave, rotulo, nivel: "ok", detalhe: "publicada neste banco" };
+    const texto = (error.message ?? "").trim();
+    if (RPC_AUSENTE.includes(error.code ?? "") || /does not exist|schema cache|Could not find the function/i.test(texto)) {
+      return { chave, rotulo, nivel: "faltando", detalhe: "ainda não foi publicada neste banco", arquivo };
+    }
+    if (error.code === "42501" && /administrador|sess[aã]o/i.test(texto)) {
+      return { chave, rotulo, nivel: "erro", detalhe: texto };
+    }
+    // Recusa vinda de dentro da função = a função existe e está funcionando.
+    return { chave, rotulo, nivel: "ok", detalhe: `publicada (a prova respondeu: ${texto || "sem detalhe"})` };
+  };
+
+  const provaCriar = await client.rpc("admin_create_user", {
+    _email: "verificacao@sem-dominio",
+    _password: "123",
+    _full_name: "Verificação",
+    _role: "member",
+    _screen_permissions: [],
+    _schedule_permissions: {},
+  });
+  itens.push(avaliar("criar", "Criar conta (admin_create_user)", SQL_CONTAS, provaCriar.error));
+
+  const provaSenha = await client.rpc("admin_set_password", { _user_id: null, _password: "12" });
+  itens.push(avaliar("senha", "Definir senha (admin_set_password)", SQL_CONTAS, provaSenha.error));
+
+  const provaAdmin = await client.rpc("admin_set_admin", { _user_id: null, _admin: true });
+  itens.push(avaliar("admin", "Administrador sim/não (admin_set_admin)", SQL_CONTAS, provaAdmin.error));
+
+  const provaPermissoes = await client.rpc("admin_set_permissions", {
+    _user_id: null,
+    _screen_permissions: [],
+    _schedule_permissions: {},
+  });
+  itens.push(avaliar("permissoes", "Permissões (admin_set_permissions)", SQL_CONTAS, provaPermissoes.error));
+
+  const provaLista = await client.rpc("admin_list_users");
+  itens.push(avaliar("listar", "Listar contas (admin_list_users)", SQL_LISTA, provaLista.error));
+
+  try {
+    const { error } = await client.functions.invoke("admin-users", { body: { action: "list" } });
+    itens.push(
+      error
+        ? {
+            chave: "funcao",
+            rotulo: "Edge Function admin-users",
+            nivel: "opcional",
+            detalhe: "não publicada — não faz falta: as funções do banco acima já resolvem tudo",
+          }
+        : { chave: "funcao", rotulo: "Edge Function admin-users", nivel: "ok", detalhe: "publicada neste projeto" },
+    );
+  } catch (e) {
+    itens.push({
+      chave: "funcao",
+      rotulo: "Edge Function admin-users",
+      nivel: "opcional",
+      detalhe: `não publicada (${(e as Error).message}) — não faz falta: as funções do banco acima já resolvem tudo`,
+    });
+  }
+
+  return itens;
+}
 
 export async function adminFunctionError(error: ApiError, data?: unknown): Promise<string> {
   let serverMessage = (data as { error?: string } | null)?.error;
@@ -79,7 +167,7 @@ export async function adminFunctionError(error: ApiError, data?: unknown): Promi
     if (response.status === 401) return "Sua sessão expirou. Saia e entre novamente.";
     if (response.status === 403) return "Acesso restrito a administradores.";
     if (response.status === 404) {
-      return "A gestão de contas ainda não está publicada neste banco: aplique a migração supabase/migrations/20261013140000_admin_contas_sem_edge_function.sql no SQL Editor do projeto (ou publique a Edge Function admin-users).";
+      return "A gestão de contas ainda não está publicada neste banco. Use “Conferir publicação no Supabase”, nesta tela, para copiar o SQL e colar no SQL Editor (ou publique a Edge Function admin-users).";
     }
   }
   if (serverMessage) return serverMessage;
