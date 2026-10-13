@@ -10,7 +10,10 @@
      4. rodar a sincronização duas vezes não duplica nada;
      5. o id gerado no SQL é igual ao id do app.js do relatório (aqui estão
         alguns pares já conferidos contra o app.js de verdade);
-     6. editar um cronograma livre não mexe no relatório.
+     6. editar um cronograma livre não mexe no relatório;
+     7. o status do cronograma chega certo no relatório: "completed" (o
+        "Concluído" do app) vira concluído e a pausa vira risco, mesmo sem
+        paused_at preenchido.
 
    Como rodar (o PGlite não é dependência do projeto — é só para teste):
 
@@ -38,6 +41,7 @@ if (!pglite) {
 const ler = (p) => readFileSync(resolve(RAIZ, p), "utf8");
 const integracao = ler("supabase/migrations/20261012120000_integracao_relatorio_implantacoes.sql");
 const livre = ler("supabase/migrations/20261013120000_cronogramas_livres.sql");
+const statusRelatorio = ler("supabase/migrations/20261013150000_status_do_cronograma_no_relatorio.sql");
 
 /* O schema de apoio: só as tabelas/colunas/funções que as migrações tocam
    (o Postgres do Supabase tem o resto: auth.uid, is_workspace_member…). */
@@ -178,7 +182,8 @@ const antes = await db.query(
 conferir("antes da migração não existe a coluna kind", antes.rows[0].n === 0, `colunas: ${antes.rows[0].n}`);
 
 await db.exec(livre);
-console.log("· migração dos cronogramas livres: publicada\n");
+await db.exec(statusRelatorio);
+console.log("· migrações dos cronogramas livres e do status no relatório: publicadas\n");
 
 const colunas = await db.query(
   `select column_name from information_schema.columns
@@ -264,6 +269,45 @@ const livreEditado = await db.query(
 conferir("cronograma livre guarda título e assunto", livreEditado.rows[0]?.title === "Obra — reforma (revisada)" && livreEditado.rows[0]?.subject === "Obra");
 const docsFinal = await db.query(`select count(*)::int as n from public.documentos`);
 conferir("editar o cronograma livre não cria empresa no relatório", docsFinal.rows[0].n === 1, String(docsFinal.rows[0].n));
+
+/* ---------- o status do cronograma no relatório ---------- */
+/* O app publica o status com p_forcar_status = true (a opção "agenda manda
+   também no status"), que é o que o botão de status do cronograma usa. */
+const statusNoRelatorio = async (forcar = true) => {
+  await db.query(`select public.rel_sincronizar_agenda(null, $1) as r`, [forcar]);
+  const { rows } = await db.query(`select dados from public.documentos where id <> '__meta__' limit 1`);
+  return String(rows[0]?.dados?.status ?? "");
+};
+
+await db.query(`update public.implementation_schedules set status = 'completed' where kind = 'implantacao'`);
+const statusConcluido = await statusNoRelatorio();
+conferir('"completed" (Concluído do app) publica a empresa como concluída', statusConcluido === "concluido", statusConcluido);
+
+await db.query(`update public.implementation_schedules set status = 'completed' where kind = 'implantacao'`);
+conferir(
+  "sem forçar, o relatório continua dono do próprio status",
+  (await statusNoRelatorio(false)) === "concluido",
+  "o documento já estava concluído e permanece",
+);
+
+await db.query(
+  `update public.implementation_schedules set status = 'waiting_client', paused_at = null, pause_reason = 'aguardando o cliente' where kind = 'implantacao'`,
+);
+const statusPausa = await statusNoRelatorio();
+conferir('pausa por status (sem paused_at) publica como risco', statusPausa === "risco", statusPausa);
+
+await db.query(`update public.implementation_schedules set status = 'paused', paused_at = current_date where kind = 'implantacao'`);
+conferir('pausa com paused_at continua sendo risco', (await statusNoRelatorio()) === "risco");
+
+await db.query(`update public.implementation_schedules set status = 'active', paused_at = null, pause_reason = null where kind = 'implantacao'`);
+const statusAtivo = await statusNoRelatorio();
+conferir('cronograma ativo volta para andamento', statusAtivo === "andamento", statusAtivo);
+
+await db.query(`update public.implementation_schedules set status = 'archived' where kind = 'implantacao'`);
+const statusArquivado = await statusNoRelatorio();
+conferir('arquivado não vira concluído sozinho', statusArquivado === "andamento", statusArquivado);
+
+await db.query(`update public.implementation_schedules set status = 'active' where kind = 'implantacao'`);
 
 console.log(falhas === 0 ? "\n✔ Todos os testes passaram." : `\n✖ ${falhas} teste(s) falharam.`);
 process.exit(falhas === 0 ? 0 : 1);

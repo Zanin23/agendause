@@ -172,3 +172,161 @@ export function plannedDateForRange(
   const within = (itemIndex / Math.max(1, itemsInPhase)) * phaseWindow;
   return toBusinessDay(addDays(startDate, Math.round(base + within)));
 }
+/* ===========================================================================
+   Status do cronograma (implementation_schedules.status)
+
+   O app usa `draft` (rascunho), `active`/`in_progress` (em execução),
+   `completed` (concluído) e `archived` (arquivado). Pausa tem controle próprio
+   (`paused` / `waiting_client`), porque pausar envolve motivo e remanejamento.
+   Os rótulos ficam aqui para lista e editor nunca divergirem.
+--------------------------------------------------------------------------- */
+export const PAUSED_STATUSES = ["paused", "waiting_client"];
+export const isPausedStatus = (s?: string | null) => !!s && PAUSED_STATUSES.includes(s);
+
+export const PAUSE_LABELS: Record<string, string> = {
+  paused: "Pausado",
+  waiting_client: "Pendente pelo cliente",
+};
+
+export const SCHEDULE_STATUS_LABELS: Record<string, string> = {
+  draft: "Rascunho",
+  active: "Ativo",
+  in_progress: "Em andamento",
+  accepted: "Aceito",
+  completed: "Concluído",
+  archived: "Arquivado",
+  paused: "Pausado",
+  waiting_client: "Pendente pelo cliente",
+};
+
+export const SCHEDULE_STATUS_VARIANTS: Record<
+  string,
+  "default" | "secondary" | "outline" | "success" | "destructive"
+> = {
+  draft: "outline",
+  active: "default",
+  in_progress: "default",
+  accepted: "success",
+  completed: "success",
+  archived: "secondary",
+  paused: "secondary",
+  waiting_client: "secondary",
+};
+
+export const scheduleStatusLabel = (s?: string | null) => SCHEDULE_STATUS_LABELS[s ?? ""] ?? (s || "—");
+export const scheduleStatusVariant = (s?: string | null) => SCHEDULE_STATUS_VARIANTS[s ?? ""] ?? "outline";
+
+/** Status que dá para escolher dentro do cronograma (a pausa tem botão próprio). */
+export const SCHEDULE_STATUS_OPTIONS: { value: string; label: string; hint: string }[] = [
+  { value: "draft", label: "Rascunho", hint: "Ainda sendo montado; não conta como atrasado." },
+  { value: "active", label: "Ativo", hint: "Em execução — é o estado do dia a dia." },
+  { value: "in_progress", label: "Em andamento", hint: "Em curso, para quem prefere este rótulo." },
+  { value: "completed", label: "Concluído", hint: "Encerrado: o relatório de implantações mostra como concluído." },
+  { value: "archived", label: "Arquivado", hint: "Fora do acompanhamento, sem apagar nada." },
+];
+
+/**
+ * O que gravar ao trocar o status. Sair de uma pausa limpa `paused_at` e
+ * `pause_reason` — senão os relatórios continuariam tratando como parado.
+ */
+export function payloadStatus(novo: string, atual?: string | null): Record<string, unknown> {
+  const saindoDaPausa = isPausedStatus(atual) && !isPausedStatus(novo);
+  return saindoDaPausa
+    ? { status: novo, paused_at: null, pause_reason: null }
+    : { status: novo };
+}
+
+/* ===========================================================================
+   Remarcação de um módulo (fase) inteiro
+
+   Dois jeitos de mexer nas datas de todas as etapas de uma fase de uma vez:
+     · "inicio"        — informe a nova data da primeira etapa da fase;
+     · "deslocamento"  — adie/antecipe tudo em N dias.
+   A distância entre as etapas continua a mesma; fim de semana vai para segunda.
+--------------------------------------------------------------------------- */
+export type RemarcacaoModo = "inicio" | "deslocamento";
+export type ItemRemarcavel = {
+  id: string;
+  planned_date: string | null;
+  status?: string | null;
+  /** Visita vinculada: a remarcação muda a data prevista, não a visita. */
+  training_id?: string | null;
+};
+export type AlteracaoData = { id: string; de: string; para: string };
+export type PlanoRemarcacao = {
+  alteracoes: AlteracaoData[];
+  deslocamento: number;
+  ignorados: number;
+  janelaAtual: { inicio: string; fim: string } | null;
+  janelaNova: { inicio: string; fim: string } | null;
+};
+
+/** "yyyy-mm-dd" (sem fuso) ou null quando vazio/inválido (inclusive 2026-13-40). */
+export function diaISO(v?: string | null): string | null {
+  const t = (v || "").trim().slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(t)) return null;
+  const [a, m, d] = t.split("-").map(Number);
+  const data = new Date(a, m - 1, d);
+  const real = data.getFullYear() === a && data.getMonth() === m - 1 && data.getDate() === d;
+  return real ? t : null;
+}
+
+const diaLocal = (iso: string) => {
+  const [a, m, d] = iso.split("-").map(Number);
+  return new Date(a, (m || 1) - 1, d || 1);
+};
+
+const isoDe = (data: Date) =>
+  `${data.getFullYear()}-${String(data.getMonth() + 1).padStart(2, "0")}-${String(data.getDate()).padStart(2, "0")}`;
+
+const janela = (datas: string[]) =>
+  datas.length ? { inicio: datas.reduce((a, b) => (a < b ? a : b)), fim: datas.reduce((a, b) => (a > b ? a : b)) } : null;
+
+export function planejarRemarcacao(
+  items: ItemRemarcavel[],
+  opts: { modo: RemarcacaoModo; valor: string | number; incluirConcluidos?: boolean; ajustarDiaUtil?: boolean },
+): PlanoRemarcacao {
+  const comData = items
+    .map((i) => ({ id: i.id, status: i.status ?? null, data: diaISO(i.planned_date) }))
+    .filter((i): i is { id: string; status: string | null; data: string } => !!i.data);
+
+  const alvo = comData.filter(
+    (i) => opts.incluirConcluidos || (i.status !== "done" && i.status !== "not_applicable"),
+  );
+  const ignorados = items.length - alvo.length;
+
+  const atual = janela(alvo.map((i) => i.data));
+  if (!alvo.length) {
+    return { alteracoes: [], deslocamento: 0, ignorados, janelaAtual: null, janelaNova: null };
+  }
+
+  let deslocamento = 0;
+  if (opts.modo === "inicio") {
+    const novoInicio = diaISO(typeof opts.valor === "string" ? opts.valor : null);
+    if (!novoInicio) {
+      return { alteracoes: [], deslocamento: 0, ignorados, janelaAtual: atual, janelaNova: atual };
+    }
+    deslocamento = Math.round((diaLocal(novoInicio).getTime() - diaLocal(atual!.inicio).getTime()) / 86400000);
+  } else {
+    deslocamento = Math.trunc(Number(opts.valor) || 0);
+  }
+
+  const ajustar = opts.ajustarDiaUtil !== false;
+  const mover = (iso: string) => {
+    const d = addDays(diaLocal(iso), deslocamento);
+    return isoDe(ajustar ? toBusinessDay(d) : d);
+  };
+
+  const novo = janela(alvo.map((i) => mover(i.data)));
+  const alteracoes = deslocamento === 0
+    ? []
+    : alvo.map((i) => ({ id: i.id, de: i.data, para: mover(i.data) })).filter((a) => a.de !== a.para);
+
+  return { alteracoes, deslocamento, ignorados, janelaAtual: atual, janelaNova: novo };
+}
+
+/** "adiadas 7 dias" / "antecipadas 2 dias" / "sem mudança de prazo". */
+export function descreveDeslocamento(dias: number): string {
+  if (!dias) return "sem mudança de prazo";
+  return dias > 0 ? `adiadas ${dias} dia(s)` : `antecipadas ${-dias} dia(s)`;
+}
