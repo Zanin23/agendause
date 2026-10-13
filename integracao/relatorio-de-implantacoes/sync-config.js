@@ -15,8 +15,7 @@
    ===================================================================== */
 window.SYNC_CONFIG = {
   url: "https://pnaupodddxrbqbjilhft.supabase.co",
-  // PENDENTE: cole aqui a chave pública do Agendause (Supabase → Settings → API keys).
-  anonKey: "",
+    anonKey: "sb_publishable_vz9REAkToghXmd1R0adsTw_J8PYkZmz",
   table: "documentos",
   schema: "public"
 };
