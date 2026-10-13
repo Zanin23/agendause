@@ -54,7 +54,7 @@ import { supabase } from "@/integrations/supabase/client";
    A view `vw_relatorio_implantacoes` já entrega as duas partes juntas.
 --------------------------------------------------------------------------- */
 
-const SITE_RELATORIO = "https://relat-rio-de-implanta-es.vercel.app";
+const SITE_RELATORIO = "https://relatorioimplant.vercel.app";
 
 type CronogramaItem = {
   id?: string;
