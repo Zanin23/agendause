@@ -14,6 +14,7 @@ import { SEO } from "@/components/SEO";
 import { LifeBuoy, Stethoscope, Mail, LockKeyhole, Eye, EyeOff, ArrowRight, Loader2, ShieldCheck } from "lucide-react";
 
 import { AuthWelcome } from "@/components/AuthWelcome";
+import { ehStatusDeInfra, explicarErroDeLogin, extrairErroAuth } from "@/lib/authErrors";
 import "@/styles/auth.css";
 
 /* ---------------------------------------------------------------------------
@@ -23,23 +24,10 @@ import "@/styles/auth.css";
    o banco está respondendo (projeto pausado, sem internet, integração pendente).
 --------------------------------------------------------------------------- */
 
-/** Converte o erro cru do Supabase em uma frase útil (com o próximo passo). */
-const explicarErro = (bruto: string): string => {
-  const m = (bruto || "").toLowerCase();
-  if (/invalid login credentials|invalid_grant|invalid credentials/.test(m))
-    return "E-mail ou senha não conferem neste banco. Se a sua conta foi criada antes de 11/10 (o sistema trocou de banco nesse dia), use “Esqueci minha senha” ou peça ao administrador para recriar a conta.";
-  if (/email not confirmed/.test(m))
-    return "A conta existe, mas o e-mail ainda não foi confirmado. Peça ao administrador para confirmar o acesso (Admin → contas).";
-  if (/failed to fetch|networkerror|load failed|network request failed|fetch failed/.test(m))
-    return "Não foi possível falar com o servidor de login. Veja se a internet está ok e rode “Verificar o acesso” abaixo — se o banco estiver pausado no Supabase, nada entra até reativá-lo.";
-  if (/too many requests|rate limit|over_request_rate_limit/.test(m))
-    return "Muitas tentativas em pouco tempo. Espere alguns minutos e tente de novo.";
-  if (/provider is not enabled|unsupported provider|validation_failed/.test(m))
-    return "O login com Google ainda não está habilitado neste banco. Entre com e-mail e senha (ou habilite o Google no Supabase → Authentication → Providers).";
-  if (/signups not allowed|signup_disabled/.test(m))
-    return "O cadastro público está desativado — as contas são criadas pelo administrador.";
-  return bruto || "Erro na autenticação";
-};
+const PROJETO =
+  (import.meta.env.VITE_SUPABASE_PROJECT_ID as string | undefined) ||
+  ((import.meta.env.VITE_SUPABASE_URL as string | undefined)?.replace(/^https?:\/\//, "").split(".")[0] ?? "");
+const PAINEL = PROJETO ? `https://supabase.com/dashboard/project/${PROJETO}` : "https://supabase.com/dashboard";
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -79,10 +67,11 @@ const Auth = () => {
       const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
       if (error) throw error;
     } catch (err) {
-      const mensagem = explicarErro(err instanceof Error ? err.message : String(err));
+      const mensagem = explicarErroDeLogin(err, { projeto: PROJETO, painel: PAINEL });
       setErro(mensagem);
       toast.error(mensagem);
-      if (/servidor|internet|pausado/i.test(mensagem)) setMostrarAjuda(true);
+      const { status } = extrairErroAuth(err);
+      if (ehStatusDeInfra(status) || /servidor|internet|pausado/i.test(mensagem)) setMostrarAjuda(true);
     } finally {
       setLoading(false);
     }
@@ -105,7 +94,7 @@ const Auth = () => {
         if (result.error) throw result.error;
       }
     } catch (error) {
-      const message = explicarErro(error instanceof Error ? error.message : String(error));
+      const message = explicarErroDeLogin(error, { projeto: PROJETO, painel: PAINEL });
       setErro(message);
       toast.error(message);
     } finally {
