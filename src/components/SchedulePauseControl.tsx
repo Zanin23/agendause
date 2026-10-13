@@ -8,15 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { toBusinessDay } from "@/lib/schedule";
-
-export const PAUSED_STATUSES = ["paused", "waiting_client"];
-export const isPausedStatus = (s?: string | null) => !!s && PAUSED_STATUSES.includes(s);
-export const PAUSE_LABELS: Record<string, string> = { paused: "Pausado", waiting_client: "Pendente pelo cliente" };
+import { PAUSE_LABELS, isPausedStatus, toBusinessDay } from "@/lib/schedule";
+import { publicarStatusNoRelatorio } from "@/lib/publicarRelatorio";
 
 type Item = { id: string; planned_date: string | null; status: string };
 type Props = {
-  schedule: { id: string; status: string; paused_at?: string | null; pause_reason?: string | null };
+  schedule: { id: string; status: string; workspace_id?: string | null; paused_at?: string | null; pause_reason?: string | null };
   items: Item[];
   canEdit: boolean;
   onChanged: () => void;
@@ -45,7 +42,9 @@ export function SchedulePauseControl({ schedule, items, canEdit, onChanged, part
       .update({ status: kind, paused_at: iso(new Date()), pause_reason: reason.trim() || null } as never).eq("id", schedule.id);
     setBusy(false);
     if (error) return toast.error(error.message);
+    const erroRelatorio = await publicarStatusNoRelatorio(schedule.workspace_id);
     toast.success(kind === "waiting_client" ? "Cronograma marcado como pendente pelo cliente" : "Cronograma pausado");
+    if (erroRelatorio) toast.warning(`A pausa foi salva, mas o relatório de implantações não atualizou: ${erroRelatorio}`);
     setOpenPause(false); setReason(""); onChanged();
   };
 
@@ -68,7 +67,9 @@ export function SchedulePauseControl({ schedule, items, canEdit, onChanged, part
       .update({ status: "active", paused_at: null, pause_reason: null } as never).eq("id", schedule.id);
     setBusy(false);
     if (error) return toast.error(error.message);
+    const erroRelatorio = await publicarStatusNoRelatorio(schedule.workspace_id);
     toast.success(shift ? `Cronograma retomado — ${open.length} etapas remanejadas` : "Cronograma retomado");
+    if (erroRelatorio) toast.warning(`O cronograma foi retomado, mas o relatório de implantações não atualizou: ${erroRelatorio}`);
     setOpenResume(false); onChanged();
   };
 

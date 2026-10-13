@@ -13,32 +13,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BackButton } from "@/components/BackButton";
-import { ehCronogramaLivre, tituloDoCronograma } from "@/lib/schedule";
-
-const STATUS_LABELS: Record<string, string> = {
-  draft: "Rascunho",
-  active: "Ativo",
-  in_progress: "Em andamento",
-  accepted: "Aceito",
-  completed: "Concluído",
-  archived: "Arquivado",
-  paused: "Pausado",
-  waiting_client: "Pendente pelo cliente",
-};
-
-const STATUS_VARIANTS: Record<string, "default" | "secondary" | "outline" | "success" | "destructive"> = {
-  draft: "outline",
-  active: "default",
-  in_progress: "default",
-  accepted: "success",
-  completed: "success",
-  archived: "secondary",
-  paused: "secondary",
-  waiting_client: "secondary",
-};
-
-const statusLabel = (s: string) => STATUS_LABELS[s] ?? s;
-const statusVariant = (s: string) => STATUS_VARIANTS[s] ?? "outline";
+import {
+  ehCronogramaLivre,
+  scheduleStatusLabel as statusLabel,
+  scheduleStatusVariant as statusVariant,
+  tituloDoCronograma,
+} from "@/lib/schedule";
 
 type Row = {
   id: string;

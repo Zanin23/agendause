@@ -12,6 +12,8 @@ import { toast } from "sonner";
 import { PhaseReorderDialog } from "@/components/PhaseReorderDialog";
 import { SurveyTab } from "@/components/SurveyTab";
 import { SchedulePauseControl } from "@/components/SchedulePauseControl";
+import { ScheduleStatusControl } from "@/components/ScheduleStatusControl";
+import { PhaseDateShiftDialog } from "@/components/PhaseDateShiftDialog";
 import { ClipboardList, ListChecks } from "lucide-react";
 import { usePermissions } from "@/hooks/usePermissions";
 import { supabase } from "@/integrations/supabase/client";
@@ -56,6 +58,7 @@ type Schedule = {
   id: string; client_name: string; client_email: string | null; start_date: string;
   kind?: string | null; title?: string | null; subject?: string | null;
   cadence: string; modality: string; use_team: string[]; status: string;
+  workspace_id?: string | null;
   paused_at?: string | null; pause_reason?: string | null;
   observations: string | null; public_token: string | null; accepted_at: string | null; accepted_by: string | null;
 };
@@ -76,6 +79,7 @@ export default function ScheduleEditor() {
   const [trainings, setTrainings] = useState<TrainingLite[]>([]);
   const [tab, setTab] = useState<"cronograma" | "levantamento">("cronograma");
   const [colarAberto, setColarAberto] = useState(false);
+  const [remarcarFaseId, setRemarcarFaseId] = useState<string | null>(null);
 
   const load = async () => {
     if (!id) return;
@@ -411,7 +415,13 @@ export default function ScheduleEditor() {
               </p>
             </div>
           </div>
-          <div className="flex flex-wrap gap-1 sm:gap-1.5">
+          <div className="flex flex-wrap items-center gap-1 sm:gap-1.5">
+            <ScheduleStatusControl
+              schedule={schedule}
+              items={phases.flatMap((p) => p.items)}
+              canEdit={canEdit}
+              onChanged={load}
+            />
             <SchedulePauseControl part="button" schedule={schedule} items={phases.flatMap((p) => p.items)} canEdit={canEdit} onChanged={load} />
             <Button variant="ghost" size="sm" className="px-2 sm:px-3" onClick={() => navigate(`/cronogramas/${schedule.id}/visualizar`)}>
               <Network className="h-4 w-4" /> <span className="hidden sm:inline">Organograma</span>
@@ -719,6 +729,16 @@ export default function ScheduleEditor() {
                         className="font-semibold text-sm sm:text-base border-0 shadow-none px-2 focus-visible:ring-1 -ml-2 min-w-0 flex-1" />
                       {canEdit && (
                         <>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 shrink-0 px-2"
+                            onClick={() => setRemarcarFaseId(phase.id)}
+                            title="Remarcar as datas de todas as etapas desta fase"
+                          >
+                            <CalendarClock className="h-4 w-4" />
+                            <span className="hidden sm:inline ml-1.5">Datas</span>
+                          </Button>
                           <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => movePhase(pi, -1)} disabled={pi === 0}>
                             <ArrowUp className="h-4 w-4" />
                           </Button>
@@ -921,6 +941,20 @@ export default function ScheduleEditor() {
         fasePadrao={phases.find((p) => p.id === activePhaseId)?.title || ""}
         onConfirm={colarAtividades}
       />
+
+      {(() => {
+        const fase = phases.find((p) => p.id === remarcarFaseId);
+        if (!fase) return null;
+        return (
+          <PhaseDateShiftDialog
+            open
+            onOpenChange={(o) => !o && setRemarcarFaseId(null)}
+            fase={fase.title || `Fase ${phases.indexOf(fase) + 1}`}
+            items={fase.items}
+            onApplied={load}
+          />
+        );
+      })()}
     </div>
   );
 }
