@@ -15,6 +15,7 @@ import {
 import { AppHeader } from "@/components/AppHeader";
 import { SEO } from "@/components/SEO";
 import { CreateTrainingDialog } from "@/components/CreateTrainingDialog";
+import { firstNameOf, greetingForHour } from "@/lib/profileName";
 import { useAuth } from "@/hooks/useAuth";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { TodayVisitsCard } from "@/components/TodayVisitsCard";
@@ -31,7 +32,7 @@ type Tile = {
 type Spark = { id: number; x: number; y: number; dx: number; dy: number };
 
 const HomeExperimental = () => {
-  const { user } = useAuth();
+  const { fullName } = useAuth();
   const { active } = useWorkspace();
   const [open, setOpen] = useState(false);
   const [now, setNow] = useState(() => new Date());
@@ -82,10 +83,9 @@ const HomeExperimental = () => {
     };
   }, []);
 
-  const rawName: string | undefined = user?.user_metadata?.full_name;
-  const firstName = rawName ? rawName.split(" ")[0] : "";
+  const firstName = firstNameOf(fullName);
   const hour = now.getHours();
-  const greeting = hour < 12 ? "Bom dia" : hour < 18 ? "Boa tarde" : "Boa noite";
+  const greeting = greetingForHour(hour);
 
   // typewriter for the outlined name line
   const target = (firstName || "equipe").toUpperCase();
@@ -189,12 +189,12 @@ const HomeExperimental = () => {
             {active && <span className="text-muted-foreground">/ base {active.name}</span>}
           </div>
 
-          <h1 className="mt-8 font-black tracking-[-0.04em] leading-[0.82] uppercase">
+          <h1 aria-label={`${greeting}, ${firstName || "equipe"}!`} className="mt-8 font-black tracking-[-0.04em] leading-[0.82] uppercase">
             <span className="xp-rise block" style={{ fontSize: "clamp(2.75rem, 12vw, 9rem)", animationDelay: ".08s" }}>
               {greeting}
             </span>
             <span
-              className="xp-rise block xp-outline-text"
+              className="xp-rise block xp-outline-text break-words"
               style={{ fontSize: "clamp(2.75rem, 12vw, 9rem)", animationDelay: ".16s" }}
             >
               {typed || "\u00a0"}

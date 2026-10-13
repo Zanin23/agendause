@@ -9,14 +9,14 @@ import { useIsAdmin } from "@/hooks/useIsAdmin";
 import logoAsset from "@/assets/logo-use-sistemas.png.asset.json";
 
 export const AppHeader = () => {
-  const { user } = useAuth();
+  const { user, fullName } = useAuth();
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
   const { active } = useWorkspace();
   const { isAdmin } = useIsAdmin();
 
-  const initials = (user?.user_metadata?.full_name || user?.email || "?")
-    .split(" ")
+  const initials = (fullName || user?.email || "?")
+    .trim().split(/\s+/)
     .map((p: string) => p[0])
     .slice(0, 2)
     .join("")

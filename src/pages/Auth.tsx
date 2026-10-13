@@ -11,7 +11,10 @@ import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/
 import { AuthDiagnostics } from "@/components/AuthDiagnostics";
 import { toast } from "sonner";
 import { SEO } from "@/components/SEO";
-import { LifeBuoy, Stethoscope } from "lucide-react";
+import { LifeBuoy, Stethoscope, Mail, LockKeyhole, Eye, EyeOff, ArrowRight, Loader2, ShieldCheck } from "lucide-react";
+
+import { AuthWelcome } from "@/components/AuthWelcome";
+import "@/styles/auth.css";
 
 /* ---------------------------------------------------------------------------
    Entrar — e, se não conseguir entrar, sair daqui com um caminho.
@@ -47,11 +50,15 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [emailEnviado, setEmailEnviado] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [mostrarAjuda, setMostrarAjuda] = useState(false);
 
   useEffect(() => {
     if (user) navigate("/", { replace: true });
   }, [user, navigate]);
+
+  useEffect(() => { setShowPassword(false); }, [mode]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,8 +78,8 @@ const Auth = () => {
       }
       const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
       if (error) throw error;
-    } catch (err: any) {
-      const mensagem = explicarErro(err?.message || String(err));
+    } catch (err) {
+      const mensagem = explicarErro(err instanceof Error ? err.message : String(err));
       setErro(mensagem);
       toast.error(mensagem);
       if (/servidor|internet|pausado/i.test(mensagem)) setMostrarAjuda(true);
@@ -83,45 +90,47 @@ const Auth = () => {
 
   const handleGoogle = async () => {
     setErro(null);
-    // Fora dos domínios Lovable (ex.: Vercel), usa o Google OAuth nativo do Supabase.
-    const host = window.location.hostname;
-    const onLovable = /(^|\.)(lovable\.app|lovableproject\.com|lovableproject-dev\.com)$/.test(host);
-    if (!onLovable) {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: { redirectTo: window.location.origin },
-      });
-      if (error) {
-        const mensagem = explicarErro(error.message);
-        setErro(mensagem);
-        toast.error(mensagem);
+    setGoogleLoading(true);
+    try {
+      const host = window.location.hostname;
+      const onLovable = /(^|\.)(lovable\.app|lovableproject\.com|lovableproject-dev\.com)$/.test(host);
+      if (!onLovable) {
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider: "google",
+          options: { redirectTo: window.location.origin },
+        });
+        if (error) throw error;
+      } else {
+        const result = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin });
+        if (result.error) throw result.error;
       }
-      return;
-    }
-    const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
-    });
-    if (result.error) {
-      const mensagem = explicarErro(result.error.message || "Erro ao entrar com Google");
-      setErro(mensagem);
-      toast.error(mensagem);
+    } catch (error) {
+      const message = explicarErro(error instanceof Error ? error.message : String(error));
+      setErro(message);
+      toast.error(message);
+    } finally {
+      setGoogleLoading(false);
     }
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center px-4 py-10 bg-background">
+    <main className="auth-page">
       <SEO
         title={mode === "signin" ? "Entrar — TreinaCheck" : "Recuperar acesso — TreinaCheck"}
         description="Acesse o TreinaCheck para gerenciar a agenda de treinamentos da sua equipe e registrar aceites."
         path="/auth"
       />
-      <div className="w-full max-w-md space-y-4">
-        <Card className="w-full">
-          <CardHeader className="text-center space-y-2">
-            <img src={logoAsset.url} alt="Use Sistemas" className="mx-auto h-16 w-auto" />
-            <h1 className="text-2xl font-semibold leading-none">TreinaCheck</h1>
+      <div className="auth-shell">
+        <AuthWelcome />
+        <div className="auth-form-panel">
+          <div className="auth-mobile-brand"><span className="auth-logo"><img src={logoAsset.url} alt="Use Sistemas" /></span>TreinaCheck</div>
+          <div className="auth-form-inner space-y-4">
+        <Card className="auth-form-card">
+          <CardHeader className="auth-form-heading space-y-2">
+            <p className="auth-form-kicker">{mode === "signin" ? "SEU ESPAÇO DE TRABALHO" : "VAMOS RECUPERAR SEU ACESSO"}</p>
+            <h1>{mode === "signin" ? "Bom ter você por aqui." : "Uma nova senha, um novo começo."}</h1>
             <CardDescription>
-              {mode === "signin" ? "Entre para acessar a agenda" : "Vamos criar uma senha nova para você"}
+              {mode === "signin" ? "Entre na sua conta e continue de onde parou." : "Informe seu e-mail para receber o link de recuperação."}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -145,34 +154,46 @@ const Auth = () => {
               </div>
             ) : (
               <>
-                <form onSubmit={handleSubmit} className="space-y-3">
+                <form onSubmit={handleSubmit} className="space-y-5">
                   <div className="space-y-1.5">
-                    <Label htmlFor="email">Email</Label>
+                    <Label htmlFor="email">E-mail de acesso</Label>
+                    <div className="auth-input-wrap"><Mail size={16} />
                     <Input
                       id="email"
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
+                      placeholder="voce@empresa.com.br"
+                      disabled={loading || googleLoading}
                       autoComplete="email"
                       required
                     />
+                    </div>
                   </div>
                   {mode === "signin" && (
                     <div className="space-y-1.5">
-                      <Label htmlFor="password">Senha</Label>
+                      <Label htmlFor="password">Sua senha</Label>
+                      <div className="auth-input-wrap auth-password-input"><LockKeyhole size={16} />
                       <Input
                         id="password"
-                        type="password"
+                        type={showPassword ? "text" : "password"}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
+                        placeholder="Digite sua senha"
+                        disabled={loading || googleLoading}
                         autoComplete="current-password"
                         required
                         minLength={6}
                       />
+                      <button type="button" className="auth-password-toggle" onClick={() => setShowPassword(value => !value)}
+                        aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"} aria-pressed={showPassword}>
+                        {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+                      </button>
+                      </div>
                     </div>
                   )}
-                  <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? "Aguarde..." : mode === "signin" ? "Entrar" : "Enviar link de nova senha"}
+                  <Button type="submit" className="w-full auth-primary-button" disabled={loading || googleLoading}>
+                    {loading ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Aguarde...</> : <>{mode === "signin" ? "Entrar na minha conta" : "Enviar link de recuperação"}<ArrowRight className="h-4 w-4 ml-2" /></>}
                   </Button>
                 </form>
 
@@ -188,7 +209,7 @@ const Auth = () => {
                   <span className="h-px flex-1 bg-border" />
                 </div>
 
-                <Button type="button" variant="outline" className="w-full" onClick={handleGoogle}>
+                <Button type="button" variant="outline" className="w-full auth-google-button" onClick={handleGoogle} disabled={loading || googleLoading}>
                   <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4 mr-2">
                     <path
                       fill="#4285F4"
@@ -204,14 +225,15 @@ const Auth = () => {
                       d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.7 0 3.99 2.47 1.29 6.62l3.98 3.09C6.22 6.86 8.87 4.75 12 4.75Z"
                     />
                   </svg>
-                  Entrar com Google
+                  {googleLoading ? "Conectando ao Google..." : "Continuar com Google"}
                 </Button>
 
                 <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
                   {mode === "signin" ? (
                     <button
                       type="button"
-                      className="text-primary hover:underline"
+                      className="text-primary hover:underline disabled:opacity-50"
+                      disabled={loading || googleLoading}
                       onClick={() => { setMode("reset"); setErro(null); }}
                     >
                       Esqueci minha senha
@@ -219,7 +241,8 @@ const Auth = () => {
                   ) : (
                     <button
                       type="button"
-                      className="text-muted-foreground hover:underline"
+                      className="text-muted-foreground hover:underline disabled:opacity-50"
+                      disabled={loading || googleLoading}
                       onClick={() => { setMode("signin"); setErro(null); }}
                     >
                       Voltar para o login
@@ -236,7 +259,7 @@ const Auth = () => {
                   </button>
                 </div>
 
-                <p className="text-center text-sm text-muted-foreground">
+                <p className="text-center text-xs leading-relaxed text-muted-foreground pt-2">
                   Apenas contas criadas por administradores podem acessar o sistema.
                 </p>
               </>
@@ -255,6 +278,9 @@ const Auth = () => {
             </CardContent>
           </Card>
         )}
+          </div>
+          <p className="auth-form-footnote"><ShieldCheck size={13} /> Acesso à sua equipe · TreinaCheck por Use Sistemas</p>
+        </div>
       </div>
     </main>
   );
