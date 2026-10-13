@@ -1300,6 +1300,10 @@ export type Database = {
       }
     }
     Functions: {
+      admin_list_users: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       accept_handoff_as_support: {
         Args: { _handoff_id: string; _name: string }
         Returns: boolean

@@ -1,1 +1,6 @@
 project_id = "psgekwifthuzduhpreay"
+
+[functions.admin-users]
+# A função valida o JWT via auth.getUser e exige has_role(..., 'admin').
+# Evita que o gateway legado bloqueie tokens dos novos signing keys/preflight.
+verify_jwt = false
