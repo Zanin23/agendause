@@ -1304,6 +1304,29 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Json
       }
+      admin_create_user: {
+        Args: {
+          _email: string
+          _password: string
+          _full_name?: string
+          _role?: Database["public"]["Enums"]["app_role"]
+          _screen_permissions?: Json
+          _schedule_permissions?: Json
+        }
+        Returns: Json
+      }
+      admin_set_admin: {
+        Args: { _user_id: string; _admin: boolean }
+        Returns: Json
+      }
+      admin_set_password: {
+        Args: { _user_id: string; _password: string }
+        Returns: Json
+      }
+      admin_set_permissions: {
+        Args: { _user_id: string; _screen_permissions?: Json; _schedule_permissions?: Json }
+        Returns: Json
+      }
       accept_handoff_as_support: {
         Args: { _handoff_id: string; _name: string }
         Returns: boolean

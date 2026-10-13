@@ -2,7 +2,7 @@
 // node --experimental-strip-types scripts/testes/admin-users.mjs
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { loadAdminUsers, adminFunctionError } from '../../src/lib/adminUsers.ts';
+import { loadAdminUsers, adminFunctionError, adminRpcError, callAdminAction } from '../../src/lib/adminUsers.ts';
 
 const payload = { users: [{ id: 'me' }, { id: 'another' }], all_schedules: [] };
 const client = (result, legacy) => ({
@@ -49,4 +49,147 @@ test('mensagens úteis para transporte, sessão e função ausente', async () =>
   assert.match(await adminFunctionError({ message: 'HTTP', context: new Response(null, { status: 401 }) }), /sessão expirou/);
   assert.match(await adminFunctionError({ message: 'HTTP', context: new Response(null, { status: 404 }) }), /não está publicada/);
   assert.equal(await adminFunctionError({ message: 'HTTP', context: new Response('{"error":"Senha fraca"}', { status: 400 }) }), 'Senha fraca');
+});
+
+/* ---------- ações administrativas (criar conta, senha, permissões) ---------- */
+
+const clienteAcao = ({ rpc, edge, reset } = {}) => {
+  const chamadas = { rpc: [], edge: [], reset: [] };
+  return {
+    chamadas,
+    rpc: async (name, args) => {
+      chamadas.rpc.push({ name, args });
+      if (!rpc) throw new Error('RPC não deveria ser chamada');
+      return rpc({ name, args });
+    },
+    functions: {
+      invoke: async (name, options) => {
+        chamadas.edge.push({ name, body: options.body });
+        if (!edge) throw new Error('Edge Function não deveria ser chamada');
+        return edge({ name, body: options.body });
+      },
+    },
+    auth: reset
+      ? {
+          resetPasswordForEmail: async (email, options) => {
+            chamadas.reset.push({ email, options });
+            return reset({ email, options });
+          },
+        }
+      : undefined,
+  };
+};
+
+const novoUsuario = {
+  action: 'create_user',
+  email: 'novo@empresa.com',
+  password: 'SenhaNova1',
+  full_name: 'Novo Usuário',
+  role: 'member',
+  screen_permissions: [{ screen: 'schedules', actions: ['read', 'write'] }],
+  schedule_permissions: { '33333333-3333-3333-3333-333333333333': 'read' },
+};
+
+test('criar conta usa a RPC do banco, sem Edge Function', async () => {
+  const c = clienteAcao({ rpc: () => ({ data: { success: true, user_id: 'u1' }, error: null }) });
+  const r = await callAdminAction(c, novoUsuario);
+  assert.deepEqual(r, { success: true, user_id: 'u1' });
+  assert.equal(c.chamadas.rpc.length, 1);
+  assert.equal(c.chamadas.rpc[0].name, 'admin_create_user');
+  assert.deepEqual(c.chamadas.rpc[0].args, {
+    _email: 'novo@empresa.com',
+    _password: 'SenhaNova1',
+    _full_name: 'Novo Usuário',
+    _role: 'member',
+    _screen_permissions: novoUsuario.screen_permissions,
+    _schedule_permissions: novoUsuario.schedule_permissions,
+  });
+  assert.equal(c.chamadas.edge.length, 0, 'não deve chamar a Edge Function quando a RPC existe');
+});
+
+test('banco ainda sem a migração: cai na Edge Function com o mesmo pedido', async () => {
+  for (const code of ['PGRST202', '42883']) {
+    const c = clienteAcao({
+      rpc: () => ({ data: null, error: { code, message: 'function not found' } }),
+      edge: ({ body }) => ({ data: { success: true, via: 'edge', body }, error: null }),
+    });
+    const r = await callAdminAction(c, novoUsuario);
+    assert.equal(r.via, 'edge');
+    assert.deepEqual(r.body, novoUsuario);
+    assert.equal(c.chamadas.edge[0].name, 'admin-users');
+  }
+});
+
+test('erro de regra do banco não vira chamada à Edge Function', async () => {
+  const c = clienteAcao({
+    rpc: () => ({ data: null, error: { code: '23505', message: 'Já existe uma conta com o e-mail novo@empresa.com.' } }),
+  });
+  await assert.rejects(callAdminAction(c, novoUsuario), /Já existe uma conta/);
+  assert.equal(c.chamadas.edge.length, 0);
+});
+
+test('senha, admin e permissões usam os argumentos certos', async () => {
+  const chamadas = [];
+  const c = clienteAcao({ rpc: ({ name, args }) => (chamadas.push({ name, args }), { data: { success: true }, error: null }) });
+  await callAdminAction(c, { action: 'set_password', user_id: 'u2', password: 'Abc12345' });
+  await callAdminAction(c, { action: 'set_admin', user_id: 'u2', admin: true });
+  await callAdminAction(c, {
+    action: 'set_permissions',
+    user_id: 'u2',
+    screen_permissions: [{ screen: 'reports', actions: ['read'] }],
+    schedule_permissions: {},
+  });
+  assert.deepEqual(chamadas, [
+    { name: 'admin_set_password', args: { _user_id: 'u2', _password: 'Abc12345' } },
+    { name: 'admin_set_admin', args: { _user_id: 'u2', _admin: true } },
+    {
+      name: 'admin_set_permissions',
+      args: {
+        _user_id: 'u2',
+        _screen_permissions: [{ screen: 'reports', actions: ['read'] }],
+        _schedule_permissions: {},
+      },
+    },
+  ]);
+});
+
+test('enviar redefinição usa o e-mail do próprio GoTrue, sem depender de deploy', async () => {
+  const c = clienteAcao({ reset: () => ({ error: null }) });
+  const r = await callAdminAction(c, {
+    action: 'send_reset',
+    email: 'quem@empresa.com',
+    redirect_to: 'https://agendause.vercel.app/auth',
+  });
+  assert.deepEqual(r, { success: true });
+  assert.deepEqual(c.chamadas.reset, [
+    { email: 'quem@empresa.com', options: { redirectTo: 'https://agendause.vercel.app/auth' } },
+  ]);
+  assert.equal(c.chamadas.rpc.length, 0);
+  assert.equal(c.chamadas.edge.length, 0);
+});
+
+test('enviar redefinição sem auth no cliente cai na Edge Function', async () => {
+  const c = clienteAcao({ edge: () => ({ data: { success: true }, error: null }) });
+  await callAdminAction(c, { action: 'send_reset', email: 'quem@empresa.com' });
+  assert.equal(c.chamadas.edge[0].body.action, 'send_reset');
+});
+
+test('mensagens do banco ficam em português e explicam o que fazer', () => {
+  assert.match(adminRpcError({ code: '42501', message: 'Acesso restrito a administradores.' }), /restrito a administradores/);
+  assert.match(
+    adminRpcError({ code: '42501', message: 'permission denied for table users' }),
+    /publicar a Edge Function|service_role/,
+  );
+  assert.match(adminRpcError({ code: '42501', message: 'Este banco não autoriza gravar em auth.users a partir do SQL' }), /auth\.users/);
+  assert.match(adminRpcError({ code: 'PGRST301', message: 'JWT expired' }), /sessão expirou/);
+  assert.equal(adminRpcError({ code: '22023', message: 'Informe um e-mail válido.' }), 'Informe um e-mail válido.');
+});
+
+test('função ausente sem Edge Function publicada explica o caminho da migração', async () => {
+  const c = clienteAcao({
+    rpc: () => ({ data: null, error: { code: 'PGRST202', message: 'not found' } }),
+    edge: () => ({ data: null, error: { name: 'FunctionsFetchError', message: 'Failed to send a request to the Edge Function' } }),
+  });
+  await assert.rejects(callAdminAction(c, novoUsuario), /20261013140000_admin_contas_sem_edge_function\.sql/);
+  await assert.rejects(callAdminAction(c, novoUsuario), /SQL Editor/);
 });
