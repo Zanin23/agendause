@@ -12,6 +12,8 @@ Guia de acesso do TreinaCheck. Vale para o site publicado
   cronogramas e da integração com o relatório). Ele aparece no `.env` como
   `VITE_SUPABASE_URL`. A tela de login mostra esse endereço no rodapé do
   **Verificar o acesso**.
+- Cada pessoa pode **trocar a sua própria senha** em **Configurações → Senha de
+  acesso** (seção 4A-1 deste guia).
 - As contas são criadas **apenas por administrador** — no site, em
   **Admin → Controle de Acessos → Novo Usuário**, ou fora dele com
   `scripts/criar-usuario.mjs` (veja `docs/controle-de-usuarios.md`). Não existe
@@ -144,6 +146,23 @@ e tente entrar com ela no site.
 - **a conta nova também dá 500** → o problema é do projeto (gatilho/hook de
   autenticação): veja **Logs → Auth** no painel e confira se há hook
   personalizado em **Authentication → Hooks**.
+
+### 4A-1. Trocar a própria senha (dentro do sistema)
+
+Quem já está logado não precisa passar pelo e-mail: em **Configurações**
+(`/configuracoes`, ícone de engrenagem no cabeçalho) → cartão **“Senha de acesso”**,
+basta informar a **senha atual**, a **nova senha** e repeti-la.
+
+- A senha atual é conferida antes de qualquer gravação: sem isso, quem passasse
+  por um computador com a sessão aberta trocaria a senha do dono da conta.
+- O cartão mostra uma **dica de força** enquanto você digita e recusa senhas
+  curtas (menos de 6 caracteres), iguais à atual ou previsíveis (nome do
+  sistema, `123456`, `senha123`…). O Supabase também recusa senhas que já
+  apareceram em vazamentos — a mensagem na tela explica isso.
+- A troca vale para o **próximo login**; a sessão atual continua aberta, então
+  nenhuma outra tela é interrompida.
+- Não lembra a senha atual? Saia e use **“Esqueci minha senha”** na tela de
+  login (ou o conserto em `supabase/consertos/`, se o login estiver com erro).
 
 ### 4B. Criar a conta pelo site (administrador)
 
