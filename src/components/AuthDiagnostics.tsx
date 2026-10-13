@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { ehStatusDeInfra, mensagemServidorFora } from "@/lib/authErrors";
+import { avisoDeProjetoAntigo, painelDoProjeto, PROJETO_ATUAL, resolverProjeto } from "@/lib/projetoAtual";
 
 /* ---------------------------------------------------------------------------
    Diagnóstico de acesso — responde, em português, por que o login não passa:
@@ -14,12 +15,16 @@ import { ehStatusDeInfra, mensagemServidorFora } from "@/lib/authErrors";
    Tudo com a chave pública (anon), então pode ser rodado na tela de login.
 --------------------------------------------------------------------------- */
 
-const URL_BASE = (import.meta.env.VITE_SUPABASE_URL as string | undefined)?.replace(/\/+$/, "") || "";
-const CHAVE = (import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined) || "";
-const PROJETO =
-  (import.meta.env.VITE_SUPABASE_PROJECT_ID as string | undefined) ||
-  URL_BASE.replace(/^https?:\/\//, "").split(".")[0] ||
-  "—";
+/* O app corrige sozinho quando o build aponta para um projeto que o sistema não
+   usa: aqui usamos exatamente o que está em uso, para o diagnóstico não mentir. */
+const PROJETO_RESOLVIDO = resolverProjeto(
+  import.meta.env.VITE_SUPABASE_URL as string | undefined,
+  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined,
+  import.meta.env.VITE_SUPABASE_PROJECT_ID as string | undefined,
+);
+const URL_BASE = PROJETO_RESOLVIDO.url;
+const CHAVE = PROJETO_RESOLVIDO.chave;
+const PROJETO = PROJETO_RESOLVIDO.ref || "—";
 
 type Nivel = "ok" | "aviso" | "erro";
 
@@ -48,7 +53,7 @@ const buscar = async (url: string, ms = 8000) => {
 const porqueFalhou = (e: unknown) =>
   (e as Error)?.name === "AbortError" ? "sem resposta em 8s" : (e as Error)?.message || "falha de rede";
 
-const PAINEL = PROJETO && PROJETO !== "—" ? `https://supabase.com/dashboard/project/${PROJETO}` : "https://supabase.com/dashboard";
+const PAINEL = painelDoProjeto(PROJETO === "—" ? null : PROJETO);
 
 const postar = async (url: string, corpo: unknown, ms = 8000) => {
   const ctrl = new AbortController();
@@ -72,6 +77,25 @@ const AuthDiagnostics = () => {
   const rodar = useCallback(async () => {
     setRodando(true);
     const out: Checagem[] = [];
+
+    // 0) qual projeto este site está usando (e se é o oficial)
+    const avisoProjeto = avisoDeProjetoAntigo(PROJETO_RESOLVIDO);
+    if (avisoProjeto) {
+      out.push({
+        chave: "projeto-site",
+        rotulo: "Projeto configurado no site",
+        nivel: "aviso",
+        detalhe: avisoProjeto,
+        acao: { href: "https://vercel.com/dashboard", texto: "Abrir a Vercel" },
+      });
+    } else {
+      out.push({
+        chave: "projeto-site",
+        rotulo: "Projeto configurado no site",
+        nivel: "ok",
+        detalhe: `este site está usando o projeto oficial “${PROJETO_ATUAL.nome}” (${PROJETO}, ${URL_BASE})`,
+      });
+    }
 
     // 1) servidor de autenticação (é ele que valida e-mail e senha)
     try {

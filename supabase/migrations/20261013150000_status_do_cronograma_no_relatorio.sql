@@ -17,7 +17,7 @@
 -- É só a MESMA função `rel_sincronizar_agenda` publicada de novo, com o CASE
 -- do status ajustado. Idempotente: pode rodar quantas vezes quiser.
 --
--- Publicação: SQL Editor do projeto psgekwifthuzduhpreay → cole este arquivo.
+-- Publicação: SQL Editor do projeto pnaupodddxrbqbjilhft → cole este arquivo.
 -- ============================================================================
 
 create or replace function public.rel_sincronizar_agenda(

@@ -3,18 +3,20 @@
    migrar-usuarios.mjs — traz as CONTAS de um projeto Supabase antigo para o
    projeto que o TreinaCheck usa hoje (o mesmo da agenda e da integração).
 
-   Por que existe: em 11/10/2026 o app trocou de banco (saiu do projeto
-   Lovable `pnaupodddxrbqbjilhft` para o projeto `psgekwifthuzduhpreay`).
-   Quem foi criado antes dessa data existe só no banco antigo — e por isso o
-   login diz "e-mail ou senha não conferem". Este script recria essas contas
-   no banco novo (sem tocar em nada do banco antigo).
+   Por que existe: em 11/10/2026 algumas instruções deste repositório passaram
+   a mandar publicar tudo no projeto `psgekwifthuzduhpreay` — que o sistema
+   NUNCA usou. O projeto oficial é o `pnaupodddxrbqbjilhft` ("Agendause"), onde
+   estão as contas, os dados e o que está configurado na Vercel. Quem criou
+   conta no projeto errado (ou em qualquer outro banco) não consegue entrar, e
+   o login diz "e-mail ou senha não conferem". Este script recria essas contas
+   no projeto oficial (sem tocar em nada no banco de origem).
 
    Precisa das chaves SECRETAS (service_role) dos dois projetos. Elas NUNCA vão
    para o repositório: passe por variável de ambiente ou por linha de comando.
 
    Uso:
      # 1) só mostrar o que seria feito (recomendado antes de tudo)
-     ANTIGO_URL=https://pnaupodddxrbqbjilhft.supabase.co \
+     ANTIGO_URL=https://psgekwifthuzduhpreay.supabase.co \
      ANTIGO_SERVICE_KEY=sb_secret_xxx \
      NOVO_SERVICE_KEY=eyJ...service_role... \
      node scripts/migrar-usuarios.mjs --dry-run
@@ -26,7 +28,7 @@
      ... node scripts/migrar-usuarios.mjs --admin meu@email.com
 
    Opções:
-     --de <url>            URL do projeto antigo (padrão pnaupodddxrbqbjilhft)
+     --de <url>            URL do projeto de origem (padrão: psgekwifthuzduhpreay, o dos enganos)
      --chave-de <chave>    service_role do projeto antigo
      --para <url>          URL do projeto novo (padrão: VITE_SUPABASE_URL do .env)
      --chave-para <chave>  service_role do projeto novo
@@ -79,7 +81,7 @@ const ADMIN_EXTRA = (valorDe("admin") || "")
   .map((s) => s.trim().toLowerCase())
   .filter(Boolean);
 
-const ANTIGO_URL = tiraBarra(valorDe("de") || process.env.ANTIGO_URL || "https://pnaupodddxrbqbjilhft.supabase.co");
+const ANTIGO_URL = tiraBarra(valorDe("de") || process.env.ANTIGO_URL || "https://psgekwifthuzduhpreay.supabase.co");
 const ANTIGO_CHAVE = valorDe("chave-de") || process.env.ANTIGO_SERVICE_KEY || process.env.ANTIGO_SERVICE_ROLE_KEY || "";
 const NOVO_URL = tiraBarra(valorDe("para") || process.env.NOVO_URL || process.env.SUPABASE_URL || env.VITE_SUPABASE_URL || "");
 const NOVO_CHAVE = valorDe("chave-para") || process.env.NOVO_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || "";

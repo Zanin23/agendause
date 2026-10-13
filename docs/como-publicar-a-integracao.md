@@ -36,14 +36,14 @@ cartão **“Implantações — Cronogramas + relatório”** na tela inicial (e
 
 **Onde:** no projeto **do TreinaCheck** (o mesmo que já guarda agenda,
 cronogramas e treinamentos). É o projeto cuja URL termina em
-`psgekwifthuzduhpreay` — **não** o do relatório (`dlnfuvhlkgnzesrnqgfd`).
+`pnaupodddxrbqbjilhft` — **não** o do relatório (`dlnfuvhlkgnzesrnqgfd`).
 
 ### 1.1 Abrir o SQL Editor
 
 Link direto (faça login no Supabase antes):
 
 ```
-https://supabase.com/dashboard/project/psgekwifthuzduhpreay/sql/new
+https://supabase.com/dashboard/project/pnaupodddxrbqbjilhft/sql/new
 ```
 
 (ou: entre em supabase.com → escolha o projeto do TreinaCheck → menu da
@@ -116,7 +116,7 @@ Elas estão no banco antigo do relatório. Você tem duas rotas — escolha **um
 3. Clique na pílula **☁** no topo (ou **Dados ▾ → Servidor compartilhado**).
 4. Cole nos dois campos as chaves do TreinaCheck (estão no arquivo
    `integracao/relatorio-de-implantacoes/sync-config.js`, deste repositório):
-   - **URL:** `https://psgekwifthuzduhpreay.supabase.co`
+   - **URL:** `https://pnaupodddxrbqbjilhft.supabase.co`
    - **Chave:** a linha `anonKey` (começa com `eyJhbGciOi...`)
 5. Clique em **“Testar e conectar neste navegador”**.
 6. Como o banco novo está vazio, o próprio site **publica sozinho** o relatório
@@ -157,7 +157,7 @@ Lendo https://dlnfuvhlkgnzesrnqgfd.supabase.co …
   12 linha(s) encontrada(s) no projeto antigo.
 Já existem no destino: 0 linha(s).
 A gravar: 12 linha(s).
-✔ 12 linha(s) gravada(s) em https://psgekwifthuzduhpreay.supabase.co.
+✔ 12 linha(s) gravada(s) em https://pnaupodddxrbqbjilhft.supabase.co.
 ```
 
 Não precisa de `npm install` — o script usa só o que já vem no Node. As duas

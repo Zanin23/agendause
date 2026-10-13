@@ -61,7 +61,7 @@ suporte.
 
 ### 1. Banco (obrigatório, só colar SQL)
 
-No projeto **`psgekwifthuzduhpreay`**, abra **SQL Editor** e execute:
+No projeto **`pnaupodddxrbqbjilhft`**, abra **SQL Editor** e execute:
 
 1. `supabase/migrations/20261013130000_admin_list_users.sql` (se ainda não rodou)
 2. `supabase/migrations/20261013140000_admin_contas_sem_edge_function.sql`
@@ -76,7 +76,7 @@ Só é necessária se o banco recusar as RPCs (veja “Se o banco recusar” aba
 se você preferir o caminho oficial de administração:
 
 ```bash
-supabase functions deploy admin-users --project-ref psgekwifthuzduhpreay
+supabase functions deploy admin-users --project-ref pnaupodddxrbqbjilhft
 ```
 
 `supabase/config.toml` configura `verify_jwt = false` **somente para esta
@@ -133,7 +133,7 @@ a mesma que a Edge Function usa — por um destes dois jeitos:
 
 ```bash
 # publicar a Edge Function e usar a própria tela
-supabase functions deploy admin-users --project-ref psgekwifthuzduhpreay
+supabase functions deploy admin-users --project-ref pnaupodddxrbqbjilhft
 
 # ou criar a conta pela sua máquina, sem CLI e sem abrir o site
 SUPABASE_SERVICE_KEY=sb_secret_xxx \

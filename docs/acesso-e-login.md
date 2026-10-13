@@ -8,7 +8,7 @@ Guia de acesso do TreinaCheck. Vale para o site publicado
 ## 1. Como o login funciona hoje
 
 - O app **não guarda usuários**. Quem valida e-mail e senha é o **Supabase**.
-- O projeto em uso é o **`psgekwifthuzduhpreay`** (o mesmo da agenda, dos
+- O projeto em uso é o **`pnaupodddxrbqbjilhft`** (o mesmo da agenda, dos
   cronogramas e da integração com o relatório). Ele aparece no `.env` como
   `VITE_SUPABASE_URL`. A tela de login mostra esse endereço no rodapé do
   **Verificar o acesso**.
@@ -31,6 +31,7 @@ traduzida — mas a causa continua sendo uma destas:
 | `{}` / “erro 503” / “fora do ar” | **Projeto pausado** no Supabase (o plano gratuito pausa depois de dias sem uso) | Abra o painel do Supabase, confira se o projeto aparece como **Paused** e clique em **Restore/Resume**. Enquanto estiver pausado, ninguém entra |
 | “erro 500/502/520–530” | Instabilidade momentânea do Supabase | Tente de novo em alguns minutos; confira o status do Supabase |
 | `Invalid API key` | Chave pública errada no `.env` da Vercel | Confira `VITE_SUPABASE_URL` e `VITE_SUPABASE_PUBLISHABLE_KEY` e faça um novo deploy |
+| A mensagem cita o projeto **`psgekwifthuzduhpreay`** | O build do site ficou apontado para um projeto que o sistema não usa — o oficial é o **Agendause** (`pnaupodddxrbqbjilhft`); veja a seção 2 | Corrija as variáveis na Vercel (item abaixo). Enquanto isso, o app usa o projeto oficial sozinho, quando conhece a chave pública |
 
 Para confirmar em 10 segundos: tela de login → **Não consigo entrar** →
 **Verificar o acesso**. O item **Teste real de login** tenta entrar com uma conta
@@ -43,24 +44,52 @@ de mentira:
 
 ---
 
-## 2. A causa mais provável (troca de banco em 11/10/2026)
+## 1C. Variáveis de ambiente na Vercel (fonte do projeto que o site usa)
 
-O sistema mudou de banco nessa data:
+O site publicado é compilado com as variáveis do painel da Vercel — **elas têm
+prioridade sobre o `.env` do repositório**. Se estiverem erradas, o site inteiro
+fala com o banco errado (e o login responde erro 500, mesmo com o projeto oficial
+saudável).
 
-| Antes (até 11/10) | Agora |
+Projeto `agendause` → **Settings → Environment Variables**: os três valores
+precisam ser os do `.env` do repositório, **do Agendause**:
+
+| Variável | Valor |
 | --- | --- |
-| `pnaupodddxrbqbjilhft.supabase.co` (projeto antigo do Lovable) | `psgekwifthuzduhpreay.supabase.co` |
+| `VITE_SUPABASE_URL` | `https://pnaupodddxrbqbjilhft.supabase.co` |
+| `VITE_SUPABASE_PROJECT_ID` | `pnaupodddxrbqbjilhft` |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | a chave `publishable`/`anon` do **Agendause** (Supabase → Project Settings → API keys) |
 
-Quem foi criado **antes** dessa troca existe só no banco antigo. Ao tentar
-entrar, o banco novo responde **“Invalid login credentials”** — que o app agora
-traduz como:
+Depois de salvar, faça **Deployments → Redeploy** (as variáveis só entram no
+build seguinte). Como conferir: tela de login → **Não consigo entrar** →
+**Verificar o acesso** → item **“Projeto configurado no site”**, que precisa
+estar verde com o `pnaupodddxrbqbjilhft`.
 
-> *“E-mail ou senha não conferem neste banco. Se a sua conta foi criada antes de
-> 11/10 (o sistema trocou de banco nesse dia), use ‘Esqueci minha senha’ ou peça
-> ao administrador para recriar a conta.”*
+## 2. A troca de banco que NÃO existiu (leia antes de tudo)
 
-Ou seja: **não é a sua senha que está errada — é a conta que precisa existir no
-banco novo.** A seção 4 traz os três caminhos para resolver.
+> **O projeto oficial do TreinaCheck é o `pnaupodddxrbqbjilhft` — o “Agendause”.**
+> É nele que estão as contas, os dados, o relatório e o que está configurado na
+> Vercel. É nele que se cola SQL.
+
+Em 11/10/2026 algumas instruções deste repositório passaram a mandar publicar
+tudo em um projeto novo, `psgekwifthuzduhpreay`. **Isso foi um engano**: aquele
+projeto nunca foi usado pelo sistema. O estrago possível era duplo:
+
+- SQL colado no lugar errado → a tela do sistema continuava reclamando do que
+  “faltava publicar”;
+- mensagens citando um projeto diferente do que aparece no painel do Supabase →
+  parecia que o sistema estava no banco errado (na prática, era a *mensagem* que
+  vinha de um build apontado para lá).
+
+Se você colou algo no `psgekwifthuzduhpreay`, não tem problema: nada aqui usa
+aquele projeto. Cole agora no **Agendause** (`pnaupodddxrbqbjilhft`), em
+**SQL Editor**.
+
+Depois de conferir isso, o “Invalid login credentials” tem só duas causas:
+
+1. **a senha não é essa** → “Esqueci minha senha” (seção 4A);
+2. **a conta não existe neste projeto** (criada em outro banco, ou nunca criada)
+   → seções 4B/4C (criar) ou 4D (trazer as contas de outro projeto).
 
 ---
 
@@ -78,7 +107,7 @@ banco novo.** A seção 4 traz os três caminhos para resolver.
    página, o projeto e o resultado de cada teste. Cole isso no suporte (ou
    mande aqui no chat) e o problema fica óbvio.
 3. Se você **lembra a senha** e mesmo assim não entra → vá para a seção 4
-   (conta provavelmente não existe no banco novo).
+   (a conta provavelmente não existe neste projeto).
 4. Se você **não lembra a senha** → “Esqueci minha senha” (seção 4A).
 
 ---
@@ -113,7 +142,7 @@ Edge Function. Instruções em `docs/controle-de-usuarios.md`.
 
 ### 4C. Criar a conta direto no painel do Supabase (5 cliques, sem código)
 
-1. Abra **Supabase → projeto `psgekwifthuzduhpreay` → Authentication → Users**.
+1. Abra **Supabase → projeto `pnaupodddxrbqbjilhft` → Authentication → Users**.
 2. Procure o seu e-mail. Se não estiver na lista, clique em **Add user →
    Create new user**:
    - **email**: o seu
@@ -125,14 +154,14 @@ Edge Function. Instruções em `docs/controle-de-usuarios.md`.
 ### 4D. Trazer as contas do banco antigo (script)
 
 Se houver mais gente na mesma situação, o script copia **todas** as contas do
-projeto antigo para o banco novo — sem tocar em nada do antigo.
+projeto de origem para o projeto oficial — sem tocar em nada no de origem.
 
 ```bash
 # do seu computador, na raiz deste repositório
 # as chaves service_role ficam em Supabase → Project Settings → API
 ANTIGO_URL=https://pnaupodddxrbqbjilhft.supabase.co \
 ANTIGO_SERVICE_KEY=<service_role do projeto antigo> \
-NOVO_SERVICE_KEY=<service_role do projeto psgekwifthuzduhpreay> \
+NOVO_SERVICE_KEY=<service_role do projeto pnaupodddxrbqbjilhft> \
 node scripts/migrar-usuarios.mjs --dry-run          # mostra o que faria
 ```
 
@@ -185,7 +214,7 @@ ele não conseguiu ler `workspaces`:
   painel do Supabase e clique em **Restore/Resume**. Enquanto estiver pausado,
   **ninguém** entra — nem pelo app, nem pelo site do relatório.
 - **Chave errada no `.env`** → confira se `VITE_SUPABASE_URL` e
-  `VITE_SUPABASE_PUBLISHABLE_KEY` são do projeto `psgekwifthuzduhpreay`, e
+  `VITE_SUPABASE_PUBLISHABLE_KEY` são do projeto `pnaupodddxrbqbjilhft`, e
   publique de novo (Vercel → Deployments → Redeploy).
 
 ### 4G. Entrei, mas não vejo o menu Admin
@@ -206,7 +235,7 @@ ligado no banco:
 1. **Supabase → Authentication → Providers → Google** → habilite e cole
    *Client ID* e *Client Secret* (do Google Cloud Console).
 2. No Google Cloud, em **Authorized redirect URIs**, use o endereço mostrado
-   pelo Supabase (`https://psgekwifthuzduhpreay.supabase.co/auth/v1/callback`).
+   pelo Supabase (`https://pnaupodddxrbqbjilhft.supabase.co/auth/v1/callback`).
 3. Em **URL Configuration**, inclua `https://agendause.vercel.app`.
 
 Se o botão responder *“O login com Google ainda não está habilitado neste
