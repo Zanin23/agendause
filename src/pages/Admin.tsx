@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { AppHeader } from "@/components/AppHeader";
 import { BackButton } from "@/components/BackButton";
+import { AdminPublicationCheck } from "@/components/AdminPublicationCheck";
 import { SEO } from "@/components/SEO";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -235,6 +236,8 @@ const Admin = () => {
             </div>
           </div>
         </div>
+
+        <AdminPublicationCheck />
 
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />

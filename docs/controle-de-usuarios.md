@@ -31,6 +31,32 @@ Regras que valem para todas as RPCs:
 - a conta criada nasce com e-mail **já confirmado**, com identidade de e-mail
   (`auth.identities`), perfil, vínculo com as bases e papel — pronta para entrar.
 
+## Saber o que falta sem sair do site
+
+No topo do **Controle de Acessos** existe o painel **Conferir publicação no
+Supabase**. Ele testa, com a sua própria sessão de administrador, o que está
+publicado neste banco:
+
+- **Criar conta**, **Definir senha**, **Administrador sim/não**, **Permissões**
+  e **Listar contas** (as funções do banco);
+- **Edge Function admin-users** (opcional — aparece como item informativo, com
+  bolinha cinza, e não conta como pendência).
+
+A conferência **não grava nada**: cada função é chamada com dados inválidos de
+propósito (e-mail sem domínio, `user_id` nulo) e recusa antes de tocar em
+qualquer conta. Se uma delas ainda não existe no banco, o painel mostra:
+
+1. o **link direto** para o SQL Editor do projeto;
+2. botões **Copiar SQL** (o arquivo inteiro da migração que falta, com
+   comentário no topo dizendo o que fazer);
+3. o passo a passo em quatro linhas: copiar → colar → **Run** → **Conferir
+   novamente**.
+
+Deu tudo certo quando os cinco itens do banco ficam verdes. Se **ainda** falhar
+depois disso, o problema é outro (permissão do banco ou rede) — o botão
+**Copiar diagnóstico** do painel copia o estado item por item para mandar ao
+suporte.
+
 ## Publicação — o que fazer no Supabase
 
 ### 1. Banco (obrigatório, só colar SQL)
@@ -98,6 +124,22 @@ telas e `--simular` mostra o que seria feito sem gravar nada.
 7. Contas sem role `admin` não conseguem chamar as RPCs com sucesso, mesmo
    diretamente.
 
+## Se o próprio banco recusar as funções
+
+A criação pelo SQL precisa que o banco aceite gravar em `auth.users` por dentro
+de uma função. Se o seu projeto bloquear isso (a tela mostra “O banco recusou a
+gravação em auth.users…”), o caminho é a API de administração do Supabase —
+a mesma que a Edge Function usa — por um destes dois jeitos:
+
+```bash
+# publicar a Edge Function e usar a própria tela
+supabase functions deploy admin-users --project-ref psgekwifthuzduhpreay
+
+# ou criar a conta pela sua máquina, sem CLI e sem abrir o site
+SUPABASE_SERVICE_KEY=sb_secret_xxx \
+node scripts/criar-usuario.mjs --email fulano@empresa.com --nome "Fulano de Tal" --admin
+```
+
 ## Testes automatizados
 
 ```bash
@@ -119,7 +161,9 @@ como compatibilidade) e as mensagens de erro.
   foram apagadas**. Se a migração nova estiver aplicada, a tela nem chega a
   chamar a Edge Function.
 - **“A gestão de contas ainda não está publicada neste banco…”** — faltam as
-  migrações do passo 1 (e a Edge Function não está publicada).
+  migrações do passo 1 (e a Edge Function não está publicada). O painel
+  **Conferir publicação no Supabase**, no topo da tela, diz exatamente qual
+  falta e copia o SQL por você.
 - **“Sua sessão expirou. Saia e entre novamente.”** — token vencido; saia e
   entre de novo.
 - **“Já existe uma conta com o e-mail …”** — use **Definir senha** ou **Enviar

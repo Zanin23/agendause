@@ -80,9 +80,10 @@ Entre com uma conta administradora → **Admin → Controle de Acessos** → **N
 Usuário** → nome, e-mail, senha (mínimo 6 caracteres), cargo e telas. A conta já
 nasce com e-mail confirmado e vínculo com as bases.
 
-Se essa tela reclamar que a gestão de contas não está publicada, aplique as
-migrações indicadas em `docs/controle-de-usuarios.md` (só colar SQL no Supabase)
-— não é preciso publicar nenhuma Edge Function.
+Se essa tela reclamar que a gestão de contas não está publicada, use o painel
+**Conferir publicação no Supabase**, no topo da própria tela: ele diz item por
+item o que falta, copia o SQL e abre o editor — não é preciso publicar nenhuma
+Edge Function. Instruções em `docs/controle-de-usuarios.md`.
 
 ### 4C. Criar a conta direto no painel do Supabase (5 cliques, sem código)
 
@@ -193,7 +194,7 @@ banco”*, o passo 1 ainda não foi feito — entre com e-mail e senha enquanto 
 | --- | --- |
 | Não lembro a senha e já entrei antes | Login → **Esqueci minha senha** → `/redefinir-senha` |
 | “E-mail ou senha não conferem” toda vez | Sua conta provavelmente é do banco antigo → **4C** (painel) ou **4D** (script) |
-| Sou admin e não consigo **criar** conta | **4B** — aplicar as migrações de `docs/controle-de-usuarios.md` |
+| Sou admin e não consigo **criar** conta | **4B** — publicar as funções pelo painel “Conferir publicação no Supabase” |
 | Entro mas fico em “Escolha sua base” vazio | **4E** (vínculo com a base) |
 | Entro mas não vejo **Admin** | **4G** (`user_roles`) |
 | Nada carrega / “não foi possível falar com o banco” | **4F** (rede, projeto pausado, chave) |
