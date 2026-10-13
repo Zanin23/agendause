@@ -18,24 +18,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-
-type AdminUser = {
-  id: string;
-  email: string | null;
-  full_name: string | null;
-  created_at: string;
-  last_sign_in_at: string | null;
-  email_confirmed: boolean;
-  workspace: string | null;
-  roles: string[];
-  screen_permissions: { screen: string; actions: string[] }[];
-  schedule_permissions: Record<string, string>;
-};
-
-type LiteSchedule = {
-  id: string;
-  client_name: string;
-};
+import { adminFunctionError, loadAdminUsers, type AdminUser, type LiteSchedule } from "@/lib/adminUsers";
 
 const formatDate = (v?: string | null) =>
   v ? new Date(v).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" }) : "—";
@@ -46,6 +29,7 @@ const Admin = () => {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [allSchedules, setAllSchedules] = useState<LiteSchedule[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [target, setTarget] = useState<AdminUser | null>(null);
   const [editPermsTarget, setEditPermsTarget] = useState<AdminUser | null>(null);
@@ -65,19 +49,7 @@ const Admin = () => {
 
   const call = useCallback(async (payload: Record<string, unknown>) => {
     const { data, error } = await supabase.functions.invoke("admin-users", { body: payload });
-    if (error) {
-      let serverMsg: string | null = (data as any)?.error ?? null;
-      const ctx = (error as any)?.context;
-      if (!serverMsg && ctx && typeof ctx.json === "function") {
-        try {
-          const body = await ctx.json();
-          serverMsg = body?.error ?? null;
-        } catch {
-          /* corpo não é JSON */
-        }
-      }
-      throw new Error(serverMsg || error.message);
-    }
+    if (error) throw new Error(await adminFunctionError(error, data));
     if ((data as any)?.error) throw new Error((data as any).error);
     return data as any;
   }, []);
@@ -85,15 +57,18 @@ const Admin = () => {
   const load = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await call({ action: "list" });
+      setLoadError(null);
+      const data = await loadAdminUsers(supabase);
       setUsers(data.users ?? []);
       setAllSchedules(data.all_schedules ?? []);
     } catch (e: any) {
-      toast.error(e.message || "Erro ao carregar contas");
+      const message = e.message || "Erro ao carregar contas";
+      setLoadError(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
-  }, [call]);
+  }, []);
 
   useEffect(() => {
     if (!roleLoading && isAdmin) load();
@@ -263,6 +238,13 @@ const Admin = () => {
 
         {loading ? (
           <div className="py-16 text-center text-muted-foreground">Carregando contas...</div>
+        ) : loadError ? (
+          <section role="alert" className="rounded-2xl border border-destructive/40 bg-destructive/5 p-6 space-y-3">
+            <h2 className="font-semibold">Não foi possível carregar os usuários</h2>
+            <p className="text-sm text-muted-foreground">{loadError}</p>
+            <p className="text-sm text-muted-foreground">Isso não significa que as contas foram apagadas.</p>
+            <Button variant="outline" onClick={load}>Tentar novamente</Button>
+          </section>
         ) : filtered.length === 0 ? (
           <div className="py-16 text-center text-muted-foreground">Nenhuma conta encontrada.</div>
         ) : (
