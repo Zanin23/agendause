@@ -129,6 +129,22 @@ Depois de conferir isso, o “Invalid login credentials” tem só duas causas:
 > (`https://agendause.vercel.app/redefinir-senha` e, se usar prévias,
 > `https://*-<seu-time>.vercel.app/redefinir-senha`).
 
+### 4A-2. A conta aparece na lista, a senha confere, mas o login dá erro 500
+
+Teste que separa as causas em 30 segundos: crie uma conta nova em
+**Supabase → Authentication → Users → Add user** (marcando *Auto Confirm User*)
+e tente entrar com ela no site.
+
+- **a conta nova entra** → o projeto está são; o problema é a linha da *sua*
+  conta no banco (falta o registro de identidade de e-mail ou a senha não está
+  em bcrypt). Rode o conserto:
+  `supabase/consertos/consertar-login-de-uma-conta.sql` no **SQL Editor** —
+  o PASSO 1 é só leitura (mostra o que está errado) e o PASSO 2 conserta
+  (grava a senha nova em bcrypt, confirma o e-mail e garante a identidade);
+- **a conta nova também dá 500** → o problema é do projeto (gatilho/hook de
+  autenticação): veja **Logs → Auth** no painel e confira se há hook
+  personalizado em **Authentication → Hooks**.
+
 ### 4B. Criar a conta pelo site (administrador)
 
 Entre com uma conta administradora → **Admin → Controle de Acessos** → **Novo

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { ehStatusDeInfra, mensagemServidorFora } from "@/lib/authErrors";
 import { avisoDeProjetoAntigo, painelDoProjeto, PROJETO_ATUAL, resolverProjeto } from "@/lib/projetoAtual";
+import { descreverErroDeLogin, lerUltimoErroDeLogin } from "@/lib/ultimoErroLogin";
 
 /* ---------------------------------------------------------------------------
    Diagnóstico de acesso — responde, em português, por que o login não passa:
@@ -94,6 +95,24 @@ const AuthDiagnostics = () => {
         rotulo: "Projeto configurado no site",
         nivel: "ok",
         detalhe: `este site está usando o projeto oficial “${PROJETO_ATUAL.nome}” (${PROJETO}, ${URL_BASE})`,
+      });
+    }
+
+    // 0b) o que o servidor respondeu na última tentativa de entrar
+    const ultimoErro = lerUltimoErroDeLogin();
+    if (ultimoErro) {
+      out.push({
+        chave: "ultimo-erro",
+        rotulo: "Último erro de login",
+        nivel: ehStatusDeInfra(ultimoErro.status) ? "erro" : "aviso",
+        detalhe: descreverErroDeLogin(ultimoErro),
+      });
+    } else {
+      out.push({
+        chave: "ultimo-erro",
+        rotulo: "Último erro de login",
+        nivel: "ok",
+        detalhe: "nenhuma tentativa falhou neste navegador",
       });
     }
 

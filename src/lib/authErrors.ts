@@ -58,8 +58,9 @@ export function mensagemDeJson(mensagem: string): string {
 
 export type ContextoLogin = { projeto?: string; painel?: string };
 
-export function mensagemServidorFora(status: number | undefined, ctx: ContextoLogin = {}): string {
-  const codigo = status ? ` (erro ${status})` : "";
+export function mensagemServidorFora(status: number | undefined, ctx: ContextoLogin = {}, codigoDoSupabase?: string): string {
+  const marcas = [status ? `erro ${status}` : "", codigoDoSupabase ?? ""].filter(Boolean).join(" · ");
+  const codigo = marcas ? ` (${marcas})` : "";
   const painel = ctx.painel ? ` Abra ${ctx.painel} — ` : " Abra o painel do Supabase — ";
   return (
     `O servidor de login está fora do ar ou instável${codigo}. Isso é problema do servidor, não da sua senha. ` +
@@ -91,7 +92,7 @@ export function explicarErroDeLogin(err: unknown, ctx: ContextoLogin = {}): stri
 
   // Servidor/infraestrutura: nunca é a senha da pessoa.
   if (ehStatusDeInfra(status) || (nome === "AuthRetryableFetchError" && !bruto)) {
-    return mensagemServidorFora(status, ctx);
+    return mensagemServidorFora(status, ctx, codigo);
   }
   if (/invalid login credentials|invalid_grant|invalid credentials|invalid_credentials/.test(m))
     return "E-mail ou senha não conferem neste banco. Se a sua conta foi criada antes de 11/10 (o sistema trocou de banco nesse dia), use “Esqueci minha senha” ou peça ao administrador para recriar a conta.";

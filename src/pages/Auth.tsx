@@ -16,6 +16,7 @@ import { LifeBuoy, Stethoscope, Mail, LockKeyhole, Eye, EyeOff, ArrowRight, Load
 import { AuthWelcome } from "@/components/AuthWelcome";
 import { ehStatusDeInfra, explicarErroDeLogin, extrairErroAuth } from "@/lib/authErrors";
 import { avisoDeProjetoAntigo, painelDoProjeto, resolverProjeto } from "@/lib/projetoAtual";
+import { limparUltimoErroDeLogin, registrarErroDeLogin } from "@/lib/ultimoErroLogin";
 import "@/styles/auth.css";
 
 /* ---------------------------------------------------------------------------
@@ -73,11 +74,14 @@ const Auth = () => {
       }
       const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
       if (error) throw error;
+      limparUltimoErroDeLogin();
     } catch (err) {
       const mensagem = explicarErroDeLogin(err, { projeto: PROJETO, painel: PAINEL });
       setErro(mensagem);
       toast.error(mensagem);
-      const { status } = extrairErroAuth(err);
+      const { status, codigo } = extrairErroAuth(err);
+      // Fica registrado para o diagnóstico (dá para mandar o caso exato ao suporte).
+      registrarErroDeLogin({ mensagem, status, codigo, projeto: PROJETO });
       if (ehStatusDeInfra(status) || /servidor|internet|pausado/i.test(mensagem)) setMostrarAjuda(true);
     } finally {
       setLoading(false);
