@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Database, Loader2, Check, Accessibility, Type, ShieldCheck, ChevronRight, LogOut } from "lucide-react";
+import { Database, Loader2, Check, Accessibility, Type, ShieldCheck, ChevronRight, LogOut, UserRound, Save } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
 import { BackButton } from "@/components/BackButton";
 import { SEO } from "@/components/SEO";
@@ -9,6 +9,9 @@ import { useA11y, type FontScale } from "@/hooks/useA11y";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { firstNameOf, greetingForHour, normalizeProfileName } from "@/lib/profileName";
 import { toast } from "sonner";
 
 function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label: string }) {
@@ -37,7 +40,25 @@ const Settings = () => {
   const [pendingId, setPendingId] = useState<string | null>(null);
   const { scale, setScale, bold, setBold, contrast, setContrast } = useA11y();
   const { isAdmin } = useIsAdmin();
-  const { user, signOut } = useAuth();
+  const { user, signOut, fullName, profileLoading, profileError, updateFullName } = useAuth();
+  const [name, setName] = useState(fullName);
+  const [savingName, setSavingName] = useState(false);
+  useEffect(() => { setName(fullName); }, [fullName]);
+
+  const saveName = async (event: React.FormEvent) => {
+    event.preventDefault();
+    try {
+      const normalized = normalizeProfileName(name);
+      setSavingName(true);
+      await updateFullName(normalized);
+      setName(normalized);
+      toast.success("Nome atualizado! Sua saudação já está personalizada.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível salvar seu nome.");
+    } finally {
+      setSavingName(false);
+    }
+  };
   const navigate = useNavigate();
   const [signingOut, setSigningOut] = useState(false);
 
@@ -59,8 +80,8 @@ const Settings = () => {
       setPendingId(id);
       await setActive(id);
       toast.success("Base ativa alterada");
-    } catch (e: any) {
-      toast.error(e.message || "Erro ao trocar base");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro ao trocar base");
     } finally {
       setPendingId(null);
     }
@@ -76,6 +97,38 @@ const Settings = () => {
           <h1 className="text-3xl font-semibold tracking-tight mt-3">Configurações</h1>
           <p className="text-muted-foreground mt-1">Ajuste preferências da sua conta.</p>
         </div>
+
+        <section className="rounded-2xl border border-border bg-card/60 p-6">
+          <header className="flex items-center gap-3 mb-5">
+            <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+              <UserRound className="h-5 w-5" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold">Meu perfil</h2>
+              <p className="text-sm text-muted-foreground">Como você quer ser chamado?</p>
+            </div>
+          </header>
+          <form onSubmit={saveName} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="profile-name">Seu nome</Label>
+              <Input id="profile-name" value={name} onChange={(event) => setName(event.target.value)}
+                placeholder="Ex.: Ana Souza" autoComplete="name" required minLength={2} maxLength={80}
+                disabled={savingName || profileLoading} aria-describedby="profile-name-help" />
+              <p id="profile-name-help" className="text-xs text-muted-foreground">O primeiro nome aparece na saudação. Seu e-mail de acesso não será alterado.</p>
+            </div>
+            {profileError && <p role="alert" className="text-sm text-destructive">{profileError}</p>}
+            <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl bg-primary/5 border border-primary/15 p-4">
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Prévia da tela inicial</p>
+                <p className="font-semibold mt-1 break-words">{greetingForHour(new Date().getHours())}{firstNameOf(name) ? `, ${firstNameOf(name)}` : ""}!</p>
+              </div>
+              <Button type="submit" disabled={savingName || profileLoading || name.trim() === fullName.trim()}>
+                {savingName ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+                {savingName ? "Salvando..." : "Salvar nome"}
+              </Button>
+            </div>
+          </form>
+        </section>
 
         <section className="rounded-2xl border border-border bg-card/60 p-6">
           <header className="flex items-center gap-3 mb-4">

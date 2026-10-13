@@ -5,10 +5,11 @@ import { useEffect, useState } from "react";
 import { AppHeader } from "@/components/AppHeader";
 import { SEO } from "@/components/SEO";
 import { CreateTrainingDialog } from "@/components/CreateTrainingDialog";
+import { firstNameOf, greetingForHour } from "@/lib/profileName";
 import { useAuth } from "@/hooks/useAuth";
 
 const Home = () => {
-  const { user } = useAuth();
+  const { fullName } = useAuth();
   const [open, setOpen] = useState(false);
   // Rotate the hero background animation every 5 minutes (0, 1, 2).
   const [heroVariant, setHeroVariant] = useState<0 | 1 | 2>(() => {
@@ -20,9 +21,7 @@ const Home = () => {
     }, 5 * 60 * 1000);
     return () => clearInterval(id);
   }, []);
-  const rawName: string | undefined = user?.user_metadata?.full_name;
-  // Only use a proper name; ignore the email local-part so we don't greet "Olá, foo123".
-  const firstName = rawName ? rawName.split(" ")[0] : "";
+  const firstName = firstNameOf(fullName);
 
   const cards = [
     {
@@ -71,7 +70,7 @@ const Home = () => {
             <div className="min-w-0">
               <p className="text-xs uppercase tracking-[0.3em] text-primary font-semibold">TreinaCheck · Use Sistemas</p>
               <h1 className="text-3xl sm:text-4xl md:text-5xl font-semibold tracking-tight mt-3 break-words">
-                Olá{firstName ? `,\u00a0 ${firstName}` : ""}.
+                {greetingForHour(new Date().getHours())}{firstName ? `, ${firstName}` : ""}!
               </h1>
               <p className="text-muted-foreground mt-2 text-sm sm:text-base">O que você quer fazer hoje?</p>
               <div className="mt-5 flex flex-wrap gap-3">
