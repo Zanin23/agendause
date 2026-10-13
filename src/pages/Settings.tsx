@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Database, Loader2, Check, Accessibility, Type, ShieldCheck, ChevronRight, LogOut, UserRound, Save } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
+import { SenhaDeAcessoCard } from "@/components/SenhaDeAcessoCard";
 import { BackButton } from "@/components/BackButton";
 import { SEO } from "@/components/SEO";
 import { useWorkspace } from "@/hooks/useWorkspace";
@@ -129,6 +130,8 @@ const Settings = () => {
             </div>
           </form>
         </section>
+
+        <SenhaDeAcessoCard />
 
         <section className="rounded-2xl border border-border bg-card/60 p-6">
           <header className="flex items-center gap-3 mb-4">
