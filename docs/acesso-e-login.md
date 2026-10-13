@@ -12,7 +12,9 @@ Guia de acesso do TreinaCheck. Vale para o site publicado
   cronogramas e da integração com o relatório). Ele aparece no `.env` como
   `VITE_SUPABASE_URL`. A tela de login mostra esse endereço no rodapé do
   **Verificar o acesso**.
-- As contas são criadas **apenas por administrador** (Admin → contas). Não existe
+- As contas são criadas **apenas por administrador** — no site, em
+  **Admin → Controle de Acessos → Novo Usuário**, ou fora dele com
+  `scripts/criar-usuario.mjs` (veja `docs/controle-de-usuarios.md`). Não existe
   cadastro público.
 
 ---
@@ -65,14 +67,24 @@ banco novo.** A seção 4 traz os três caminhos para resolver.
 3. O link abre `/redefinir-senha`, onde você escolhe a senha nova e já entra.
 4. Se o e-mail de redefinição **não chegar em alguns minutos**, quase certo que
    a conta não existe neste banco: os e-mails do Supabase não devolvem erro para
-   e-mail inexistente (é proteção contra descoberta de contas). Vá para 4B/4C.
+   e-mail inexistente (é proteção contra descoberta de contas). Vá para 4B/4C/4D.
 
 > Requisito: o endereço que abre o link precisa estar liberado em
 > **Supabase → Authentication → URL Configuration → Redirect URLs**
 > (`https://agendause.vercel.app/redefinir-senha` e, se usar prévias,
 > `https://*-<seu-time>.vercel.app/redefinir-senha`).
 
-### 4B. Criar a conta direto no painel (5 cliques, sem código)
+### 4B. Criar a conta pelo site (administrador)
+
+Entre com uma conta administradora → **Admin → Controle de Acessos** → **Novo
+Usuário** → nome, e-mail, senha (mínimo 6 caracteres), cargo e telas. A conta já
+nasce com e-mail confirmado e vínculo com as bases.
+
+Se essa tela reclamar que a gestão de contas não está publicada, aplique as
+migrações indicadas em `docs/controle-de-usuarios.md` (só colar SQL no Supabase)
+— não é preciso publicar nenhuma Edge Function.
+
+### 4C. Criar a conta direto no painel do Supabase (5 cliques, sem código)
 
 1. Abra **Supabase → projeto `psgekwifthuzduhpreay` → Authentication → Users**.
 2. Procure o seu e-mail. Se não estiver na lista, clique em **Add user →
@@ -81,9 +93,9 @@ banco novo.** A seção 4 traz os três caminhos para resolver.
    - **password**: uma senha forte
    - marque **Auto Confirm User** (sem isso o login reclama de “e-mail não
      confirmado”)
-3. Pronto para entrar. Depois confira os acessos (seções 4D e 4F).
+3. Pronto para entrar. Depois confira os acessos (seções 4E e 4G).
 
-### 4C. Trazer as contas do banco antigo (script)
+### 4D. Trazer as contas do banco antigo (script)
 
 Se houver mais gente na mesma situação, o script copia **todas** as contas do
 projeto antigo para o banco novo — sem tocar em nada do antigo.
@@ -111,7 +123,7 @@ precisa saber senha antiga):
 - **As chaves service_role nunca vão para o repositório.** Passe por variável de
   ambiente na hora de rodar (o `.env` do app guarda só a chave pública).
 
-### 4D. “Você não tem acesso a nenhuma base”
+### 4E. “Você não tem acesso a nenhuma base”
 
 Isso é login ok, mas sem vínculo com a base (workspace). No **SQL Editor** do
 projeto novo:
@@ -136,7 +148,7 @@ set active_workspace_id = (select id from public.workspaces where slug = 'implan
 where id = (select id from auth.users where email = 'seu@email.com');
 ```
 
-### 4E. “Não foi possível carregar suas bases” / tudo travado
+### 4F. “Não foi possível carregar suas bases” / tudo travado
 
 O app agora diz isso em vez de ficar girando em “Carregando...”. Significa que
 ele não conseguiu ler `workspaces`:
@@ -149,7 +161,7 @@ ele não conseguiu ler `workspaces`:
   `VITE_SUPABASE_PUBLISHABLE_KEY` são do projeto `psgekwifthuzduhpreay`, e
   publique de novo (Vercel → Deployments → Redeploy).
 
-### 4F. Entrei, mas não vejo o menu Admin
+### 4G. Entrei, mas não vejo o menu Admin
 
 O papel de administrador fica em `user_roles`:
 
@@ -159,7 +171,7 @@ select id, 'admin' from auth.users where email = 'seu@email.com'
 on conflict (user_id, role) do nothing;
 ```
 
-### 4G. “Entrar com Google”
+### 4H. “Entrar com Google”
 
 O botão existe na tela de login. Para funcionar, o provedor precisa estar
 ligado no banco:
@@ -180,11 +192,12 @@ banco”*, o passo 1 ainda não foi feito — entre com e-mail e senha enquanto 
 | Situação | O que fazer |
 | --- | --- |
 | Não lembro a senha e já entrei antes | Login → **Esqueci minha senha** → `/redefinir-senha` |
-| “E-mail ou senha não conferem” toda vez | Sua conta provavelmente é do banco antigo → **4B** (painel) ou **4C** (script) |
-| Entro mas fico em “Escolha sua base” vazio | **4D** (vínculo com a base) |
-| Entro mas não vejo **Admin** | **4F** (`user_roles`) |
-| Nada carrega / “não foi possível falar com o banco” | **4E** (rede, projeto pausado, chave) |
-| Quero entrar com Google | **4G** (habilitar provedor no Supabase) |
+| “E-mail ou senha não conferem” toda vez | Sua conta provavelmente é do banco antigo → **4C** (painel) ou **4D** (script) |
+| Sou admin e não consigo **criar** conta | **4B** — aplicar as migrações de `docs/controle-de-usuarios.md` |
+| Entro mas fico em “Escolha sua base” vazio | **4E** (vínculo com a base) |
+| Entro mas não vejo **Admin** | **4G** (`user_roles`) |
+| Nada carrega / “não foi possível falar com o banco” | **4F** (rede, projeto pausado, chave) |
+| Quero entrar com Google | **4H** (habilitar provedor no Supabase) |
 
 Ferramenta de apoio em qualquer um dos casos: tela de login → **Não consigo
 entrar → Verificar o acesso → Copiar diagnóstico**.

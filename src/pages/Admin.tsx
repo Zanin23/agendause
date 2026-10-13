@@ -18,7 +18,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { adminFunctionError, loadAdminUsers, type AdminUser, type LiteSchedule } from "@/lib/adminUsers";
+import { callAdminAction, loadAdminUsers, type AdminActionPayload, type AdminUser, type LiteSchedule } from "@/lib/adminUsers";
 
 const formatDate = (v?: string | null) =>
   v ? new Date(v).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" }) : "—";
@@ -38,6 +38,7 @@ const Admin = () => {
   const [saving, setSaving] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
   const [newUser, setNewUser] = useState({ 
     email: "", 
     fullName: "", 
@@ -47,12 +48,12 @@ const Admin = () => {
     schedule_permissions: {} as Record<string, string>
   });
 
-  const call = useCallback(async (payload: Record<string, unknown>) => {
-    const { data, error } = await supabase.functions.invoke("admin-users", { body: payload });
-    if (error) throw new Error(await adminFunctionError(error, data));
-    if ((data as any)?.error) throw new Error((data as any).error);
-    return data as any;
-  }, []);
+  // Ações administrativas: RPC no banco (admin_create_user & cia) e, só quando
+  // a migração ainda não está aplicada, a Edge Function admin-users.
+  const call = useCallback(
+    (payload: AdminActionPayload) => callAdminAction(supabase, payload),
+    [],
+  );
 
   const load = useCallback(async () => {
     try {
@@ -145,6 +146,7 @@ const Admin = () => {
     }
     try {
       setSaving(true);
+      setCreateError(null);
       await call({ 
         action: "create_user", 
         email: newUser.email, 
@@ -155,6 +157,7 @@ const Admin = () => {
         schedule_permissions: newUser.schedule_permissions
       });
       toast.success(`Usuário ${newUser.email} criado com sucesso`);
+      setCreateError(null);
       setIsCreating(false);
       setNewUser({ 
         email: "", 
@@ -166,7 +169,9 @@ const Admin = () => {
       });
       load();
     } catch (e: any) {
-      toast.error(e.message || "Erro ao criar usuário");
+      const message = e.message || "Erro ao criar usuário";
+      setCreateError(message);
+      toast.error(message);
     } finally {
       setSaving(false);
     }
@@ -214,7 +219,12 @@ const Admin = () => {
               </p>
             </div>
             <div className="flex gap-2">
-              <Button onClick={() => setIsCreating(true)}>
+              <Button
+                onClick={() => {
+                  setCreateError(null);
+                  setIsCreating(true);
+                }}
+              >
                 <UserPlus className="h-4 w-4 mr-2" />
                 Novo Usuário
               </Button>
@@ -369,7 +379,13 @@ const Admin = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      <Dialog open={isCreating} onOpenChange={setIsCreating}>
+      <Dialog
+        open={isCreating}
+        onOpenChange={(open) => {
+          setIsCreating(open);
+          if (!open) setCreateError(null);
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Criar novo usuário</DialogTitle>
@@ -527,6 +543,11 @@ const Admin = () => {
               </div>
             </div>
           </div>
+          {createError && (
+            <p role="alert" className="rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm text-muted-foreground">
+              {createError}
+            </p>
+          )}
           <DialogFooter>
             <Button variant="ghost" onClick={() => setIsCreating(false)} disabled={saving}>
               Cancelar
