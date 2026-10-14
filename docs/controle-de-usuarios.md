@@ -19,6 +19,7 @@ principal.
 | Administrador sim/não | RPC `admin_set_admin(...)` | Edge Function (`set_admin`) |
 | Salvar permissões | RPC `admin_set_permissions(...)` | Edge Function (`set_permissions`) |
 | Enviar e-mail de redefinição | e-mail do próprio login (GoTrue) | Edge Function (`send_reset`) |
+| Apagar conta | RPC `admin_delete_user(...)` | Edge Function (`delete_user`) |
 
 Regras que valem para todas as RPCs:
 
@@ -64,11 +65,48 @@ suporte.
 No projeto **`pnaupodddxrbqbjilhft`**, abra **SQL Editor** e execute:
 
 1. `supabase/migrations/20261013130000_admin_list_users.sql` (se ainda não rodou)
-2. `supabase/migrations/20261013140000_admin_contas_sem_edge_function.sql`
+2. `supabase/migrations/20261013140000_admin_contas_sem_edge_function.sql` (se ainda não rodou)
+3. `supabase/migrations/20261014120000_admin_contas_corrige_500_e_exclui.sql` — **obrigatório
+   para quem já tinha rodado o item 2**. Corrige o erro 500 e adiciona “Apagar”.
 
-Os dois arquivos são idempotentes (podem ser executados de novo) e não apagam
-nem recriam contas. Requerem as migrações anteriores de roles/permissões/
+Os arquivos são idempotentes (podem ser executados de novo) e não apagam
+contas existentes. Requerem as migrações anteriores de roles/permissões/
 workspaces.
+
+#### Por que as contas criadas pela tela davam erro 500
+
+A versão anterior criava a conta em `auth.users` sem preencher as colunas de
+token que o login do Supabase (GoTrue) lê como texto (`confirmation_token`,
+`recovery_token`, `email_change`, etc.). Elas ficavam **NULL**, e o login da
+conta respondia erro 500. Conta criada no painel do Supabase (**Authentication →
+Users → Add user**) funcionava porque o painel preenche essas colunas com texto
+vazio.
+
+O item 3 corrige isso de duas formas:
+
+- as contas novas já nascem com essas colunas em branco;
+- as contas antigas que ficaram com NULL são consertadas automaticamente
+  (nenhuma senha é trocada — quem já sabe a senha pode entrar direto).
+
+Se alguma conta criada pela tela continuar dando erro 500 depois do item 3,
+use o conserto manual de `supabase/consertos/consertar-login-de-uma-conta.sql`.
+
+### 1B. Apagar conta
+
+Em **Admin → Controle de Acessos**, cada conta tem o botão **Apagar** (não
+aparece para a sua própria conta). Antes de apagar, a tela pede confirmação.
+
+O que acontece:
+
+- a conta deixa de conseguir entrar e some da lista; perfil, papéis,
+  permissões, vínculos com as bases e identidades de login são removidos;
+- **cronogramas, modelos e treinamentos criados pela conta não são apagados**:
+  passam a ser de quem apagou (assim o trabalho da implantação não se perde);
+- notas, pedidos de faturamento e aceites de treinamento feitos pela conta são
+  removidos junto (são dados pessoais ligados à conta);
+- não dá para desfazer.
+
+Ninguém consegue apagar a própria conta — peça a outro administrador.
 
 ### 2. Edge Function (opcional)
 
@@ -119,9 +157,11 @@ telas e `--simular` mostra o que seria feito sem gravar nada.
 5. Troque a senha de uma conta de teste (**Definir senha**), use **Tornar
    admin**/**Remover admin** e salve **Permissões** — os três também funcionam
    sem a Edge Function.
-6. Confira no painel Supabase **Authentication → Users** se o número de contas
+6. Crie uma conta de teste, entre com ela (e-mail e senha) para confirmar que
+   não dá erro 500 e, depois, apague-a com **Apagar** pela tela de admin.
+7. Confira no painel Supabase **Authentication → Users** se o número de contas
    corresponde ao projeto atual. A correção não importa contas de outro projeto.
-7. Contas sem role `admin` não conseguem chamar as RPCs com sucesso, mesmo
+8. Contas sem role `admin` não conseguem chamar as RPCs com sucesso, mesmo
    diretamente.
 
 ## Se o próprio banco recusar as funções
@@ -149,8 +189,10 @@ npm install --no-save @electric-sql/pglite    # só para o primeiro comando
 npm run build
 ```
 
-O primeiro roda a migração 20261013140000 num Postgres de verdade e confere
-criação, senha, papéis, permissões, recusas de quem não é admin e idempotência.
+O primeiro roda as migrações 20261013140000 e 20261014120000 num Postgres de
+verdade e confere criação, senha, papéis, permissões, recusas de quem não é
+admin, idempotência, a reprodução do erro 500 (conta criada pela versão antiga
+fica com token NULL) e a exclusão de conta (com os cronogramas transferidos).
 O segundo testa a escolha de caminho do front-end (RPC primeiro, Edge Function
 como compatibilidade) e as mensagens de erro.
 

@@ -2,7 +2,7 @@
 // node --experimental-strip-types scripts/testes/admin-users.mjs
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { loadAdminUsers, adminFunctionError, adminRpcError, callAdminAction, checkAdminPublication, SQL_LISTA, SQL_CONTAS } from '../../src/lib/adminUsers.ts';
+import { loadAdminUsers, adminFunctionError, adminRpcError, callAdminAction, checkAdminPublication, SQL_LISTA, SQL_CONTAS, SQL_CORRECAO } from '../../src/lib/adminUsers.ts';
 
 const payload = { users: [{ id: 'me' }, { id: 'another' }], all_schedules: [] };
 const client = (result, legacy) => ({
@@ -185,6 +185,27 @@ test('mensagens do banco ficam em português e explicam o que fazer', () => {
   assert.equal(adminRpcError({ code: '22023', message: 'Informe um e-mail válido.' }), 'Informe um e-mail válido.');
 });
 
+test('apagar conta usa a RPC admin_delete_user, sem Edge Function', async () => {
+  const c = clienteAcao({ rpc: () => ({ data: { success: true, email: 'x@y.com' }, error: null }) });
+  assert.deepEqual(await callAdminAction(c, { action: 'delete_user', user_id: 'u-antiga' }), { success: true, email: 'x@y.com' });
+  assert.equal(c.chamadas.rpc[0].name, 'admin_delete_user');
+  assert.deepEqual(c.chamadas.rpc[0].args, { _user_id: 'u-antiga' });
+  assert.equal(c.chamadas.edge.length, 0);
+});
+test('apagar conta: recusa do banco (ex.: própria conta) vira mensagem, sem Edge Function', async () => {
+  const c = clienteAcao({ rpc: () => ({ data: null, error: { code: '22023', message: 'Você não pode apagar a sua própria conta. Peça a outro administrador.' } }) });
+  await assert.rejects(callAdminAction(c, { action: 'delete_user', user_id: 'eu' }), /própria conta/);
+  assert.equal(c.chamadas.edge.length, 0);
+});
+test('apagar conta em banco sem a migração cai na Edge Function com delete_user', async () => {
+  const c = clienteAcao({
+    rpc: () => ({ data: null, error: { code: 'PGRST202', message: 'not found' } }),
+    edge: () => ({ data: { success: true }, error: null }),
+  });
+  assert.deepEqual(await callAdminAction(c, { action: 'delete_user', user_id: 'u1' }), { success: true });
+  assert.deepEqual(c.chamadas.edge[0], { name: 'admin-users', body: { action: 'delete_user', user_id: 'u1' } });
+});
+
 test('função ausente sem Edge Function publicada explica o caminho da migração', async () => {
   const c = clienteAcao({
     rpc: () => ({ data: null, error: { code: 'PGRST202', message: 'not found' } }),
@@ -210,13 +231,15 @@ const acha = (itens, chave) => itens.find((i) => i.chave === chave);
 
 test('banco sem nada publicado: aponta os dois SQLs e a Edge Function', async () => {
   const itens = await checkAdminPublication(clientePublicacao({}));
-  assert.equal(itens.length, 6);
-  assert.equal(itens.filter((i) => i.nivel === 'faltando').length, 5, 'só as 5 funções do banco são exigidas');
+  assert.equal(itens.length, 7);
+  assert.equal(itens.filter((i) => i.nivel === 'faltando').length, 6, 'só as 6 funções do banco são exigidas');
   assert.equal(acha(itens, 'criar').arquivo, SQL_CONTAS);
   assert.equal(acha(itens, 'senha').arquivo, SQL_CONTAS);
   assert.equal(acha(itens, 'admin').arquivo, SQL_CONTAS);
   assert.equal(acha(itens, 'permissoes').arquivo, SQL_CONTAS);
   assert.equal(acha(itens, 'listar').arquivo, SQL_LISTA);
+  assert.equal(acha(itens, 'excluir').arquivo, SQL_CORRECAO);
+  assert.equal(acha(itens, 'excluir').nivel, 'faltando');
   assert.equal(acha(itens, 'funcao').nivel, 'opcional');
   assert.match(acha(itens, 'funcao').detalhe, /não faz falta/);
 });
@@ -231,12 +254,14 @@ test('banco publicado: tudo ok, inclusive com a Edge Function ausente', async ()
         admin_set_admin: { data: null, error: { code: '22023', message: 'user_id é obrigatório' } },
         admin_set_permissions: { data: null, error: { code: '22023', message: 'user_id é obrigatório' } },
         admin_list_users: { data: { users: [], all_schedules: [] }, error: null },
+        admin_delete_user: { data: null, error: { code: '22023', message: 'user_id é obrigatório' } },
       },
     }),
   );
   assert.equal(acha(itens, 'criar').nivel, 'ok');
   assert.match(acha(itens, 'criar').detalhe, /Informe um e-mail válido/);
   assert.equal(acha(itens, 'listar').nivel, 'ok');
+  assert.equal(acha(itens, 'excluir').nivel, 'ok');
   assert.equal(acha(itens, 'funcao').nivel, 'opcional', 'a Edge Function não é exigida');
   assert.equal(itens.filter((i) => i.nivel === 'faltando').length, 0, 'nada pendente quando o banco está publicado');
   assert.equal(itens.filter((i) => i.nivel === 'erro').length, 0);
