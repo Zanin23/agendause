@@ -520,6 +520,7 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string | null
+          decided_modules: string[]
           id: string
           intro: string | null
           public_token: string | null
@@ -535,6 +536,7 @@ export type Database = {
         Insert: {
           created_at?: string
           created_by?: string | null
+          decided_modules?: string[]
           id?: string
           intro?: string | null
           public_token?: string | null
@@ -550,6 +552,7 @@ export type Database = {
         Update: {
           created_at?: string
           created_by?: string | null
+          decided_modules?: string[]
           id?: string
           intro?: string | null
           public_token?: string | null
@@ -900,6 +903,80 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "process_surveys"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      survey_modules: {
+        Row: {
+          code: string
+          name: string
+          optional: boolean
+          position: number
+          section: string
+          terms: string[]
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          name: string
+          optional?: boolean
+          position?: number
+          section: string
+          terms?: string[]
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          name?: string
+          optional?: boolean
+          position?: number
+          section?: string
+          terms?: string[]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      survey_template_questions: {
+        Row: {
+          help_text: string | null
+          id: string
+          label: string
+          module_code: string
+          options: Json
+          position: number
+          required: boolean
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          help_text?: string | null
+          id?: string
+          label: string
+          module_code: string
+          options?: Json
+          position?: number
+          required?: boolean
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          help_text?: string | null
+          id?: string
+          label?: string
+          module_code?: string
+          options?: Json
+          position?: number
+          required?: boolean
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "survey_template_questions_module_code_fkey"
+            columns: ["module_code"]
+            isOneToOne: false
+            referencedRelation: "survey_modules"
+            referencedColumns: ["code"]
           },
         ]
       }

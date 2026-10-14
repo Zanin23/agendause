@@ -36,6 +36,7 @@ const Notes = lazy(() => import("./pages/Notes"));
 const SelectWorkspace = lazy(() => import("./pages/SelectWorkspace"));
 const Settings = lazy(() => import("./pages/Settings"));
 const Admin = lazy(() => import("./pages/Admin"));
+const SurveyBankEditor = lazy(() => import("./pages/SurveyBankEditor"));
 const Index = lazy(() => import("./pages/Index"));
 const Article = lazy(() => import("./pages/Article"));
 const Clients = lazy(() => import("./pages/Clients"));
@@ -82,6 +83,7 @@ const App = () => (
                 <Route path="/selecionar-base" element={<ProtectedRoute requireWorkspace={false}><SelectWorkspace /></ProtectedRoute>} />
                 <Route path="/configuracoes" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
                 <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
+                <Route path="/admin/levantamento-padrao" element={<ProtectedRoute><SurveyBankEditor /></ProtectedRoute>} />
                 <Route path="/" element={<ProtectedRoute><HomeExperimental /></ProtectedRoute>} />
                 <Route path="/inicio-classico" element={<ProtectedRoute><Home /></ProtectedRoute>} />
                 <Route path="/inicio-experimental" element={<ProtectedRoute><HomeExperimental /></ProtectedRoute>} />

@@ -4,36 +4,28 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
   Plus, Trash2, Link2, ArrowUp, ArrowDown, FileText, Download, RefreshCw,
-  ClipboardList, CheckCircle2, Clock, Paperclip, Printer,
+  ClipboardList, CheckCircle2, Clock, Paperclip, Printer, Lightbulb, Layers,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { publicUrl } from "@/lib/publicUrl";
-import { SURVEY_TEMPLATE } from "@/lib/surveyTemplate";
+import {
+  type BankQuestion, type SurveyModule, type SurveyQuestionType, QUESTION_TYPE_LABELS,
+  perguntasDoModulo, secoesPresentes, sugestoesDeModulos, textosDasRespostas,
+} from "@/lib/surveyModulos";
+import type { Json } from "@/integrations/supabase/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 
-export type SurveyQuestionType =
-  | "text" | "longtext" | "number" | "date" | "select" | "multiselect" | "boolean" | "file";
-
-export const QUESTION_TYPE_LABELS: Record<SurveyQuestionType, string> = {
-  text: "Texto curto",
-  longtext: "Texto longo",
-  number: "Número",
-  date: "Data",
-  select: "Escolha única",
-  multiselect: "Escolha múltipla",
-  boolean: "Sim / Não",
-  file: "Envio de arquivo",
-};
 
 type Survey = {
   id: string; schedule_id: string; title: string; intro: string | null;
   status: string; public_token: string | null; respondent_name: string | null;
   respondent_email: string | null; submitted_at: string | null; created_at: string;
+  decided_modules?: string[] | null;
 };
 type Question = {
   id: string; survey_id: string; section: string | null; position: number;
@@ -54,6 +46,8 @@ export function SurveyTab({
   const [files, setFiles] = useState<SurveyFile[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
+  const [modulos, setModulos] = useState<SurveyModule[]>([]);
+  const [banco, setBanco] = useState<BankQuestion[]>([]);
   const navigate = useNavigate();
 
   const load = useCallback(async () => {
@@ -79,7 +73,42 @@ export function SurveyTab({
 
   useEffect(() => { load(); }, [load]);
 
+  // Módulos e perguntas padrão (editados em Admin → Perguntas do levantamento).
+  useEffect(() => {
+    (async () => {
+      const [{ data: mods, error: e1 }, { data: qs, error: e2 }] = await Promise.all([
+        supabase.from("survey_modules").select("code, name, section, optional, terms, position").order("position", { ascending: true }),
+        supabase.from("survey_template_questions").select("id, module_code, position, label, help_text, type, options, required").order("position", { ascending: true }),
+      ]);
+      if (e1 || e2) {
+        toast.error(`Não foi possível carregar o padrão de perguntas: ${(e1 || e2)?.message}`);
+        return;
+      }
+      setModulos((mods as unknown as SurveyModule[]) || []);
+      setBanco((qs as unknown as BankQuestion[]) || []);
+    })();
+  }, []);
+
+  // Sugestões: termos citados nas respostas de módulos opcionais que ainda não estão no levantamento.
+  const secoesNoLevantamento = useMemo(() => secoesPresentes(questions), [questions]);
+  const sugestoes = useMemo(
+    () => sugestoesDeModulos({
+      modulos,
+      textos: textosDasRespostas(Object.values(answers)),
+      secoesNoLevantamento,
+      decididos: survey?.decided_modules ?? [],
+    }),
+    [modulos, answers, secoesNoLevantamento, survey?.decided_modules],
+  );
+
   const createSurvey = async (withTemplate = true) => {
+    // Padrão = só os módulos obrigatórios (Comercial e Financeiro); os opcionais entram por sugestão.
+    const linhasPadrao = withTemplate
+      ? modulos.filter((m) => !m.optional).flatMap((m) => perguntasDoModulo(m, banco))
+      : [];
+    if (withTemplate && linhasPadrao.length === 0) {
+      return toast.error("O padrão de perguntas ainda não foi carregado. Confira se a migração 20261014150000 foi aplicada.");
+    }
     setCreating(true);
     const { data: userData } = await supabase.auth.getUser();
     const { data: created, error } = await supabase.from("process_surveys").insert({
@@ -91,15 +120,15 @@ export function SurveyTab({
     if (error) { setCreating(false); return toast.error(error.message); }
     if (withTemplate && created) {
       const { error: qErr } = await supabase.from("survey_questions").insert(
-        SURVEY_TEMPLATE.map((q, i) => ({
+        linhasPadrao.map((q, i) => ({
           survey_id: created.id,
           position: i,
           section: q.section,
           label: q.label,
-          help_text: q.help_text ?? null,
+          help_text: q.help_text,
           type: q.type,
-          options: (q.options ?? []) as any,
-          required: !!q.required,
+          options: q.options as Json,
+          required: q.required,
         })),
       );
       if (qErr) toast.error(qErr.message);
@@ -111,23 +140,64 @@ export function SurveyTab({
 
   const applyTemplate = async () => {
     if (!survey) return;
-    if (!confirm("Adicionar o padrão de perguntas ao questionário? As perguntas atuais serão mantidas.")) return;
+    // Só traz as seções obrigatórias que ainda não estão no levantamento.
+    const faltando = modulos.filter((m) => !m.optional && !secoesNoLevantamento.has(m.section));
+    const linhas = faltando.flatMap((m) => perguntasDoModulo(m, banco));
+    if (linhas.length === 0) return toast.message("As perguntas obrigatórias já estão no levantamento");
+    if (!confirm("Adicionar as perguntas obrigatórias que estão faltando? As perguntas atuais serão mantidas.")) return;
     const base = questions.length ? Math.max(...questions.map((q) => q.position)) + 1 : 0;
     const { error } = await supabase.from("survey_questions").insert(
-      SURVEY_TEMPLATE.map((q, i) => ({
+      linhas.map((q, i) => ({
         survey_id: survey.id,
         position: base + i,
         section: q.section,
         label: q.label,
-        help_text: q.help_text ?? null,
+        help_text: q.help_text,
         type: q.type,
-        options: (q.options ?? []) as any,
-        required: !!q.required,
+        options: q.options as Json,
+        required: q.required,
       })),
     );
     if (error) return toast.error(error.message);
-    toast.success("Padrão de perguntas aplicado");
+    toast.success("Perguntas obrigatórias aplicadas");
     load();
+  };
+
+  /** Registra que o consultor já decidiu sobre este módulo (aceitou ou recusou). */
+  const marcarDecidido = async (codigo: string) => {
+    if (!survey) return;
+    const decididos = Array.from(new Set([...(survey.decided_modules ?? []), codigo]));
+    await updateSurvey({ decided_modules: decididos });
+  };
+
+  const inserirModulo = async (modulo: SurveyModule) => {
+    if (!survey) return;
+    const linhas = perguntasDoModulo(modulo, banco);
+    if (linhas.length === 0) {
+      return toast.error(`O módulo ${modulo.name} não tem perguntas no padrão. Cadastre-as em Admin → Perguntas do levantamento.`);
+    }
+    const base = questions.length ? Math.max(...questions.map((q) => q.position)) + 1 : 0;
+    const { error } = await supabase.from("survey_questions").insert(
+      linhas.map((q, i) => ({
+        survey_id: survey.id,
+        position: base + i,
+        section: q.section,
+        label: q.label,
+        help_text: q.help_text,
+        type: q.type,
+        options: q.options as Json,
+        required: q.required,
+      })),
+    );
+    if (error) return toast.error(error.message);
+    await marcarDecidido(modulo.code);
+    toast.success(`Módulo ${modulo.name} inserido no levantamento`);
+    load();
+  };
+
+  const recusarModulo = async (modulo: SurveyModule) => {
+    await marcarDecidido(modulo.code);
+    toast.message(`Sugestão de ${modulo.name} dispensada neste levantamento`);
   };
 
   const updateSurvey = async (patch: Partial<Survey>) => {
@@ -320,6 +390,57 @@ export function SurveyTab({
                 </li>
               ))}
             </ul>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Sugestões de módulos citados nas respostas */}
+      {canEdit && !submitted && sugestoes.length > 0 && (
+        <Card className="border-primary/40 bg-primary/5">
+          <CardContent className="p-4 sm:p-5 space-y-3">
+            <h3 className="flex items-center gap-2 font-semibold">
+              <Lightbulb className="h-4 w-4 text-primary" /> Sugestões para o levantamento
+            </h3>
+            {sugestoes.map(({ modulo, termos }) => (
+              <div key={modulo.code} className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border bg-card p-3">
+                <p className="text-sm min-w-0">
+                  Foi citado{" "}
+                  <strong>{termos.map((t) => `“${t}”`).join(", ")}</strong>{" "}
+                  nas respostas. Inserir o módulo <strong>{modulo.name}</strong> no levantamento?
+                </p>
+                <div className="flex gap-2 shrink-0">
+                  <Button size="sm" onClick={() => inserirModulo(modulo)}>Sim, inserir</Button>
+                  <Button size="sm" variant="outline" onClick={() => recusarModulo(modulo)}>Não</Button>
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Módulos opcionais: inserção manual */}
+      {canEdit && !submitted && modulos.some((m) => m.optional) && (
+        <Card>
+          <CardContent className="p-4 sm:p-5 space-y-2">
+            <h3 className="text-xs uppercase tracking-wider text-muted-foreground font-semibold flex items-center gap-1.5">
+              <Layers className="h-3.5 w-3.5" /> Módulos opcionais
+            </h3>
+            <div className="flex flex-wrap gap-2">
+              {modulos.filter((m) => m.optional).map((m) =>
+                secoesNoLevantamento.has(m.section) ? (
+                  <Badge key={m.code} variant="secondary">
+                    <CheckCircle2 className="h-3 w-3 mr-1" /> {m.name} no levantamento
+                  </Badge>
+                ) : (
+                  <Button key={m.code} size="sm" variant="outline" onClick={() => inserirModulo(m)}>
+                    <Plus className="h-4 w-4" /> {m.name}
+                  </Button>
+                ),
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Quando um termo do módulo aparecer nas respostas, o sistema sugere inseri-lo.
+            </p>
           </CardContent>
         </Card>
       )}
