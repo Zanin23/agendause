@@ -203,6 +203,46 @@ Deno.serve(async (req) => {
       return json({ success: true, user_id: newUser.id });
     }
 
+    if (action === 'delete_user') {
+      const userId = String(body?.user_id || '').trim();
+      if (!userId) return json({ error: 'user_id é obrigatório' }, 400);
+      if (userId === caller.id) {
+        return json({ error: 'Você não pode apagar a sua própria conta. Peça a outro administrador.' }, 400);
+      }
+
+      // Mesma regra da RPC admin_delete_user: cronogramas, modelos e treinamentos
+      // da conta passam para quem apagou; não somem junto com a conta.
+      const { error: schedErr } = await admin
+        .from('implementation_schedules')
+        .update({ owner_id: caller.id })
+        .eq('owner_id', userId);
+      if (schedErr) throw schedErr;
+      const { error: tplErr } = await admin
+        .from('implementation_templates')
+        .update({ owner_id: caller.id })
+        .eq('owner_id', userId);
+      if (tplErr) throw tplErr;
+      const { error: trainErr } = await admin
+        .from('trainings')
+        .update({ created_by: caller.id })
+        .eq('created_by', userId);
+      if (trainErr) throw trainErr;
+
+      // workspace_members não tem FK para auth.users: limpa à mão.
+      const { error: wsErr } = await admin.from('workspace_members').delete().eq('user_id', userId);
+      if (wsErr) throw wsErr;
+
+      // Apaga a conta; identidades, sessões, perfil, papéis e dados pessoais caem em cascata.
+      const { error } = await admin.auth.admin.deleteUser(userId);
+      if (error) {
+        const msg = String(error.message || '');
+        // 400 (e não 404): a tela trata 404 como "função não publicada".
+        if (/not.?found/i.test(msg)) return json({ error: 'Conta não encontrada neste banco.' }, 400);
+        throw error;
+      }
+      return json({ success: true });
+    }
+
     return json({ error: 'Ação inválida' }, 400);
   } catch (e) {
     return json({ error: (e as Error).message }, 500);

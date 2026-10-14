@@ -3,9 +3,10 @@ import { CheckCircle2, Circle, Copy, ExternalLink, Loader2, RefreshCw, TriangleA
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { checkAdminPublication, SQL_CONTAS, SQL_LISTA, type PublicacaoItem } from "@/lib/adminUsers";
+import { checkAdminPublication, SQL_CONTAS, SQL_CORRECAO, SQL_LISTA, type PublicacaoItem } from "@/lib/adminUsers";
 import sqlLista from "../../supabase/migrations/20261013130000_admin_list_users.sql?raw";
 import sqlContas from "../../supabase/migrations/20261013140000_admin_contas_sem_edge_function.sql?raw";
+import sqlCorrecao from "../../supabase/migrations/20261014120000_admin_contas_corrige_500_e_exclui.sql?raw";
 
 /* ---------------------------------------------------------------------------
    Conferir publicação — mostra, dentro do próprio sistema, o que ainda falta
@@ -24,6 +25,7 @@ const SQL_EDITOR = PROJETO ? `https://supabase.com/dashboard/project/${PROJETO}/
 const ARQUIVOS: Record<string, { rotulo: string; conteudo: string }> = {
   [SQL_LISTA]: { rotulo: "SQL da listagem de contas", conteudo: sqlLista },
   [SQL_CONTAS]: { rotulo: "SQL de criar/gerenciar contas", conteudo: sqlContas },
+  [SQL_CORRECAO]: { rotulo: "SQL de correção (erro 500 ao criar) e exclusão de contas", conteudo: sqlCorrecao },
 };
 
 const ICONE: Record<PublicacaoItem["nivel"], JSX.Element> = {

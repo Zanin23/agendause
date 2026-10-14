@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Shield, ShieldCheck, Search, KeyRound, Loader2, Mail, RefreshCw, UserCog, UserPlus, Eye, EyeOff, LayoutGrid, ClipboardList, CheckCircle2, Lock, Unlock, Save } from "lucide-react";
+import { Shield, ShieldCheck, Search, KeyRound, Loader2, Mail, RefreshCw, UserCog, UserPlus, Eye, EyeOff, LayoutGrid, ClipboardList, CheckCircle2, Lock, Unlock, Save, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
@@ -34,6 +34,8 @@ const Admin = () => {
   const [query, setQuery] = useState("");
   const [target, setTarget] = useState<AdminUser | null>(null);
   const [editPermsTarget, setEditPermsTarget] = useState<AdminUser | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<AdminUser | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [saving, setSaving] = useState(false);
@@ -135,6 +137,21 @@ const Admin = () => {
       toast.error(e.message || "Erro ao alterar permissão");
     } finally {
       setBusyId(null);
+    }
+  };
+
+  const deleteUser = async () => {
+    if (!deleteTarget) return;
+    try {
+      setDeleting(true);
+      await call({ action: "delete_user", user_id: deleteTarget.id });
+      setUsers((prev) => prev.filter((p) => p.id !== deleteTarget.id));
+      toast.success(`Conta ${deleteTarget.email ?? ""} apagada`.trim());
+      setDeleteTarget(null);
+    } catch (e) {
+      toast.error((e as Error).message || "Erro ao apagar conta");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -332,6 +349,16 @@ const Admin = () => {
                       <UserCog className="h-4 w-4 mr-2" />
                       {admin ? "Remover admin" : "Tornar admin"}
                     </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-destructive hover:text-destructive"
+                      onClick={() => setDeleteTarget(u)}
+                      disabled={u.id === user?.id}
+                      title={u.id === user?.id ? "Você não pode apagar a própria conta" : "Apagar conta"}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" /> Apagar
+                    </Button>
                   </div>
                 </article>
               );
@@ -339,6 +366,34 @@ const Admin = () => {
           </div>
         )}
       </main>
+
+      <Dialog open={!!deleteTarget} onOpenChange={(o) => !o && !deleting && setDeleteTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Apagar conta</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 text-sm">
+            <p>
+              Apagar a conta de <strong>{deleteTarget?.email}</strong>? Ela deixa de conseguir entrar no sistema, e
+              o perfil, as permissões e os vínculos com as bases são removidos.
+            </p>
+            <p className="text-muted-foreground">
+              Cronogramas, modelos e treinamentos criados por essa conta não são apagados: passam a ser seus.
+              Notas, pedidos e aceites feitos por ela também são removidos.
+            </p>
+            <p className="text-muted-foreground">Esta ação não pode ser desfeita.</p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteTarget(null)} disabled={deleting}>
+              Cancelar
+            </Button>
+            <Button variant="destructive" onClick={deleteUser} disabled={deleting}>
+              {deleting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Trash2 className="h-4 w-4 mr-2" />}
+              Apagar conta
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!target} onOpenChange={(o) => !o && setTarget(null)}>
         <DialogContent>

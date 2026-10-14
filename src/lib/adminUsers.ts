@@ -34,6 +34,7 @@ export type AdminActionPayload =
       screen_permissions: ScreenPermission[];
       schedule_permissions: Record<string, string>;
     }
+  | { action: "delete_user"; user_id: string }
   | { action: "send_reset"; email: string; redirect_to?: string };
 
 type ApiError = { message: string; code?: string; context?: unknown; name?: string };
@@ -59,6 +60,7 @@ const RPC_POR_ACAO = {
   set_password: "admin_set_password",
   set_admin: "admin_set_admin",
   set_permissions: "admin_set_permissions",
+  delete_user: "admin_delete_user",
 } as const;
 
 /** PostgREST devolve estes códigos quando a função ainda não existe no banco. */
@@ -71,6 +73,8 @@ const PENDENTE_DE_PUBLICACAO = /não está publicada|não foi possível acessar 
 
 export const SQL_LISTA = "20261013130000_admin_list_users.sql";
 export const SQL_CONTAS = "20261013140000_admin_contas_sem_edge_function.sql";
+/** Correção do erro 500 em contas criadas pela tela + exclusão de conta (roda depois de SQL_CONTAS). */
+export const SQL_CORRECAO = "20261014120000_admin_contas_corrige_500_e_exclui.sql";
 
 export type PublicacaoNivel = "ok" | "opcional" | "faltando" | "erro";
 export type PublicacaoItem = {
@@ -129,6 +133,9 @@ export async function checkAdminPublication(client: AdminActionClient): Promise<
     _schedule_permissions: {},
   });
   itens.push(avaliar("permissoes", "Permissões (admin_set_permissions)", SQL_CONTAS, provaPermissoes.error));
+
+  const provaExcluir = await client.rpc("admin_delete_user", { _user_id: null });
+  itens.push(avaliar("excluir", "Apagar conta (admin_delete_user)", SQL_CORRECAO, provaExcluir.error));
 
   const provaLista = await client.rpc("admin_list_users");
   itens.push(avaliar("listar", "Listar contas (admin_list_users)", SQL_LISTA, provaLista.error));
@@ -215,6 +222,8 @@ function rpcArgs(payload: AdminActionPayload): Record<string, unknown> | undefin
         _screen_permissions: payload.screen_permissions ?? [],
         _schedule_permissions: payload.schedule_permissions ?? {},
       };
+    case "delete_user":
+      return { _user_id: payload.user_id };
     default:
       return undefined;
   }
