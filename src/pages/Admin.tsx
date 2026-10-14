@@ -19,6 +19,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 import { callAdminAction, loadAdminUsers, type AdminActionPayload, type AdminUser, type LiteSchedule } from "@/lib/adminUsers";
 
 const formatDate = (v?: string | null) =>
@@ -27,6 +28,7 @@ const formatDate = (v?: string | null) =>
 const Admin = () => {
   const { user } = useAuth();
   const { isAdmin, loading: roleLoading } = useIsAdmin();
+  const navigate = useNavigate();
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [allSchedules, setAllSchedules] = useState<LiteSchedule[]>([]);
   const [loading, setLoading] = useState(true);
@@ -236,7 +238,11 @@ const Admin = () => {
                 Gerencie os usuários e permissões administrativas do sistema.
               </p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" onClick={() => navigate("/admin/levantamento-padrao")}>
+                <ClipboardList className="h-4 w-4 mr-2" />
+                Perguntas do levantamento
+              </Button>
               <Button
                 onClick={() => {
                   setCreateError(null);
