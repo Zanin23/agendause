@@ -495,6 +495,8 @@ const Admin = () => {
                   {[
                     { id: 'schedules', label: 'Cronogramas' },
                     { id: 'clients', label: 'Clientes' },
+                    { id: 'commercial_assessments', label: 'Levantamento Comercial' },
+                    { id: 'commercial_assessments_review', label: 'Análise técnica do levantamento' },
                     { id: 'reports', label: 'Relatórios' },
                     { id: 'notes', label: 'Notas' }
                   ].map((screen) => (
@@ -638,6 +640,8 @@ const Admin = () => {
                 {[
                   { id: 'schedules', label: 'Cronogramas' },
                   { id: 'clients', label: 'Clientes' },
+                  { id: 'commercial_assessments', label: 'Levantamento Comercial' },
+                  { id: 'commercial_assessments_review', label: 'Análise técnica do levantamento' },
                   { id: 'reports', label: 'Relatórios' },
                   { id: 'notes', label: 'Notas' }
                 ].map((screen) => (
