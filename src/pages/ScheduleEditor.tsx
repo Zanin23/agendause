@@ -14,9 +14,10 @@ import { SurveyTab } from "@/components/SurveyTab";
 import { SchedulePauseControl } from "@/components/SchedulePauseControl";
 import { ScheduleStatusControl } from "@/components/ScheduleStatusControl";
 import { PhaseDateShiftDialog } from "@/components/PhaseDateShiftDialog";
-import { ClipboardList, ListChecks } from "lucide-react";
+import { ClipboardList, ListChecks, ClipboardCheck } from "lucide-react";
 import { usePermissions } from "@/hooks/usePermissions";
 import { supabase } from "@/integrations/supabase/client";
+import { asDatabaseRow, looseSupabase } from "@/lib/looseSupabase";
 import { AppHeader } from "@/components/AppHeader";
 import { SEO } from "@/components/SEO";
 import { Button } from "@/components/ui/button";
@@ -69,7 +70,7 @@ type TrainingLite = {
 export default function ScheduleEditor() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { isAdmin, hasSchedulePermission, loading: roleLoading } = usePermissions();
+  const { isAdmin, hasSchedulePermission, hasScreenPermission, loading: roleLoading } = usePermissions();
   const [schedule, setSchedule] = useState<Schedule | null>(null);
   const [phases, setPhases] = useState<Phase[]>([]);
   const [loading, setLoading] = useState(true);
@@ -77,7 +78,8 @@ export default function ScheduleEditor() {
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
   const [showSettings, setShowSettings] = useState(false);
   const [trainings, setTrainings] = useState<TrainingLite[]>([]);
-  const [tab, setTab] = useState<"cronograma" | "levantamento">("cronograma");
+  const [tab, setTab] = useState<"cronograma" | "levantamento" | "comercial">("cronograma");
+  const [commercialAssessmentId, setCommercialAssessmentId] = useState<string | null>(null);
   const [colarAberto, setColarAberto] = useState(false);
   const [remarcarFaseId, setRemarcarFaseId] = useState<string | null>(null);
 
@@ -109,6 +111,31 @@ export default function ScheduleEditor() {
   };
 
   useEffect(() => { load(); }, [id]);
+
+  const commercialScheduleId = schedule?.id ?? null;
+  const commercialScheduleEligible = schedule ? !ehCronogramaLivre(schedule) : false;
+  useEffect(() => {
+    if (!commercialScheduleId || !commercialScheduleEligible) {
+      setCommercialAssessmentId(null);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      try {
+        const { data, error } = await looseSupabase
+          .from("commercial_assessments")
+          .select("id")
+          .eq("schedule_id", commercialScheduleId)
+          .maybeSingle();
+        if (error) throw error;
+        const assessmentId = data ? asDatabaseRow(data).id : null;
+        if (!cancelled) setCommercialAssessmentId(typeof assessmentId === "string" ? assessmentId : null);
+      } catch {
+        if (!cancelled) setCommercialAssessmentId(null);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [commercialScheduleId, commercialScheduleEligible]);
 
   // Load trainings (preferindo as do mesmo cliente)
   useEffect(() => {
@@ -583,10 +610,36 @@ export default function ScheduleEditor() {
               <ClipboardList className="h-4 w-4" /> Levantamento
             </button>
           )}
+          {!livre && (isAdmin || hasScreenPermission("commercial_assessments", "read") || hasScreenPermission("commercial_assessments", "write") || hasScreenPermission("commercial_assessments_review", "read") || hasScreenPermission("commercial_assessments_review", "write") || hasSchedulePermission(schedule.id, "read")) && (
+            <button
+              onClick={() => setTab("comercial")}
+              className={`px-3 py-2 text-sm font-medium border-b-2 -mb-px flex items-center gap-1.5 transition-colors ${
+                tab === "comercial" ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <ClipboardCheck className="h-4 w-4" /> Levantamento Comercial
+            </button>
+          )}
         </div>
 
         {tab === "levantamento" && (
           <SurveyTab scheduleId={schedule.id} clientName={schedule.client_name} canEdit={canEdit} />
+        )}
+
+        {tab === "comercial" && (
+          <Card>
+            <CardContent className="flex flex-wrap items-center justify-between gap-4 p-5">
+              <div>
+                <h2 className="font-semibold">Levantamento Comercial de {schedule.client_name}</h2>
+                <p className="mt-1 max-w-2xl text-sm text-muted-foreground">Consulte os dados da contratação, empresas, integrações, migração e pendências antes de organizar o cronograma.</p>
+              </div>
+              {(commercialAssessmentId || canEdit || hasScreenPermission("commercial_assessments", "write")) ? (
+                <Button variant="outline" onClick={() => navigate(commercialAssessmentId ? `/levantamento-comercial/${commercialAssessmentId}` : `/levantamento-comercial/novo?cronograma=${schedule.id}`)}>
+                  {commercialAssessmentId ? "Abrir levantamento" : "Criar levantamento"}
+                </Button>
+              ) : <div className="text-sm text-muted-foreground">Nenhum levantamento vinculado. Solicite acesso comercial para criá-lo.</div>}
+            </CardContent>
+          </Card>
         )}
 
         {tab === "cronograma" && (<>

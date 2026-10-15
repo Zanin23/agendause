@@ -14,12 +14,15 @@ import {
   FileQuestion,
   Network,
   ClipboardList,
+  ClipboardCheck,
   Link2,
   Paperclip,
   ChevronRight,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { asDatabaseRow, looseSupabase } from "@/lib/looseSupabase";
+import { usePermissions } from "@/hooks/usePermissions";
 import { AppHeader } from "@/components/AppHeader";
 import { BackButton } from "@/components/BackButton";
 import { SEO } from "@/components/SEO";
@@ -64,6 +67,13 @@ type Item = {
 };
 
 type Phase = { id: string; title: string; position: number; items: Item[] };
+type CommercialAssessmentSummary = {
+  id: string;
+  status: string;
+  completion_percent: number;
+  pending_count: number;
+  updated_at: string | null;
+};
 
 const STATUS_LABEL: Record<string, string> = {
   agendado: "Agendada",
@@ -74,11 +84,13 @@ const STATUS_LABEL: Record<string, string> = {
 export default function ClientDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { isAdmin, hasScreenPermission, hasSchedulePermission } = usePermissions();
   const [loading, setLoading] = useState(true);
   const [schedule, setSchedule] = useState<any>(null);
   const [phases, setPhases] = useState<Phase[]>([]);
   const [trainings, setTrainings] = useState<Training[]>([]);
   const [survey, setSurvey] = useState<any>(null);
+  const [commercialAssessment, setCommercialAssessment] = useState<CommercialAssessmentSummary | null>(null);
   const [questions, setQuestions] = useState<any[]>([]);
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [files, setFiles] = useState<any[]>([]);
@@ -98,6 +110,22 @@ export default function ClientDetail() {
         return;
       }
       setSchedule(sched);
+
+      const { data: commercialData } = await looseSupabase
+        .from("commercial_assessments")
+        .select("id,status,completion_percent,pending_count,updated_at")
+        .eq("schedule_id", id)
+        .maybeSingle();
+      if (commercialData) {
+        const commercial = asDatabaseRow(commercialData);
+        setCommercialAssessment({
+          id: typeof commercial.id === "string" ? commercial.id : "",
+          status: typeof commercial.status === "string" ? commercial.status : "em_preenchimento",
+          completion_percent: typeof commercial.completion_percent === "number" ? commercial.completion_percent : Number(commercial.completion_percent) || 0,
+          pending_count: typeof commercial.pending_count === "number" ? commercial.pending_count : Number(commercial.pending_count) || 0,
+          updated_at: typeof commercial.updated_at === "string" ? commercial.updated_at : null,
+        });
+      } else setCommercialAssessment(null);
 
       const { data: ph } = await supabase
         .from("schedule_phases")
@@ -283,6 +311,8 @@ export default function ClientDetail() {
   }
 
   const sections = Array.from(new Set(questions.map((q) => q.section || "Geral")));
+  const canReadCommercial = isAdmin || hasScreenPermission("commercial_assessments", "read") || hasScreenPermission("commercial_assessments", "write") || hasScreenPermission("commercial_assessments_review", "read") || hasScreenPermission("commercial_assessments_review", "write") || hasSchedulePermission(id || "", "read");
+  const canWriteCommercial = isAdmin || hasScreenPermission("commercial_assessments", "write") || hasSchedulePermission(id || "", "write");
 
   const Metric = ({ label, value, hint, icon: Icon, tone }: any) => (
     <div className="rounded-2xl border border-border bg-card/60 p-4 print:break-inside-avoid">
@@ -499,7 +529,41 @@ export default function ClientDetail() {
           )}
         </section>
 
-        {/* LEVANTAMENTO */}
+        {/* LEVANTAMENTO COMERCIAL / PRÉ-IMPLANTAÇÃO */}
+        <section className="space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <ClipboardCheck className="h-5 w-5 text-primary print:hidden" /> Levantamento Comercial
+            </h2>
+            {canReadCommercial && (commercialAssessment || canWriteCommercial) && <Button variant="outline" size="sm" className="print:hidden" onClick={() => navigate(commercialAssessment ? `/levantamento-comercial/${commercialAssessment.id}` : `/levantamento-comercial/novo?cronograma=${schedule.id}`)}>
+              {commercialAssessment ? "Abrir levantamento" : "Criar levantamento"}
+            </Button>}
+          </div>
+          {!canReadCommercial ? (
+            <Card><CardContent className="py-6 text-sm text-muted-foreground">Solicite acesso ao Levantamento Comercial para consultar o cenário deste projeto.</CardContent></Card>
+          ) : !commercialAssessment ? (
+            <Card><CardContent className="py-6 text-sm text-muted-foreground">
+              Ainda não há levantamento comercial vinculado a este projeto. {canWriteCommercial ? "Cadastre o cenário comercial antes de iniciar o planejamento da implantação." : "Um usuário com permissão comercial pode cadastrá-lo."}
+            </CardContent></Card>
+          ) : (
+            <Card className="cursor-pointer transition-colors hover:border-primary/50" onClick={() => navigate(`/levantamento-comercial/${commercialAssessment.id}`)}>
+              <CardContent className="flex flex-wrap items-center justify-between gap-4 p-4">
+                <div>
+                  <div className="font-medium">Pré-implantação de {schedule.client_name}</div>
+                  <div className="mt-1 text-xs text-muted-foreground">Atualizado {commercialAssessment.updated_at ? format(new Date(commercialAssessment.updated_at), "d MMM yyyy 'às' HH:mm", { locale: ptBR }) : "—"}</div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Badge variant={commercialAssessment.status === "aprovado_planejamento" ? "success" : "outline"}>
+                    {commercialAssessment.status === "aprovado_planejamento" ? "Aprovado para planejamento" : String(commercialAssessment.status || "Em preenchimento").replace(/_/g, " ")}
+                  </Badge>
+                  <div className="text-right text-xs"><div className="font-semibold">{commercialAssessment.completion_percent || 0}% completo</div><div className="text-muted-foreground">{commercialAssessment.pending_count || 0} pendência(s)</div></div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </section>
+
+        {/* LEVANTAMENTO DE PROCESSOS */}
         <section className="space-y-3">
           <h2 className="text-lg font-semibold flex items-center gap-2">
             <FileQuestion className="h-5 w-5 text-primary print:hidden" /> Levantamento de processos

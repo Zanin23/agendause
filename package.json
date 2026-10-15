@@ -8,6 +8,8 @@
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
+    "test:levantamento-comercial": "node scripts/testes/levantamento-comercial.mjs",
+    "test:levantamento-comercial-sql": "node scripts/testes/levantamento-comercial-sql.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

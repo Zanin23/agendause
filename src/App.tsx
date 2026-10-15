@@ -41,6 +41,9 @@ const Index = lazy(() => import("./pages/Index"));
 const Article = lazy(() => import("./pages/Article"));
 const Clients = lazy(() => import("./pages/Clients"));
 const ClientDetail = lazy(() => import("./pages/ClientDetail"));
+const CommercialAssessments = lazy(() => import("./pages/CommercialAssessments"));
+const CommercialAssessmentForm = lazy(() => import("./pages/CommercialAssessmentForm"));
+const CommercialAssessmentReport = lazy(() => import("./pages/CommercialAssessmentReport"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -104,6 +107,10 @@ const App = () => (
                 <Route path="/cronogramas/:id/termo" element={<ProtectedRoute><HandoffTerm /></ProtectedRoute>} />
                 <Route path="/clientes" element={<ProtectedRoute><Clients /></ProtectedRoute>} />
                 <Route path="/clientes/:id" element={<ProtectedRoute><ClientDetail /></ProtectedRoute>} />
+                <Route path="/levantamento-comercial" element={<ProtectedRoute><CommercialAssessments /></ProtectedRoute>} />
+                <Route path="/levantamento-comercial/novo" element={<ProtectedRoute><CommercialAssessmentForm /></ProtectedRoute>} />
+                <Route path="/levantamento-comercial/:id/relatorio" element={<ProtectedRoute><CommercialAssessmentReport /></ProtectedRoute>} />
+                <Route path="/levantamento-comercial/:id" element={<ProtectedRoute><CommercialAssessmentForm /></ProtectedRoute>} />
                 <Route path="/cobrar" element={<ProtectedRoute><BillingRequests /></ProtectedRoute>} />
                 <Route path="/anotacoes" element={<ProtectedRoute><Notes /></ProtectedRoute>} />
                 <Route path="*" element={<NotFound />} />
