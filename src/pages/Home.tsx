@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { CalendarDays, CalendarPlus, FileCheck2, ArrowRight, ClipboardList, Receipt, StickyNote } from "lucide-react";
 import logoAsset from "@/assets/logo-use-sistemas.png.asset.json";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { AppHeader } from "@/components/AppHeader";
 import { SEO } from "@/components/SEO";
 import { CreateTrainingDialog } from "@/components/CreateTrainingDialog";
@@ -11,16 +11,6 @@ import { useAuth } from "@/hooks/useAuth";
 const Home = () => {
   const { fullName } = useAuth();
   const [open, setOpen] = useState(false);
-  // Rotate the hero background animation every 5 minutes (0, 1, 2).
-  const [heroVariant, setHeroVariant] = useState<0 | 1 | 2>(() => {
-    return (Math.floor(Date.now() / (5 * 60 * 1000)) % 3) as 0 | 1 | 2;
-  });
-  useEffect(() => {
-    const id = setInterval(() => {
-      setHeroVariant((v) => (((v + 1) % 3) as 0 | 1 | 2));
-    }, 5 * 60 * 1000);
-    return () => clearInterval(id);
-  }, []);
   const firstName = firstNameOf(fullName);
 
   const cards = [
@@ -64,15 +54,14 @@ const Home = () => {
       <AppHeader />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-16 space-y-8 sm:space-y-12">
         <div className="relative overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-card via-card to-background p-6 sm:p-8 md:p-10">
-          <div className="absolute inset-0 opacity-[0.07] pointer-events-none" style={{ background: "var(--gradient-hero)" }} />
-          <HeroAnimatedBg variant={heroVariant} />
+          <div className="absolute inset-0 pointer-events-none bg-gradient-to-br from-primary/[0.06] via-transparent to-transparent" />
           <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-6">
             <div className="min-w-0">
               <p className="text-xs uppercase tracking-[0.3em] text-primary font-semibold">TreinaCheck · Use Sistemas</p>
               <h1 className="text-3xl sm:text-4xl md:text-5xl font-semibold tracking-tight mt-3 break-words">
                 {greetingForHour(new Date().getHours())}{firstName ? `, ${firstName}` : ""}!
               </h1>
-              <p className="text-muted-foreground mt-2 text-sm sm:text-base">O que você quer fazer hoje?</p>
+              <p className="text-muted-foreground mt-2 text-sm sm:text-base">Que bom ter você por aqui. O que vamos organizar hoje?</p>
               <div className="mt-5 flex flex-wrap gap-3">
                 <button
                   onClick={() => setOpen(true)}
@@ -88,13 +77,6 @@ const Home = () => {
                 >
                   <StickyNote className="h-4 w-4 text-primary" />
                   Anotações por empresa
-                  <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
-                </Link>
-                <Link
-                  to="/"
-                  className="group inline-flex items-center gap-2 rounded-xl border border-dashed border-primary/40 px-5 py-3 text-sm font-semibold text-primary transition-all duration-300 hover:-translate-y-0.5 hover:border-primary"
-                >
-                  Abrir a nova tela inicial
                   <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
                 </Link>
               </div>
@@ -175,41 +157,3 @@ const ActionCard = ({ icon: Icon, title, description, cta, to, onClick, primary 
 };
 
 export default Home;
-
-/* Hero background animations — 3 variants rotating every 5 minutes.
-   All share the "Grid + Nodes" language. */
-function HeroAnimatedBg({ variant }: { variant: 0 | 1 | 2 }) {
-  if (variant === 0) {
-    return (
-      <div key="a" className="absolute inset-0 pointer-events-none animate-fade-in">
-        <div className="hero-var-a-grid" />
-        <span className="hero-node" style={{ top: "26%", left: "34%", width: 6, height: 6, animation: "hero-node-pulse 4s ease-in-out infinite" }} />
-        <span className="hero-node" style={{ top: "66%", left: "22%", width: 8, height: 8, animation: "hero-node-pulse 6s ease-in-out 1s infinite" }} />
-        <span className="hero-node" style={{ top: "48%", right: "26%", width: 6, height: 6, animation: "hero-node-pulse 5s ease-in-out 2s infinite" }} />
-        <span className="hero-node" style={{ bottom: "24%", right: "34%", width: 8, height: 8, animation: "hero-node-pulse 7s ease-in-out .5s infinite" }} />
-        <div className="hero-var-a-sweep" />
-      </div>
-    );
-  }
-  if (variant === 1) {
-    return (
-      <div key="b" className="absolute inset-0 pointer-events-none animate-fade-in">
-        <div className="hero-var-b-grid" />
-        <span className="hero-node" style={{ top: "34%", left: "18%", width: 7, height: 7, animation: "hero-node-pulse 5s ease-in-out infinite" }} />
-        <span className="hero-node" style={{ top: "22%", right: "22%", width: 6, height: 6, animation: "hero-node-pulse 6.5s ease-in-out 1.2s infinite" }} />
-        <span className="hero-node" style={{ bottom: "28%", left: "42%", width: 8, height: 8, animation: "hero-node-pulse 4.5s ease-in-out .8s infinite" }} />
-        <span className="hero-node" style={{ bottom: "18%", right: "18%", width: 7, height: 7, animation: "hero-node-pulse 7s ease-in-out 2s infinite" }} />
-        <div className="hero-var-b-sweep" />
-      </div>
-    );
-  }
-  return (
-    <div key="c" className="absolute inset-0 pointer-events-none animate-fade-in">
-      <div className="hero-var-c-dots" />
-      <span className="hero-node" style={{ top: "30%", left: "28%", width: 7, height: 7, animation: "hero-node-pulse 5.5s ease-in-out infinite" }} />
-      <span className="hero-node" style={{ top: "58%", right: "32%", width: 8, height: 8, animation: "hero-node-pulse 6s ease-in-out 1s infinite" }} />
-      <span className="hero-node" style={{ bottom: "22%", left: "20%", width: 6, height: 6, animation: "hero-node-pulse 4.8s ease-in-out 1.6s infinite" }} />
-      <div className="hero-var-c-orbit" />
-    </div>
-  );
-}
