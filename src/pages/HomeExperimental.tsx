@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Building2,
   CalendarDays,
@@ -37,6 +37,41 @@ const HomeExperimental = () => {
   const now = new Date();
   const hour = now.getHours();
   const greeting = greetingForHour(hour);
+  const nameToType = (firstName || "equipe").toUpperCase();
+  const [typedName, setTypedName] = useState(() =>
+    typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      ? nameToType
+      : "",
+  );
+
+  useEffect(() => {
+    const motionPreference = window.matchMedia("(prefers-reduced-motion: reduce)");
+    if (motionPreference.matches) {
+      setTypedName(nameToType);
+      return;
+    }
+
+    setTypedName("");
+    let visibleCharacters = 0;
+    const interval = window.setInterval(() => {
+      visibleCharacters += 1;
+      setTypedName(nameToType.slice(0, visibleCharacters));
+      if (visibleCharacters >= nameToType.length) window.clearInterval(interval);
+    }, 85);
+
+    const showFullName = () => {
+      if (motionPreference.matches) {
+        window.clearInterval(interval);
+        setTypedName(nameToType);
+      }
+    };
+    motionPreference.addEventListener("change", showFullName);
+
+    return () => {
+      window.clearInterval(interval);
+      motionPreference.removeEventListener("change", showFullName);
+    };
+  }, [nameToType]);
 
   const tiles: Tile[] = [
     {
@@ -67,12 +102,18 @@ const HomeExperimental = () => {
       />
       <AppHeader />
       <main id="main-content" className="mx-auto max-w-6xl px-4 sm:px-6">
-        <section className="border-b border-border py-10 sm:py-14">
-          <p className="text-sm font-medium text-muted-foreground">{dateLabel}</p>
-          <h1 className="mt-2 max-w-4xl text-4xl font-semibold leading-tight tracking-tight text-foreground sm:text-5xl lg:text-6xl">
-            {greeting}{firstName ? `, ${firstName}` : ""}!
+        <section className="relative isolate overflow-hidden border-b border-border py-10 sm:py-14">
+          <span className="home-orb pointer-events-none absolute -right-10 top-1/2 hidden h-48 w-48 -translate-y-1/2 rounded-full sm:block" aria-hidden="true" />
+          <p className="relative z-10 text-sm font-medium text-muted-foreground">{dateLabel}</p>
+          <h1
+            aria-label={`${greeting}, ${firstName || "equipe"}!`}
+            className="relative z-10 mt-2 max-w-4xl text-4xl font-semibold leading-tight tracking-tight text-foreground sm:text-5xl lg:text-6xl"
+          >
+            {greeting}, <span aria-hidden="true">{typedName}</span>
+            {typedName.length < nameToType.length && <span className="home-type-caret" aria-hidden="true" />}
+            !
           </h1>
-          <p className="mt-3 text-base text-muted-foreground sm:text-lg">
+          <p className="relative z-10 mt-3 text-base text-muted-foreground sm:text-lg">
             Acesse uma área ou comece um novo treinamento.
           </p>
         </section>
