@@ -28,7 +28,7 @@ export const TodayVisitsCard = ({ className = "" }: { className?: string }) => {
 
   const [busy, setBusy] = useState<string | null>(null);
 
-  const { data, isLoading, refetch } = useQuery({
+  const { data, isLoading, isError, isFetching, refetch } = useQuery({
     queryKey: ["today-visits", activeId],
     enabled: !!activeId,
     queryFn: async () => {
@@ -81,36 +81,69 @@ export const TodayVisitsCard = ({ className = "" }: { className?: string }) => {
 
   return (
     <section
-      className={`xp-tile relative rounded-3xl border border-border/70 bg-card/60 p-5 sm:p-7 ${className}`}
+      className={`relative rounded-2xl border border-border/70 bg-card/60 p-5 sm:p-7 ${className}`}
     >
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex min-w-0 flex-1 items-center gap-3">
           <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/12 text-primary">
-            <AlarmClock className="h-5 w-5 xp-float" />
+            <AlarmClock aria-hidden="true" className="h-5 w-5" />
           </span>
           <div>
             <h2 className="font-black uppercase tracking-[-0.02em] text-xl sm:text-2xl leading-none">
               Lembrete de hoje
             </h2>
-            <p className="mt-1 text-xs text-muted-foreground">
+            <p role="status" aria-live="polite" className="mt-1 text-xs text-muted-foreground">
               {isLoading
                 ? "Carregando visitas…"
-                : visits.length === 0
-                ? "Nenhuma visita marcada para hoje"
-                : `${visits.length} ${visits.length === 1 ? "visita marcada" : "visitas marcadas"}`}
+                : !activeId
+                  ? "Selecione uma base para consultar a agenda"
+                  : isError
+                    ? visits.length > 0
+                      ? "Não foi possível atualizar as visitas"
+                      : "Não foi possível carregar as visitas"
+                    : visits.length === 0
+                      ? "Nenhuma visita marcada para hoje"
+                      : `${visits.length} ${visits.length === 1 ? "visita marcada" : "visitas marcadas"}`}
             </p>
           </div>
         </div>
-        <Link
-          to="/agenda"
-          className="shrink-0 text-[10px] uppercase tracking-[0.25em] text-primary inline-flex items-center gap-1 hover:underline"
-        >
-          Agenda
-          <ArrowUpRight className="h-3.5 w-3.5" />
-        </Link>
+        {!activeId ? (
+          <Link
+            to="/selecionar-base"
+            className="shrink-0 text-sm font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            Selecionar base
+          </Link>
+        ) : (
+          <Link
+            to="/agenda"
+            className="shrink-0 text-sm font-medium text-primary inline-flex items-center gap-1 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            Agenda
+            <ArrowUpRight aria-hidden="true" className="h-3.5 w-3.5" />
+          </Link>
+        )}
       </div>
 
-      {visits.length > 0 && (
+      {isError && (
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-background/40 p-3">
+          <p className="text-sm text-muted-foreground">
+            {visits.length > 0
+              ? "Confira a agenda para ver as informações mais recentes."
+              : "Tente carregar as visitas novamente."}
+          </p>
+          <button
+            type="button"
+            onClick={() => refetch()}
+            disabled={isFetching}
+            className="rounded-lg px-3 py-2 text-sm font-medium text-primary hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60"
+          >
+            {isFetching ? "Tentando novamente…" : "Tentar novamente"}
+          </button>
+        </div>
+      )}
+
+      {visits.length > 0 && activeId && (
         <ul className="mt-5 space-y-2">
           {visits.map((v) => {
             const vt = getVisitType(v.visit_type);
@@ -120,7 +153,7 @@ export const TodayVisitsCard = ({ className = "" }: { className?: string }) => {
             return (
               <li
                 key={v.id}
-                className={`xp-rise rounded-2xl border p-3 transition-colors ${
+                className={`rounded-2xl border p-3 transition-colors ${
                   isNext ? "border-primary/60 bg-primary/[0.06]" : "border-border/60 bg-background/40"
                 } hover:border-primary/60`}
               >
