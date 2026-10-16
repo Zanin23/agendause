@@ -984,3 +984,36 @@ html.a11y-contrast *:focus-visible {
   outline: 3px solid var(--color-ring) !important;
   outline-offset: 2px !important;
 }
+
+@keyframes home-orb-drift {
+  from { transform: translate3d(0, -50%, 0); }
+  to { transform: translate3d(-3rem, -55%, 0); }
+}
+
+.home-orb {
+  background: radial-gradient(circle at 35% 35%, var(--color-primary), transparent 72%);
+  filter: blur(5px);
+  opacity: 0.22;
+  animation: home-orb-drift 9s ease-in-out infinite alternate;
+}
+
+@keyframes home-type-caret {
+  50% { opacity: 0; }
+}
+
+.home-type-caret {
+  display: inline-block;
+  width: 0.055em;
+  height: 0.78em;
+  margin-left: 0.06em;
+  background: var(--color-primary);
+  vertical-align: -0.06em;
+  animation: home-type-caret 1s steps(1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-orb,
+  .home-type-caret {
+    animation: none;
+  }
+}
