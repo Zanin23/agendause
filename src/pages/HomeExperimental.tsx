@@ -46,30 +46,36 @@ const HomeExperimental = () => {
 
   useEffect(() => {
     const motionPreference = window.matchMedia("(prefers-reduced-motion: reduce)");
-    if (motionPreference.matches) {
-      setTypedName(nameToType);
-      return;
-    }
-
-    setTypedName("");
+    let timeout: number | undefined;
     let visibleCharacters = 0;
-    const interval = window.setInterval(() => {
-      visibleCharacters += 1;
-      setTypedName(nameToType.slice(0, visibleCharacters));
-      if (visibleCharacters >= nameToType.length) window.clearInterval(interval);
-    }, 85);
+    let cancelled = false;
 
-    const showFullName = () => {
+    const startTyping = () => {
+      if (timeout !== undefined) window.clearTimeout(timeout);
+      visibleCharacters = 0;
       if (motionPreference.matches) {
-        window.clearInterval(interval);
         setTypedName(nameToType);
+        return;
       }
-    };
-    motionPreference.addEventListener("change", showFullName);
 
+      setTypedName("");
+      const typeNextCharacter = () => {
+        if (cancelled) return;
+        visibleCharacters += 1;
+        setTypedName(nameToType.slice(0, visibleCharacters));
+        if (visibleCharacters < nameToType.length) {
+          timeout = window.setTimeout(typeNextCharacter, 85);
+        }
+      };
+      timeout = window.setTimeout(typeNextCharacter, 85);
+    };
+
+    startTyping();
+    motionPreference.addEventListener("change", startTyping);
     return () => {
-      window.clearInterval(interval);
-      motionPreference.removeEventListener("change", showFullName);
+      cancelled = true;
+      if (timeout !== undefined) window.clearTimeout(timeout);
+      motionPreference.removeEventListener("change", startTyping);
     };
   }, [nameToType]);
 
@@ -102,20 +108,26 @@ const HomeExperimental = () => {
       />
       <AppHeader />
       <main id="main-content" className="mx-auto max-w-6xl px-4 sm:px-6">
-        <section className="relative isolate overflow-hidden border-b border-border py-10 sm:py-14">
-          <span className="home-orb pointer-events-none absolute -right-10 top-1/2 hidden h-48 w-48 -translate-y-1/2 rounded-full sm:block" aria-hidden="true" />
-          <p className="relative z-10 text-sm font-medium text-muted-foreground">{dateLabel}</p>
-          <h1
-            aria-label={`${greeting}, ${firstName || "equipe"}!`}
-            className="relative z-10 mt-2 max-w-4xl text-4xl font-semibold leading-tight tracking-tight text-foreground sm:text-5xl lg:text-6xl"
-          >
-            {greeting}, <span aria-hidden="true">{typedName}</span>
-            {typedName.length < nameToType.length && <span className="home-type-caret" aria-hidden="true" />}
-            !
-          </h1>
-          <p className="relative z-10 mt-3 text-base text-muted-foreground sm:text-lg">
-            Acesse uma área ou comece um novo treinamento.
-          </p>
+        <section className="home-welcome mt-6 grid items-center gap-5 overflow-hidden rounded-3xl border border-border/70 p-5 shadow-sm sm:mt-8 sm:p-8 lg:grid-cols-[minmax(0,1fr)_12rem] lg:p-10">
+          <div className="relative z-10 min-w-0">
+            <p className="text-sm font-medium text-muted-foreground">{dateLabel}</p>
+            <h1
+              aria-label={`${greeting}, ${firstName || "equipe"}!`}
+              className="mt-2 break-words text-4xl font-semibold leading-tight tracking-tight text-foreground sm:text-5xl lg:text-6xl"
+            >
+              {greeting}, <span aria-hidden="true">{typedName}</span>
+              {typedName.length < nameToType.length && <span className="home-type-caret" aria-hidden="true" />}
+              !
+            </h1>
+            <p className="mt-3 text-base text-muted-foreground sm:text-lg">
+              Acesse uma área ou comece um novo treinamento.
+            </p>
+          </div>
+          <div className="home-geometry relative hidden h-40 w-48 justify-self-end lg:block" aria-hidden="true">
+            <span className="home-geometry-frame" />
+            <span className="home-geometry-square" />
+            <span className="home-geometry-rule" />
+          </div>
         </section>
 
         <section aria-label="Atalhos" className="py-8 sm:py-10">
