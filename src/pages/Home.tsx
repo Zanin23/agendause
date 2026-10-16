@@ -1,6 +1,5 @@
 import { Link } from "react-router-dom";
 import { CalendarDays, CalendarPlus, FileCheck2, ArrowRight, ClipboardList, Receipt, StickyNote } from "lucide-react";
-import logoAsset from "@/assets/logo-use-sistemas.png.asset.json";
 import { useState } from "react";
 import { AppHeader } from "@/components/AppHeader";
 import { SEO } from "@/components/SEO";
@@ -53,16 +52,16 @@ const Home = () => {
       />
       <AppHeader />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-16 space-y-8 sm:space-y-12">
-        <div className="relative overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-card via-card to-background p-6 sm:p-8 md:p-10">
-          <div className="absolute inset-0 pointer-events-none bg-gradient-to-br from-primary/[0.06] via-transparent to-transparent" />
-          <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-            <div className="min-w-0">
-              <p className="text-xs uppercase tracking-[0.3em] text-primary font-semibold">TreinaCheck · Use Sistemas</p>
-              <h1 className="text-3xl sm:text-4xl md:text-5xl font-semibold tracking-tight mt-3 break-words">
+        <section className="relative isolate overflow-hidden rounded-[1.75rem] border border-border/70 bg-card px-6 py-8 shadow-sm sm:px-9 sm:py-10 lg:px-12 lg:py-12">
+          <div className="absolute inset-0 -z-10 bg-gradient-to-br from-primary/[0.08] via-transparent to-transparent" />
+          <div className="relative flex min-h-[220px] items-center justify-between gap-8">
+            <div className="min-w-0 max-w-2xl">
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">TreinaCheck <span className="mx-1 text-border">/</span> Use Sistemas</p>
+              <h1 className="mt-4 break-words text-3xl font-semibold tracking-tight sm:text-4xl lg:text-5xl">
                 {greetingForHour(new Date().getHours())}{firstName ? `, ${firstName}` : ""}!
               </h1>
-              <p className="text-muted-foreground mt-2 text-sm sm:text-base">Que bom ter você por aqui. O que vamos organizar hoje?</p>
-              <div className="mt-5 flex flex-wrap gap-3">
+              <p className="mt-3 text-sm text-muted-foreground sm:text-base">Que bom ter você por aqui. O que vamos organizar hoje?</p>
+              <div className="mt-6 flex flex-wrap gap-3">
                 <button
                   onClick={() => setOpen(true)}
                   className="group inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/25 transition-all duration-300 hover:shadow-primary/40 hover:-translate-y-0.5"
@@ -81,17 +80,13 @@ const Home = () => {
                 </Link>
               </div>
             </div>
-            <img
-              src={logoAsset.url}
-              alt=""
-              aria-hidden="true"
-              className="hero-float hidden sm:block h-16 md:h-20 w-auto opacity-90 self-start md:self-auto"
-              onError={(e) => {
-                (e.currentTarget as HTMLImageElement).style.display = "none";
-              }}
-            />
+            <div className="home-orbit-art hidden shrink-0 items-center justify-center sm:flex" aria-hidden="true">
+              <div className="home-orbit-ring" />
+              <div className="home-orbit-core" />
+              <div className="home-orbit-path"><span className="home-orbit-satellite" /></div>
+            </div>
           </div>
-        </div>
+        </section>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
           {cards.map((card) => (
