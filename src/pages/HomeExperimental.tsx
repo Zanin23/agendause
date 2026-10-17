@@ -37,7 +37,7 @@ const HomeExperimental = () => {
   const now = new Date();
   const hour = now.getHours();
   const greeting = greetingForHour(hour);
-  const nameToType = (firstName || "equipe").toUpperCase();
+  const nameToType = firstName || "equipe";
   const [typedName, setTypedName] = useState(() =>
     typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches
       ? nameToType
