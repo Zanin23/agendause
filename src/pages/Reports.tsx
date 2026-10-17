@@ -38,6 +38,7 @@ import { toast } from "@/hooks/use-toast";
 import ManagementReports from "@/components/reports/ManagementReports";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { validReportRange, weeklyReportError } from "@/lib/weeklyReport";
 
 type TrainingRow = {
   id: string;
@@ -69,6 +70,7 @@ const Reports = () => {
     return addWeeks(thisMon, -1);
   });
   const [generating, setGenerating] = useState(false);
+  const [reportError, setReportError] = useState<string | null>(null);
   const [report, setReport] = useState<string | null>(null);
   const [stats, setStats] = useState<any | null>(null);
   const [comparison, setComparison] = useState<any | null>(null);
@@ -192,18 +194,21 @@ const Reports = () => {
 
   const rangeStartDate = useMemo(() => new Date(rangeStart + "T00:00:00"), [rangeStart]);
   const rangeEndDate = useMemo(() => new Date(rangeEnd + "T00:00:00"), [rangeEnd]);
-  const periodDays = Math.max(
+  const rangeValid = validReportRange(rangeStart, rangeEnd);
+  const periodDays = rangeValid ? Math.max(
     1,
     Math.round((rangeEndDate.getTime() - rangeStartDate.getTime()) / (24 * 60 * 60 * 1000)) + 1
-  );
-  const rangeLabel = `${format(rangeStartDate, "d MMM", { locale: ptBR })} – ${format(rangeEndDate, "d MMM yyyy", { locale: ptBR })}`;
+  ) : 0;
+  const rangeLabel = rangeValid ? `${format(rangeStartDate, "d MMM", { locale: ptBR })} – ${format(rangeEndDate, "d MMM yyyy", { locale: ptBR })}` : "selecione datas válidas";
 
   const generateReport = async () => {
-    if (rangeEndDate.getTime() < rangeStartDate.getTime()) {
-      toast({ title: "Intervalo inválido", description: "A data final deve ser igual ou posterior à inicial.", variant: "destructive" });
+    if (generating) return;
+    if (!rangeValid) {
+      setReportError("Informe datas válidas. A data final deve ser igual ou posterior à inicial.");
       return;
     }
     setGenerating(true);
+    setReportError(null);
     setReport(null);
     setStats(null);
     setComparison(null);
@@ -211,13 +216,18 @@ const Reports = () => {
       const { data, error } = await supabase.functions.invoke("weekly-report", {
         body: { start_date: rangeStart, end_date: rangeEnd },
       });
-      if (error) throw error;
+      if (error) throw new Error(await weeklyReportError(error));
       if ((data as any)?.error) throw new Error((data as any).error);
+      if (typeof data?.report !== "string" || !data.report.trim() || !data.stats) {
+        throw new Error("A IA retornou um relatório vazio ou inválido. Tente novamente.");
+      }
       setReport((data as any).report);
       setStats((data as any).stats);
       setComparison((data as any).comparison ?? null);
     } catch (e: any) {
-      toast({ title: "Erro ao gerar relatório", description: e.message || String(e), variant: "destructive" });
+      const message = e.message || String(e);
+      setReportError(message);
+      toast({ title: "Erro ao gerar relatório", description: message, variant: "destructive" });
     } finally {
       setGenerating(false);
     }
@@ -291,6 +301,7 @@ const Reports = () => {
           rangeLabel={rangeLabel}
           periodDays={periodDays}
           generating={generating}
+          error={reportError}
           report={report}
           stats={stats}
           comparison={comparison}
@@ -586,6 +597,7 @@ const WeeklyAIReport = ({
   rangeLabel,
   periodDays,
   generating,
+  error,
   report,
   stats,
   comparison,
@@ -598,6 +610,7 @@ const WeeklyAIReport = ({
   rangeLabel: string;
   periodDays: number;
   generating: boolean;
+  error: string | null;
   report: string | null;
   stats: WeeklyStats | null;
   comparison: any | null;
@@ -702,8 +715,14 @@ const WeeklyAIReport = ({
       </div>
 
       <CardContent className="p-4 sm:p-6 space-y-6">
+        {error && (
+          <div role="alert" className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
+            <p className="flex items-center gap-2 font-semibold"><AlertTriangle className="h-4 w-4 shrink-0" />Não foi possível gerar o relatório</p>
+            <p className="mt-1">{error}</p>
+          </div>
+        )}
         {/* Empty state */}
-        {!stats && !generating && (
+        {!stats && !generating && !error && (
           <div className="text-center py-10 px-4">
             <div className="mx-auto h-12 w-12 rounded-full bg-primary/10 text-primary flex items-center justify-center mb-3">
               <Sparkles className="h-6 w-6" />
