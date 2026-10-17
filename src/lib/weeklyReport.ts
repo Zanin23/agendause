@@ -11,8 +11,8 @@ export async function weeklyReportError(error: FunctionError): Promise<string> {
       const body = await response.clone().json();
       if (typeof body?.error === "string" && body.error.trim()) return body.error;
     } catch { /* O gateway pode responder sem JSON. */ }
-    if (response.status === 402) return "Créditos de IA esgotados. Adicione créditos no workspace para continuar.";
-    if (response.status === 429) return "Limite de requisições atingido. Tente novamente em instantes.";
+    if (response.status === 402) return "O provedor de IA exige ajuste de faturamento. Confira o projeto no Google AI Studio.";
+    if (response.status === 429) return "Limite de requisições ou cota do Gemini atingido. Confira os limites no Google AI Studio.";
     if (response.status === 504) return "A IA demorou demais para responder. Tente novamente ou selecione um período menor.";
     return "O serviço de relatórios está indisponível. Tente novamente em instantes.";
   }
