@@ -10,10 +10,10 @@ import { validReportRange, weeklyReportError } from '../../src/lib/weeklyReport.
 const source = stripTypeScriptTypes(readFileSync(new URL('../../supabase/functions/weekly-report/index.ts', import.meta.url), 'utf8')
   .replace(/^import .*;\n/gm, ''));
 const period = { start_date: '2026-10-01', end_date: '2026-10-11' };
-function setup({ roles = [{ role: 'admin' }], validSession = true, apiKey = 'test-ai-key', aiStatus = 200, content = '# Relatório\nResumo do período.', queryError, timeout = false } = {}) {
+function setup({ roles = [{ role: 'admin' }], validSession = true, apiKey = 'test-ai-key', aiStatus = 200, content = '# Relatório\nResumo do período.', queryError, timeout = false, model, aiPayload, errorPayload, rawResponse } = {}) {
   let handler;
   const calls = { ai: [], queries: [], clients: [] };
-  const env = { SUPABASE_URL: 'https://example.invalid', SUPABASE_SERVICE_ROLE_KEY: 'test-service', SUPABASE_ANON_KEY: 'test-anon', LOVABLE_API_KEY: apiKey };
+  const env = { SUPABASE_URL: 'https://example.invalid', SUPABASE_SERVICE_ROLE_KEY: 'test-service', SUPABASE_ANON_KEY: 'test-anon', GEMINI_API_KEY: apiKey, GEMINI_MODEL: model };
   const trainings = [
     { id: 't1', title: 'Visita', client: 'Cliente', status: 'realizado', scheduled_at: '2026-10-05T12:00:00Z' },
     { id: 't2', title: 'Cancelada', client: 'Cliente', status: 'cancelado', scheduled_at: '2026-10-06T12:00:00Z' },
@@ -44,7 +44,7 @@ function setup({ roles = [{ role: 'admin' }], validSession = true, apiKey = 'tes
     fetch: async (url, options) => {
       calls.ai.push({ url, options });
       if (timeout) throw Object.assign(new Error('timeout'), { name: 'TimeoutError' });
-      return new Response(JSON.stringify(aiStatus === 200 ? { choices: [{ message: { content } }] } : { error: 'private upstream details' }), { status: aiStatus });
+      return new Response(rawResponse ?? JSON.stringify(aiStatus === 200 ? aiPayload ?? { candidates: [{ content: { parts: [{ text: content }] }, finishReason: 'STOP' }] } : errorPayload ?? { error: { message: 'private upstream details' } }), { status: aiStatus });
     },
   });
   return {
@@ -56,7 +56,7 @@ function setup({ roles = [{ role: 'admin' }], validSession = true, apiKey = 'tes
   };
 }
 
-test('gera relatório com Bearer de IA e consulta dados usando RLS do solicitante', async () => {
+test('gera relatório diretamente com Gemini e consulta dados usando RLS do solicitante', async () => {
   const app = setup();
   const res = await app.request();
   assert.equal(res.status, 200);
@@ -67,7 +67,15 @@ test('gera relatório com Bearer de IA e consulta dados usando RLS do solicitant
   assert.equal(body.stats.confirmed_trainings, 1);
   assert.equal(body.stats.confirmation_rate_pct, 100);
   assert.equal(body.previousStats.total_visits, 0);
-  assert.equal(app.calls.ai[0].options.headers.Authorization, 'Bearer test-ai-key');
+  assert.equal(app.calls.ai[0].url, 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent');
+  assert.equal(app.calls.ai[0].options.headers['x-goog-api-key'], 'test-ai-key');
+  assert.equal(app.calls.ai[0].options.headers.Authorization, undefined);
+  assert.ok(!app.calls.ai[0].url.includes('test-ai-key'));
+  const requestBody = JSON.parse(app.calls.ai[0].options.body);
+  assert.match(requestBody.systemInstruction.parts[0].text, /português do Brasil/);
+  assert.equal(requestBody.contents[0].role, 'user');
+  assert.match(requestBody.contents[0].parts[0].text, /Dados agregados/);
+  assert.ok(!app.calls.ai[0].options.body.includes('test-ai-key'));
   assert.ok(app.calls.ai[0].options.signal instanceof AbortSignal);
   assert.equal(app.calls.clients[1].options.global.headers.Authorization, 'Bearer test-session');
   assert.ok(app.calls.queries.filter(q => q.table !== 'user_roles').every(q => q.key === 'test-anon'));
@@ -108,7 +116,7 @@ test('configuração de IA ausente tem mensagem acionável', async () => {
   const app = setup({ apiKey: '' });
   const res = await app.request();
   assert.equal(res.status, 503);
-  assert.match((await res.json()).error, /LOVABLE_API_KEY/);
+  assert.match((await res.json()).error, /GEMINI_API_KEY/);
   assert.equal(app.calls.ai.length, 0);
 });
 
@@ -136,7 +144,7 @@ test('não gera métricas incompletas se uma consulta falha', async () => {
 });
 
 test('erros de IA retornam mensagens úteis sem vazar resposta interna', async () => {
-  for (const [aiStatus, status, message] of [[401, 503, /credencial/], [403, 503, /credencial/], [402, 402, /Créditos/], [429, 429, /Limite/], [500, 500, /indisponível/]]) {
+  for (const [aiStatus, status, message] of [[401, 503, /credencial/], [403, 503, /credencial/], [402, 503, /faturamento/], [429, 429, /Limite/], [500, 502, /indisponível/]]) {
     const res = await setup({ aiStatus }).request();
     assert.equal(res.status, status);
     const body = await res.json();
@@ -153,13 +161,13 @@ test('IA vazia e timeout são falhas, não sucesso sem relatório', async () => 
 });
 
 test('front-end extrai erro JSON de FunctionsHttpError sem consumir resposta original', async () => {
-  const response = new Response(JSON.stringify({ error: 'Configure LOVABLE_API_KEY.' }), { status: 503 });
-  assert.equal(await weeklyReportError({ context: response, message: 'Edge Function returned a non-2xx status code' }), 'Configure LOVABLE_API_KEY.');
+  const response = new Response(JSON.stringify({ error: 'Configure GEMINI_API_KEY.' }), { status: 503 });
+  assert.equal(await weeklyReportError({ context: response, message: 'Edge Function returned a non-2xx status code' }), 'Configure GEMINI_API_KEY.');
   assert.equal(response.bodyUsed, false);
 });
 
-test('front-end explica sessão, permissões, publicação, rede, créditos e limites', async () => {
-  for (const [status, text] of [[401, /sessão/], [403, /permissão/], [404, /não está publicada/], [402, /Créditos/], [429, /Limite/], [500, /indisponível/], [504, /demorou/]]) {
+test('front-end explica sessão, permissões, publicação, rede, faturamento e limites', async () => {
+  for (const [status, text] of [[401, /sessão/], [403, /permissão/], [404, /não está publicada/], [402, /faturamento/], [429, /Limite/], [500, /indisponível/], [504, /demorou/]]) {
     assert.match(await weeklyReportError({ context: new Response('not JSON', { status }) }), text);
   }
   assert.match(await weeklyReportError({ name: 'FunctionsFetchError' }), /conexão/);
@@ -175,4 +183,61 @@ test('front-end valida intervalo antes de formatar datas e chamar a função', (
 test('gateway delega validação de JWT para o handler', () => {
   const config = readFileSync(new URL('../../supabase/config.toml', import.meta.url), 'utf8');
   assert.match(config, /\[functions.weekly-report\][^[]*verify_jwt\s*=\s*false/);
+});
+
+
+test('modelo é configurável apenas no servidor e não aceita URL arbitrária', async () => {
+  const app = setup({ model: 'gemini-test-model' });
+  assert.equal((await app.request()).status, 200);
+  assert.match(app.calls.ai[0].url, /models\/gemini-test-model:generateContent$/);
+  for (const model of ['https://example.invalid', '../other-model', 'gemini-foo?key=other']) {
+    const invalid = setup({ model });
+    assert.equal((await invalid.request()).status, 503);
+    assert.equal(invalid.calls.ai.length, 0);
+  }
+});
+
+test('concatena partes de texto e ignora pensamentos e partes não textuais', async () => {
+  const app = setup({ aiPayload: { candidates: [{ finishReason: 'STOP', content: { parts: [
+    { text: 'não mostrar', thought: true }, { text: '# Resumo\n' }, { inlineData: {} }, null, { text: 'Relatório completo.' },
+  ] } }] } });
+  const res = await app.request();
+  assert.equal(res.status, 200);
+  assert.equal((await res.json()).report, '# Resumo\nRelatório completo.');
+});
+
+test('bloqueios e truncamento do Gemini não viram relatório de sucesso', async () => {
+  for (const [aiPayload, expectedStatus] of [
+    [{ promptFeedback: { blockReason: 'SAFETY' } }, 422],
+    [{ candidates: [{ finishReason: 'SAFETY', content: { parts: [{ text: 'parcial' }] } }] }, 422],
+    [{ candidates: [{ finishReason: 'MAX_TOKENS', content: { parts: [{ text: 'parcial' }] } }] }, 502],
+    [{ candidates: [{ finishReason: 'OTHER', content: { parts: [{ text: 'parcial' }] } }] }, 502],
+    [{ candidates: [] }, 502],
+    [{ candidates: [{ finishReason: 'STOP', content: { parts: [{ thought: true, text: 'interno' }] } }] }, 502],
+  ]) {
+    const res = await setup({ aiPayload }).request();
+    assert.equal(res.status, expectedStatus);
+    assert.equal((await res.json()).report, undefined);
+  }
+});
+
+test('erros nativos do Google têm mensagens específicas, sem dados internos', async () => {
+  for (const [aiStatus, errorPayload, expectedStatus, pattern] of [
+    [400, { error: { details: [{ reason: 'API_KEY_INVALID' }] } }, 503, /credencial.*GEMINI_API_KEY/],
+    [400, { error: { status: 'FAILED_PRECONDITION' } }, 503, /faturamento/],
+    [404, { error: {} }, 503, /GEMINI_MODEL/],
+    [400, { error: {} }, 502, /período menor/],
+  ]) {
+    const res = await setup({ aiStatus, errorPayload }).request();
+    assert.equal(res.status, expectedStatus);
+    assert.match((await res.json()).error, pattern);
+  }
+});
+
+test('resposta não JSON é tratada sem expor HTML do provedor', async () => {
+  for (const aiStatus of [200, 503]) {
+    const res = await setup({ aiStatus, rawResponse: '<html>private upstream</html>' }).request();
+    assert.equal(res.status, 502);
+    assert.ok(!(await res.text()).includes('private upstream'));
+  }
 });
