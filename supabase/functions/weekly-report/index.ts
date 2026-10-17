@@ -1,23 +1,69 @@
-import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
-import { createClient } from 'npm:@supabase/supabase-js@2';
+import { createClient } from 'npm:@supabase/supabase-js@2.108.2';
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+};
+
+const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), {
+  status,
+  headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+});
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
 
+  if (req.method !== 'POST') return json({ error: 'Método não permitido.' }, 405);
+
   try {
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
     const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-    if (!LOVABLE_API_KEY || !SUPABASE_URL || !SERVICE_KEY) {
-      return new Response(JSON.stringify({ error: 'Missing server configuration' }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+    const ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY');
+    if (!SUPABASE_URL || !SERVICE_KEY || !ANON_KEY) {
+      return json({ error: 'A função weekly-report está sem a configuração do Supabase.' }, 503);
     }
 
-    const body = await req.json().catch(() => ({}));
+    // O gateway legado não valida os novos signing keys. Valide a sessão aqui
+    // antes de consultar dados ou consumir créditos de IA.
+    const token = req.headers.get('Authorization')?.match(/^Bearer\s+(\S+)$/i)?.[1];
+    if (!token) return json({ error: 'Sua sessão expirou. Saia e entre novamente.' }, 401);
+    const admin = createClient(SUPABASE_URL, SERVICE_KEY);
+    const { data: userData, error: userError } = await admin.auth.getUser(token);
+    if (userError || !userData?.user) return json({ error: 'Sua sessão expirou. Saia e entre novamente.' }, 401);
+    const { data: roles, error: roleError } = await admin.from('user_roles')
+      .select('role, screen_permissions').eq('user_id', userData.user.id);
+    if (roleError) throw roleError;
+    const allowed = roles?.some((role) => role.role === 'admin' ||
+      (Array.isArray(role.screen_permissions) && role.screen_permissions.some(
+        (permission: { screen?: string; actions?: string[] }) =>
+          permission?.screen === 'reports' && Array.isArray(permission.actions) && permission.actions.includes('read'),
+      )));
+    if (!allowed) return json({ error: 'Você não tem permissão para gerar relatórios.' }, 403);
+    if (!LOVABLE_API_KEY) {
+      return json({ error: 'A IA não está configurada. Configure o segredo LOVABLE_API_KEY na função weekly-report no Supabase.' }, 503);
+    }
+
+    let body;
+    try {
+      body = await req.json();
+    } catch {
+      return json({ error: 'Envie um período válido em JSON.' }, 400);
+    }
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+      return json({ error: 'Envie um período válido em JSON.' }, 400);
+    }
+    if (body.start_date !== undefined || body.end_date !== undefined) {
+      const validDate = (value: unknown) => typeof value === 'string' &&
+        /^\d{4}-\d{2}-\d{2}$/.test(value) && Number.isFinite(Date.parse(value)) &&
+        new Date(value).toISOString().slice(0, 10) === value;
+      if (!validDate(body.start_date) || !validDate(body.end_date)) {
+        return json({ error: 'Informe datas inicial e final válidas.' }, 400);
+      }
+    }
     const weekStartInput: string | undefined = body?.week_start;
     const startDateInput: string | undefined = body?.start_date;
     const endDateInput: string | undefined = body?.end_date;
@@ -53,9 +99,15 @@ Deno.serve(async (req) => {
       weekEnd = new Date(weekStart);
       weekEnd.setDate(weekEnd.getDate() + 7 * weeksCount);
     }
+    if (!Number.isFinite(weekStart.getTime()) || !Number.isFinite(weekEnd.getTime()) || weekEnd <= weekStart) {
+      return json({ error: 'A data final deve ser igual ou posterior à inicial.' }, 400);
+    }
     const periodDays = Math.max(1, Math.round((weekEnd.getTime() - weekStart.getTime()) / (24 * 60 * 60 * 1000)));
 
-    const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
+    // Use a sessão do solicitante nas consultas para respeitar as políticas RLS.
+    const supabase = createClient(SUPABASE_URL, ANON_KEY, {
+      global: { headers: { Authorization: `Bearer ${token}` } },
+    });
 
     const buildStats = async (start: Date, end: Date) => {
       const { data: trainings, error: tErr } = await supabase
@@ -70,10 +122,12 @@ Deno.serve(async (req) => {
       let userAcc: any[] = [];
       let guestAcc: any[] = [];
       if (ids.length) {
-        const [{ data: ua }, { data: ga }] = await Promise.all([
+        const [{ data: ua, error: uaError }, { data: ga, error: gaError }] = await Promise.all([
           supabase.from('training_acceptances').select('training_id, user_id, accepted_at').in('training_id', ids),
           supabase.from('guest_acceptances').select('training_id, full_name, email, accepted_at').in('training_id', ids),
         ]);
+        if (uaError) throw uaError;
+        if (gaError) throw gaError;
         userAcc = ua || [];
         guestAcc = ga || [];
       }
@@ -87,7 +141,7 @@ Deno.serve(async (req) => {
       [...userAcc, ...guestAcc].forEach((a) => {
         acceptsByTraining[a.training_id] = (acceptsByTraining[a.training_id] || 0) + 1;
       });
-      const confirmedTrainings = (trainings || []).filter((t: any) => (acceptsByTraining[t.id] || 0) > 0).length;
+      const confirmedTrainings = (trainings || []).filter((t: any) => t.status !== 'cancelado' && (acceptsByTraining[t.id] || 0) > 0).length;
       const nonCancelled = total - cancelled.length;
       const confirmationRate = nonCancelled > 0 ? Math.round((confirmedTrainings / nonCancelled) * 100) : 0;
       const totalAccepts = Object.values(acceptsByTraining).reduce((a, b) => a + b, 0);
@@ -184,9 +238,9 @@ ${trainingsLines || '(nenhuma visita na semana)'}
 
     const aiRes = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
+      signal: AbortSignal.timeout(60_000),
       headers: {
-        'Lovable-API-Key': LOVABLE_API_KEY,
-        'X-Lovable-AIG-SDK': 'vercel-ai-sdk',
+        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -199,7 +253,10 @@ ${trainingsLines || '(nenhuma visita na semana)'}
     });
 
     if (!aiRes.ok) {
-      const text = await aiRes.text();
+      console.error('weekly-report: gateway de IA retornou HTTP', aiRes.status);
+      if (aiRes.status === 401 || aiRes.status === 403) {
+        return json({ error: 'A credencial de IA foi recusada. Verifique o segredo LOVABLE_API_KEY no Supabase.' }, 503);
+      }
       if (aiRes.status === 429) {
         return new Response(JSON.stringify({ error: 'Limite de requisições atingido. Tente novamente em instantes.' }), {
           status: 429,
@@ -212,21 +269,28 @@ ${trainingsLines || '(nenhuma visita na semana)'}
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
-      return new Response(JSON.stringify({ error: 'Falha ao gerar relatório com IA', detail: text }), {
+      return new Response(JSON.stringify({ error: 'O serviço de IA está indisponível. Tente novamente em instantes.' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
     const aiJson = await aiRes.json();
-    const report = aiJson?.choices?.[0]?.message?.content ?? '';
+    const report = aiJson?.choices?.[0]?.message?.content;
+    if (typeof report !== 'string' || !report.trim()) {
+      return json({ error: 'A IA retornou um relatório vazio. Tente novamente.' }, 502);
+    }
 
     return new Response(JSON.stringify({ stats, previousStats, comparison, report, weeks: weeksCount, period_days: periodDays }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (e) {
-    return new Response(JSON.stringify({ error: (e as Error).message }), {
+    console.error('weekly-report:', e);
+    if (e instanceof Error && (e.name === 'TimeoutError' || e.name === 'AbortError')) {
+      return json({ error: 'A IA demorou demais para responder. Tente novamente ou selecione um período menor.' }, 504);
+    }
+    return new Response(JSON.stringify({ error: 'Não foi possível gerar o relatório. Tente novamente; se persistir, verifique os logs da função weekly-report.' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
