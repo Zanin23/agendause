@@ -35,7 +35,7 @@ ALTER TABLE public.workspaces
 -- mesmo se alguém já tiver mexido na coluna.
 UPDATE public.workspaces
    SET is_protected = true
- WHERE slug IN ('implantacao', 'waldemar');
+ WHERE slug IN ('implantacao', 'pdv', 'suporte', 'waldemar');
 
 COMMENT ON COLUMN public.workspaces.is_protected IS
   'true = base anterior ao controle de bases: não pode ser excluída pelo app.';

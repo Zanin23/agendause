@@ -37,7 +37,7 @@ if (!pglite) {
 const ADMIN = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
 const MEMBRO = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb";
 const IMPLANTACAO = "11111111-1111-1111-1111-111111111111";
-const WALDEMAR = "22222222-2222-2222-2222-222222222222";
+const SUPORTE = "22222222-2222-2222-2222-222222222222";
 
 /* Schema mínimo: só o que a migração e o app tocam. No Supabase o resto
    (auth.uid, RLS etc.) já existe. As tabelas de dados existem para provar
@@ -107,7 +107,7 @@ create table public.handoff_terms (
 -- Bases que já existiam antes do recurso.
 insert into public.workspaces (id, slug, name) values
   ('${IMPLANTACAO}', 'implantacao', 'Implantação'),
-  ('${WALDEMAR}', 'waldemar', 'Waldemar');
+  ('${SUPORTE}', 'suporte', 'Suporte');
 
 insert into public.profiles (id, email, active_workspace_id) values
   ('${ADMIN}', 'admin@use.com.br', '${IMPLANTACAO}'),
@@ -118,8 +118,8 @@ insert into public.user_roles (user_id, role) values ('${ADMIN}', 'admin');
 insert into public.workspace_members (workspace_id, user_id) values
   ('${IMPLANTACAO}', '${ADMIN}'),
   ('${IMPLANTACAO}', '${MEMBRO}'),
-  ('${WALDEMAR}', '${ADMIN}'),
-  ('${WALDEMAR}', '${MEMBRO}');
+  ('${SUPORTE}', '${ADMIN}'),
+  ('${SUPORTE}', '${MEMBRO}');
 
 -- Um treinamento já existente na base Implantação (não pode sumir nunca).
 insert into public.trainings (id, title, workspace_id)
@@ -192,7 +192,7 @@ await esperaErro(
 );
 await esperaErro(
   "membro comum não exclui base",
-  () => db.query("select public.admin_delete_workspace($1, 'Waldemar')", [WALDEMAR]),
+  () => db.query("select public.admin_delete_workspace($1, 'Suporte')", [SUPORTE]),
   "restrito a administradores",
 );
 await logarComo(ADMIN);
@@ -274,8 +274,8 @@ conferir("vínculos da base excluída saem junto", rows[0].n === 0);
 conferir("bases antigas + Campinas continuam", rows[0].n === 4, `${rows[0].n} bases`);
 ({ rows } = await db.query("select count(*)::int as n from public.trainings"));
 conferir("treinamentos preservados", rows[0].n === 2, `${rows[0].n} treinamento(s)`);
-({ rows } = await db.query("select name from public.workspaces where id = $1", [WALDEMAR]));
-conferir("Waldemar intacta", rows[0]?.name === "Waldemar");
+({ rows } = await db.query("select name from public.workspaces where id = $1", [SUPORTE]));
+conferir("Suporte intacta", rows[0]?.name === "Suporte");
 
 /* ---------- 8. relatório de gestão ---------- */
 rows = (await db.query("select * from public.admin_list_workspaces()")).rows;
@@ -290,7 +290,7 @@ await db.exec(migracao);
 ({ rows } = await db.query("select slug, is_protected from public.workspaces order by slug"));
 conferir(
   "rodar a migração de novo não muda proteção nem dados",
-  rows.every((r) => (r.slug === "implantacao" || r.slug === "waldemar") === (r.is_protected === true)),
+  rows.every((r) => (r.slug === "implantacao" || r.slug === "suporte") === (r.is_protected === true)),
   rows.map((r) => `${r.slug}=${r.is_protected}`).join(", "),
 );
 ({ rows } = await db.query("select count(*)::int as n from public.trainings"));
