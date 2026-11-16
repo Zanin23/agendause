@@ -30,7 +30,6 @@ import {
   getTrainingResponsibleIds,
   responsibleOptionLabel,
   trainingResponsibleNames,
-  type ResponsibleProfile,
   type TrainingResponsibleAssignment,
 } from "@/lib/trainingResponsible";
 
@@ -44,7 +43,6 @@ type Training = {
   location: string | null;
   created_by: string;
   responsible_user_id?: string | null;
-  responsible_profile?: ResponsibleProfile;
   training_responsibles?: TrainingResponsibleAssignment[];
   status: string;
   cancellation_reason: string | null;
@@ -138,7 +136,7 @@ const TrainingDetail = () => {
     if (!id) return;
     const { data: t } = await supabase
       .from("trainings")
-      .select("*, responsible_profile:profiles!trainings_responsible_user_id_fkey(id, full_name, email), training_responsibles:training_responsibles(responsible_user_id,responsible_profile:profiles!training_responsibles_responsible_user_id_fkey(id,full_name,email))")
+      .select("*, training_responsibles:training_responsibles(responsible_user_id)")
       .eq("id", id)
       .maybeSingle();
     setTraining(t as Training | null);
@@ -670,7 +668,7 @@ const TrainingDetail = () => {
                   </div>
                 ) : (
                   <p className="mt-0.5 whitespace-normal text-sm font-medium text-foreground">
-                    {trainingResponsibleNames(training.training_responsibles, training.responsible_profile) ?? "Não definido"}
+                    {trainingResponsibleNames(training, responsibleUsers) ?? "Não definido"}
                   </p>
                 )}
               </div>

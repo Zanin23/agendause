@@ -17,6 +17,7 @@ import jsPDF from "jspdf";
 import { supabase } from "@/integrations/supabase/client";
 import { SEO } from "@/components/SEO";
 import { useAuth } from "@/hooks/useAuth";
+import { useTrainingResponsibles } from "@/hooks/useTrainingResponsibles";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -29,7 +30,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { getVisitType, VISIT_TYPES } from "@/lib/visitType";
-import { trainingResponsibleNames, type ResponsibleProfile, type TrainingResponsibleAssignment } from "@/lib/trainingResponsible";
+import { trainingResponsibleNames, type TrainingResponsibleAssignment, type TrainingResponsibleOption } from "@/lib/trainingResponsible";
 
 type Training = {
   id: string;
@@ -44,7 +45,6 @@ type Training = {
   confirmed_at?: string | null;
   visit_type?: string | null;
   responsible_user_id?: string | null;
-  responsible_profile?: ResponsibleProfile;
   training_responsibles?: TrainingResponsibleAssignment[];
 };
 
@@ -57,6 +57,7 @@ const GREEN = "#1F9D55";
 const PrintAgenda = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { data: responsibleUsers = [] } = useTrainingResponsibles();
   const [trainings, setTrainings] = useState<Training[]>([]);
   const [confirmedIds, setConfirmedIds] = useState<Set<string>>(new Set());
   const [weekStart, setWeekStart] = useState<Date>(() =>
@@ -106,7 +107,7 @@ const PrintAgenda = () => {
       const [{ data }, { data: ua }, { data: ga }] = await Promise.all([
         supabase
           .from("trainings")
-          .select("*, responsible_profile:profiles!trainings_responsible_user_id_fkey(id, full_name, email), training_responsibles:training_responsibles(responsible_user_id,responsible_profile:profiles!training_responsibles_responsible_user_id_fkey(id,full_name,email))")
+          .select("*, training_responsibles:training_responsibles(responsible_user_id)")
           .order("scheduled_at", { ascending: true }),
         supabase.from("training_acceptances").select("training_id"),
         supabase.from("guest_acceptances").select("training_id"),
@@ -427,6 +428,7 @@ const PrintAgenda = () => {
                       <EventCard
                         key={t.id}
                         t={t}
+                        responsibleUsers={responsibleUsers}
                         confirmed={confirmedIds.has(t.id)}
                         onToggleConfirm={() => toggleConfirm(t)}
                         onDragStart={() => setDragId(t.id)}
@@ -531,6 +533,7 @@ const PrintAgenda = () => {
 
 const EventCard = ({
   t,
+  responsibleUsers,
   confirmed,
   onToggleConfirm,
   onDragStart,
@@ -538,6 +541,7 @@ const EventCard = ({
   onOpen,
 }: {
   t: Training;
+  responsibleUsers: TrainingResponsibleOption[];
   confirmed: boolean;
   onToggleConfirm: () => void;
   onDragStart: () => void;
@@ -553,6 +557,7 @@ const EventCard = ({
   const showConfirmation = !isCancelled;
   const teamConfirmed = !!t.confirmed_at;
   const isAllDay = Number(t.duration_minutes) >= 480;
+  const responsibleNames = trainingResponsibleNames(t, responsibleUsers);
   return (
     <div
       className="block cursor-grab active:cursor-grabbing"
@@ -573,7 +578,7 @@ const EventCard = ({
       tabIndex={0}
     >
       <div
-        className={`agenda-event relative border-2 rounded-sm px-2.5 py-2 pr-7 text-[13px] leading-snug bg-white ${isAllDay ? "" : "hover:brightness-[0.98]"}`}
+        className={`agenda-event relative border-2 rounded-sm px-2.5 py-2 text-[13px] leading-snug bg-white ${isAllDay ? "" : "hover:brightness-[0.98]"}`}
         style={{
           borderColor,
           background: isCancelled
@@ -588,7 +593,7 @@ const EventCard = ({
       >
         {isAllDay && (
           <div
-            className="agenda-event-allday -mx-2.5 -mt-2 mb-1.5 px-2.5 py-0.5 text-[9.5px] font-bold uppercase tracking-widest flex items-center gap-1"
+            className="agenda-event-allday -mx-2.5 -mt-2 mb-1.5 px-2.5 py-0.5 pr-7 text-[9.5px] font-bold uppercase tracking-widest flex items-center gap-1"
             style={{ background: borderColor, color: "#fff" }}
           >
             <span aria-hidden>☀</span> Dia inteiro · 08:00 às 18:00
@@ -612,7 +617,7 @@ const EventCard = ({
             </span>
           );
         })()}
-        <div className="flex items-start gap-1.5">
+        <div className="flex items-start gap-1.5 pr-7">
           {isDone && (
             <span
               className="font-bold text-[15px] leading-none mt-0.5"
@@ -663,9 +668,9 @@ const EventCard = ({
           {!isAllDay && <span>{t.duration_minutes} min</span>}
           {t.location && <span>• {t.location}</span>}
         </div>
-        {trainingResponsibleNames(t.training_responsibles, t.responsible_profile) && (
+        {responsibleNames && (
           <div className="agenda-event-responsible text-[10px] mt-0.5 truncate" style={{ color: isCancelled ? RED : "#555" }}>
-            Responsáveis: {trainingResponsibleNames(t.training_responsibles, t.responsible_profile)}
+            Responsáveis: {responsibleNames}
           </div>
         )}
         {isResched && t.description && (
@@ -686,10 +691,10 @@ const EventCard = ({
           </div>
         )}
         {showConfirmation && !isDone && (
-          <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
+          <div className="agenda-event-confirmation mt-1.5 flex items-center justify-center gap-1.5 flex-wrap">
             {!teamConfirmed && (
               <span
-                className="inline-flex items-center gap-1 rounded-full px-1.5 py-[1px] text-[9px] font-semibold uppercase tracking-wide border"
+                className="inline-flex h-4 items-center gap-1 rounded-full px-1.5 text-[9px] font-semibold uppercase tracking-wide leading-none border"
                 style={
                   confirmed
                     ? { color: GREEN, borderColor: GREEN, background: "#EAF7EF" }
@@ -711,7 +716,7 @@ const EventCard = ({
               }}
               onMouseDown={(e) => e.stopPropagation()}
               draggable={false}
-              className="no-print inline-flex items-center gap-1 rounded-full px-2 py-[2px] text-[9px] font-semibold uppercase tracking-wide border transition-colors"
+              className="no-print inline-flex h-4 items-center gap-1 rounded-full px-2 text-[9px] font-semibold uppercase tracking-wide leading-none border transition-colors"
               style={
                 teamConfirmed
                   ? { color: GREEN, borderColor: GREEN, background: "white" }

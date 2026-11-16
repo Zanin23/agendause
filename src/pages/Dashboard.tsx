@@ -6,6 +6,7 @@ import { CalendarPlus, MapPin, Clock, CheckCircle2, Printer, XCircle, CalendarDa
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useTrainingResponsibles } from "@/hooks/useTrainingResponsibles";
 import { AppHeader } from "@/components/AppHeader";
 import { SEO } from "@/components/SEO";
 import { Calendar } from "@/components/ui/calendar";
@@ -14,7 +15,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CreateTrainingDialog } from "@/components/CreateTrainingDialog";
 import { BackButton } from "@/components/BackButton";
-import { trainingResponsibleNames, type ResponsibleProfile, type TrainingResponsibleAssignment } from "@/lib/trainingResponsible";
+import { trainingResponsibleNames, type TrainingResponsibleAssignment, type TrainingResponsibleOption } from "@/lib/trainingResponsible";
 
 type Training = {
   id: string;
@@ -25,7 +26,6 @@ type Training = {
   location: string | null;
   created_by: string;
   responsible_user_id?: string | null;
-  responsible_profile?: ResponsibleProfile;
   training_responsibles?: TrainingResponsibleAssignment[];
   status?: string;
   cancellation_reason?: string | null;
@@ -35,6 +35,7 @@ type Training = {
 
 const Dashboard = () => {
   const { user } = useAuth();
+  const { data: responsibleUsers = [] } = useTrainingResponsibles();
   const [trainings, setTrainings] = useState<Training[]>([]);
   const [acceptedIds, setAcceptedIds] = useState<Set<string>>(new Set());
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
@@ -43,7 +44,7 @@ const Dashboard = () => {
   const load = async () => {
     const { data: t } = await supabase
       .from("trainings")
-      .select("*, responsible_profile:profiles!trainings_responsible_user_id_fkey(id, full_name, email), training_responsibles:training_responsibles(responsible_user_id,responsible_profile:profiles!training_responsibles_responsible_user_id_fkey(id,full_name,email))")
+      .select("*, training_responsibles:training_responsibles(responsible_user_id)")
       .order("scheduled_at", { ascending: true });
     setTrainings((t as Training[]) || []);
     if (user) {
@@ -157,9 +158,9 @@ const Dashboard = () => {
                         <Clock className="h-3 w-3" />
                         {format(new Date(t.scheduled_at), "d MMM • HH:mm", { locale: ptBR })}
                       </span>
-                      {trainingResponsibleNames(t.training_responsibles, t.responsible_profile) && (
+                      {trainingResponsibleNames(t, responsibleUsers) && (
                         <span className="flex items-center gap-1">
-                          <UserCheck className="h-3 w-3" /> Responsáveis: {trainingResponsibleNames(t.training_responsibles, t.responsible_profile)}
+                          <UserCheck className="h-3 w-3" /> Responsáveis: {trainingResponsibleNames(t, responsibleUsers)}
                         </span>
                       )}
                       {t.requested_by && <span>Solicitado por {t.requested_by}</span>}
@@ -247,7 +248,7 @@ const Dashboard = () => {
                 ) : (
                   <div className="space-y-3">
                     {dayTrainings.map((t) => (
-                      <TrainingCard key={t.id} training={t} accepted={acceptedIds.has(t.id)} />
+                      <TrainingCard key={t.id} training={t} accepted={acceptedIds.has(t.id)} responsibleUsers={responsibleUsers} />
                     ))}
                   </div>
                 )}
@@ -276,6 +277,7 @@ const Dashboard = () => {
                       date={g.date}
                       items={g.items}
                       acceptedIds={acceptedIds}
+                      responsibleUsers={responsibleUsers}
                     />
                   ))}
                 </div>
@@ -290,7 +292,7 @@ const Dashboard = () => {
   );
 };
 
-const TrainingCard = ({ training, accepted }: { training: Training; accepted: boolean }) => {
+const TrainingCard = ({ training, accepted, responsibleUsers }: { training: Training; accepted: boolean; responsibleUsers: TrainingResponsibleOption[] }) => {
   const date = new Date(training.scheduled_at);
   const isCancelled = training.status === "cancelado";
   const isPending = training.approval_status === "pending" && !isCancelled;
@@ -355,10 +357,10 @@ const TrainingCard = ({ training, accepted }: { training: Training; accepted: bo
                   {training.location}
                 </span>
               )}
-              {trainingResponsibleNames(training.training_responsibles, training.responsible_profile) && (
+              {trainingResponsibleNames(training, responsibleUsers) && (
                 <span className="flex items-center gap-1">
                   <UserCheck className="h-3 w-3" />
-                  Responsáveis: {trainingResponsibleNames(training.training_responsibles, training.responsible_profile)}
+                  Responsáveis: {trainingResponsibleNames(training, responsibleUsers)}
                 </span>
               )}
             </div>
@@ -381,10 +383,12 @@ const UpcomingGroup = ({
   date,
   items,
   acceptedIds,
+  responsibleUsers,
 }: {
   date: Date;
   items: Training[];
   acceptedIds: Set<string>;
+  responsibleUsers: TrainingResponsibleOption[];
 }) => {
   const today = startOfDay(new Date());
   const diff = differenceInCalendarDays(startOfDay(date), today);
@@ -418,7 +422,7 @@ const UpcomingGroup = ({
         )}
         <div className="space-y-2">
           {items.map((t) => (
-            <UpcomingRow key={t.id} training={t} accepted={acceptedIds.has(t.id)} />
+            <UpcomingRow key={t.id} training={t} accepted={acceptedIds.has(t.id)} responsibleUsers={responsibleUsers} />
           ))}
         </div>
       </div>
@@ -426,7 +430,7 @@ const UpcomingGroup = ({
   );
 };
 
-const UpcomingRow = ({ training, accepted }: { training: Training; accepted: boolean }) => {
+const UpcomingRow = ({ training, accepted, responsibleUsers }: { training: Training; accepted: boolean; responsibleUsers: TrainingResponsibleOption[] }) => {
   const date = new Date(training.scheduled_at);
   const isCancelled = training.status === "cancelado";
   const isPending = training.approval_status === "pending" && !isCancelled;
@@ -500,10 +504,10 @@ const UpcomingRow = ({ training, accepted }: { training: Training; accepted: boo
                   <span className="truncate">{training.location}</span>
                 </span>
               )}
-              {trainingResponsibleNames(training.training_responsibles, training.responsible_profile) && (
+              {trainingResponsibleNames(training, responsibleUsers) && (
                 <span className="flex items-center gap-1">
                   <UserCheck className="h-3 w-3" />
-                  Responsáveis: {trainingResponsibleNames(training.training_responsibles, training.responsible_profile)}
+                  Responsáveis: {trainingResponsibleNames(training, responsibleUsers)}
                 </span>
               )}
             </div>
