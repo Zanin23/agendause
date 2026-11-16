@@ -29,6 +29,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { getVisitType, VISIT_TYPES } from "@/lib/visitType";
+import { responsibleDisplayName, type ResponsibleProfile } from "@/lib/trainingResponsible";
 
 type Training = {
   id: string;
@@ -42,6 +43,8 @@ type Training = {
   cancellation_reason?: string | null;
   confirmed_at?: string | null;
   visit_type?: string | null;
+  responsible_user_id?: string | null;
+  responsible_profile?: ResponsibleProfile;
 };
 
 const DAY_LABELS = ["SEG", "TER", "QUA", "QUI", "SEX"];
@@ -100,7 +103,10 @@ const PrintAgenda = () => {
   useEffect(() => {
     (async () => {
       const [{ data }, { data: ua }, { data: ga }] = await Promise.all([
-        supabase.from("trainings").select("*").order("scheduled_at", { ascending: true }),
+        supabase
+          .from("trainings")
+          .select("*, responsible_profile:profiles!trainings_responsible_user_id_fkey(id, full_name, email)")
+          .order("scheduled_at", { ascending: true }),
         supabase.from("training_acceptances").select("training_id"),
         supabase.from("guest_acceptances").select("training_id"),
       ]);
@@ -655,6 +661,9 @@ const EventCard = ({
         >
           {!isAllDay && <span>{t.duration_minutes} min</span>}
           {t.location && <span>• {t.location}</span>}
+        </div>
+        <div className="agenda-event-responsible text-[10px] mt-0.5 truncate" style={{ color: isCancelled ? RED : "#555" }}>
+          Responsável: {responsibleDisplayName(t.responsible_profile)}
         </div>
         {isResched && t.description && (
           <div

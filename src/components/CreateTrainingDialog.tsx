@@ -6,9 +6,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useWorkspace } from "@/hooks/useWorkspace";
 import { toast } from "sonner";
-import { Feather, CalendarClock, MapPin, Building2, BookOpen } from "lucide-react";
+import { Feather, CalendarClock, MapPin, Building2, BookOpen, UserCheck } from "lucide-react";
 import { VISIT_TYPES, type VisitType } from "@/lib/visitType";
+import { useTrainingResponsibles } from "@/hooks/useTrainingResponsibles";
+import { responsibleOptionLabel } from "@/lib/trainingResponsible";
 
 type Props = {
   open: boolean;
@@ -18,6 +21,14 @@ type Props = {
 
 export const CreateTrainingDialog = ({ open, onOpenChange, onCreated }: Props) => {
   const { user } = useAuth();
+  const { activeId } = useWorkspace();
+  const {
+    data: responsibleUsers = [],
+    isLoading: loadingResponsibleUsers,
+    isFetching: fetchingResponsibleUsers,
+    isError: responsibleUsersError,
+    refetch: refetchResponsibleUsers,
+  } = useTrainingResponsibles(open);
   const [title, setTitle] = useState("");
   const [client, setClient] = useState("");
   const [description, setDescription] = useState("");
@@ -28,6 +39,7 @@ export const CreateTrainingDialog = ({ open, onOpenChange, onCreated }: Props) =
   const [internalNotes, setInternalNotes] = useState("");
   const [visitType, setVisitType] = useState<VisitType>("presencial");
   const [requiresAcceptance, setRequiresAcceptance] = useState(true);
+  const [responsibleUserId, setResponsibleUserId] = useState("");
   const [loading, setLoading] = useState(false);
   const [allDay, setAllDay] = useState(false);
   const [companies, setCompanies] = useState<string[]>([]);
@@ -94,17 +106,24 @@ export const CreateTrainingDialog = ({ open, onOpenChange, onCreated }: Props) =
 
   useEffect(() => {
     if (!open) return;
+    setResponsibleUserId(user?.id ?? "");
+  }, [open, user?.id]);
+
+  useEffect(() => {
+    if (!open) return;
     (async () => {
       const [t, n] = await Promise.all([
         supabase.from("trainings").select("client").not("client", "is", null),
         supabase.from("company_notes").select("company"),
       ]);
       const s = new Set<string>();
-      (t.data ?? []).forEach((r: any) => r.client && s.add(r.client));
-      (n.data ?? []).forEach((r: any) => r.company && s.add(r.company));
+      (t.data ?? []).forEach((r) => r.client && s.add(r.client));
+      (n.data ?? []).forEach((r) => r.company && s.add(r.company));
       setCompanies(Array.from(s).sort((a, b) => a.localeCompare(b, "pt-BR")));
     })();
   }, [open]);
+
+  const hasValidResponsible = responsibleUsers.some((responsible) => responsible.user_id === responsibleUserId);
 
   const prettyDate = useMemo(() => {
     if (!date) return "—";
@@ -116,12 +135,24 @@ export const CreateTrainingDialog = ({ open, onOpenChange, onCreated }: Props) =
   const reset = () => {
     setTitle(""); setClient(""); setDescription(""); setDate(""); setTime("09:00");
     setDuration(60); setLocation(""); setInternalNotes(""); setVisitType("presencial");
-    setRequiresAcceptance(true); setAllDay(false);
+    setRequiresAcceptance(true); setResponsibleUserId(user?.id ?? ""); setAllDay(false);
   };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
+    if (!activeId) {
+      toast.error("Selecione uma base antes de agendar o treinamento");
+      return;
+    }
+    if (!responsibleUserId) {
+      toast.error("Selecione o responsável pelo treinamento");
+      return;
+    }
+    if (!hasValidResponsible) {
+      toast.error("O responsável selecionado não está disponível nesta base");
+      return;
+    }
     setLoading(true);
     const scheduled_at = new Date(`${date}T${time}`).toISOString();
     const { error } = await supabase.from("trainings").insert({
@@ -135,7 +166,9 @@ export const CreateTrainingDialog = ({ open, onOpenChange, onCreated }: Props) =
       visit_type: visitType,
       requires_acceptance: requiresAcceptance,
       created_by: user.id,
-    } as any);
+      responsible_user_id: responsibleUserId,
+      workspace_id: activeId,
+    });
     setLoading(false);
     if (error) {
       toast.error(error.message);
@@ -241,6 +274,52 @@ export const CreateTrainingDialog = ({ open, onOpenChange, onCreated }: Props) =
                     className={`${underline} h-10`}
                   />
                 </div>
+              </section>
+
+              <section className="space-y-1.5">
+                <Label htmlFor="responsible-user" className={labelCls}>
+                  <UserCheck className="h-3 w-3" /> Responsável pelo treinamento
+                </Label>
+                <select
+                  id="responsible-user"
+                  value={responsibleUserId}
+                  onChange={(e) => setResponsibleUserId(e.target.value)}
+                  required
+                  disabled={loadingResponsibleUsers || responsibleUsersError || responsibleUsers.length === 0}
+                  className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <option value="">
+                    {loadingResponsibleUsers ? "Carregando usuários…" : "Selecione um usuário"}
+                  </option>
+                  {responsibleUsers.map((responsible) => (
+                    <option key={responsible.user_id} value={responsible.user_id}>
+                      {responsibleOptionLabel(responsible)}
+                    </option>
+                  ))}
+                </select>
+                {responsibleUsersError ? (
+                  <div role="alert" className="flex flex-wrap items-center gap-2 text-xs text-destructive">
+                    <span>Não foi possível carregar os usuários desta base.</span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-xs"
+                      onClick={() => void refetchResponsibleUsers()}
+                      disabled={fetchingResponsibleUsers}
+                    >
+                      Tentar novamente
+                    </Button>
+                  </div>
+                ) : responsibleUsers.length === 0 && !loadingResponsibleUsers ? (
+                  <p className="text-xs text-muted-foreground">
+                    Nenhum usuário disponível nesta base para assumir o treinamento.
+                  </p>
+                ) : (
+                  <p className="text-[11px] text-muted-foreground">
+                    Por padrão, o usuário que está agendando fica selecionado; você pode escolher outra pessoa.
+                  </p>
+                )}
               </section>
 
               <section className="rounded-xl border border-border/60 bg-muted/30 p-4 sm:p-5">
@@ -374,7 +453,11 @@ export const CreateTrainingDialog = ({ open, onOpenChange, onCreated }: Props) =
                   <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="flex-1 sm:flex-none">
                     Cancelar
                   </Button>
-                  <Button type="submit" disabled={loading} className="rounded-full px-5 flex-1 sm:flex-none">
+                  <Button
+                    type="submit"
+                    disabled={loading || loadingResponsibleUsers || responsibleUsersError || responsibleUsers.length === 0 || !hasValidResponsible}
+                    className="rounded-full px-5 flex-1 sm:flex-none"
+                  >
                     <Feather className="h-4 w-4" />
                     {loading ? "Salvando…" : "Registrar visita"}
                   </Button>

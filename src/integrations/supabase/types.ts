@@ -1192,6 +1192,7 @@ export type Database = {
           requested_at: string | null
           requested_by: string | null
           requires_acceptance: boolean
+          responsible_user_id: string | null
           scheduled_at: string
           status: string
           title: string
@@ -1216,6 +1217,7 @@ export type Database = {
           requested_at?: string | null
           requested_by?: string | null
           requires_acceptance?: boolean
+          responsible_user_id?: string | null
           scheduled_at: string
           status?: string
           title: string
@@ -1240,6 +1242,7 @@ export type Database = {
           requested_at?: string | null
           requested_by?: string | null
           requires_acceptance?: boolean
+          responsible_user_id?: string | null
           scheduled_at?: string
           status?: string
           title?: string
@@ -1248,6 +1251,13 @@ export type Database = {
           workspace_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "trainings_responsible_user_id_fkey"
+            columns: ["responsible_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "trainings_workspace_id_fkey"
             columns: ["workspace_id"]
@@ -1426,6 +1436,14 @@ export type Database = {
         Returns: boolean
       }
       current_workspace: { Args: never; Returns: string }
+      list_workspace_training_responsibles: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          email: string | null
+          full_name: string | null
+          user_id: string
+        }[]
+      }
       get_handoff_by_token: { Args: { _token: string }; Returns: Json }
       get_public_training: {
         Args: { _id: string }

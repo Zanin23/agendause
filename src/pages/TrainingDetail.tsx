@@ -25,6 +25,8 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { VISIT_TYPES, type VisitType } from "@/lib/visitType";
+import { useTrainingResponsibles } from "@/hooks/useTrainingResponsibles";
+import { responsibleDisplayName, responsibleOptionLabel, type ResponsibleProfile } from "@/lib/trainingResponsible";
 
 type Training = {
   id: string;
@@ -35,6 +37,8 @@ type Training = {
   duration_minutes: number;
   location: string | null;
   created_by: string;
+  responsible_user_id?: string | null;
+  responsible_profile?: ResponsibleProfile;
   status: string;
   cancellation_reason: string | null;
   cancelled_at: string | null;
@@ -88,6 +92,12 @@ const TrainingDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const {
+    data: responsibleUsers = [],
+    isLoading: loadingResponsibleUsers,
+    isError: responsibleUsersError,
+    refetch: refetchResponsibleUsers,
+  } = useTrainingResponsibles();
   const [training, setTraining] = useState<Training | null>(null);
   const [acceptances, setAcceptances] = useState<Acceptance[]>([]);
   const [guests, setGuests] = useState<GuestAcceptance[]>([]);
@@ -107,6 +117,9 @@ const TrainingDetail = () => {
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState("");
   const [savingTitle, setSavingTitle] = useState(false);
+  const [editingResponsible, setEditingResponsible] = useState(false);
+  const [responsibleDraft, setResponsibleDraft] = useState("");
+  const [savingResponsible, setSavingResponsible] = useState(false);
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [schedDate, setSchedDate] = useState("");
   const [schedTime, setSchedTime] = useState("");
@@ -116,7 +129,11 @@ const TrainingDetail = () => {
 
   const load = async () => {
     if (!id) return;
-    const { data: t } = await supabase.from("trainings").select("*").eq("id", id).maybeSingle();
+    const { data: t } = await supabase
+      .from("trainings")
+      .select("*, responsible_profile:profiles!trainings_responsible_user_id_fkey(id, full_name, email)")
+      .eq("id", id)
+      .maybeSingle();
     setTraining(t as Training | null);
     const { data: a } = await supabase
       .rpc("get_training_user_acceptances", { _training_id: id });
@@ -264,6 +281,33 @@ const TrainingDetail = () => {
     toast.success("Título atualizado");
     setEditingTitle(false);
     load();
+  };
+
+  const startEditResponsible = () => {
+    if (!training) return;
+    setResponsibleDraft(training.responsible_user_id ?? "");
+    setEditingResponsible(true);
+  };
+
+  const saveResponsible = async () => {
+    if (!id || !training) return;
+    const nextResponsible = responsibleDraft || null;
+    if (nextResponsible === (training.responsible_user_id ?? null)) {
+      setEditingResponsible(false);
+      return;
+    }
+
+    setSavingResponsible(true);
+    const { error } = await supabase
+      .from("trainings")
+      .update({ responsible_user_id: nextResponsible })
+      .eq("id", id);
+    setSavingResponsible(false);
+    if (error) return toast.error(error.message);
+
+    toast.success("Responsável atualizado");
+    setEditingResponsible(false);
+    await load();
   };
 
   const saveDescInner = async () => {
@@ -563,6 +607,84 @@ const TrainingDetail = () => {
               />
               Dia inteiro (08:00–18:00)
             </label>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/70 bg-muted/30 p-4">
+            <div className="flex min-w-0 items-center gap-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <UserCheck className="h-5 w-5" />
+              </span>
+              <div className="min-w-0">
+                <p className="text-xs uppercase tracking-wider text-muted-foreground">Responsável pelo treinamento</p>
+                {editingResponsible ? (
+                  <div className="mt-1.5 space-y-1.5">
+                    <select
+                      id="training-responsible"
+                      value={responsibleDraft}
+                      onChange={(e) => setResponsibleDraft(e.target.value)}
+                      disabled={loadingResponsibleUsers}
+                      className="h-10 w-full max-w-sm rounded-md border border-input bg-background px-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      <option value="">— Sem responsável —</option>
+                      {responsibleUsers.map((responsible) => (
+                        <option key={responsible.user_id} value={responsible.user_id}>
+                          {responsibleOptionLabel(responsible)}
+                        </option>
+                      ))}
+                      {training.responsible_user_id &&
+                        training.responsible_profile &&
+                        !responsibleUsers.some((responsible) => responsible.user_id === training.responsible_user_id) && (
+                          <option value={training.responsible_user_id}>
+                            {responsibleOptionLabel(training.responsible_profile)}
+                          </option>
+                        )}
+                    </select>
+                    {responsibleUsersError && (
+                      <p role="alert" className="text-xs text-destructive">
+                        Não foi possível carregar os usuários. Tente novamente.
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <p className="mt-0.5 truncate text-sm font-medium text-foreground">
+                    {responsibleDisplayName(training.responsible_profile)}
+                  </p>
+                )}
+              </div>
+            </div>
+            {editingResponsible ? (
+              <div className="flex items-center gap-1">
+                {responsibleUsersError && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => void refetchResponsibleUsers()}
+                    disabled={loadingResponsibleUsers}
+                  >
+                    Tentar novamente
+                  </Button>
+                )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setEditingResponsible(false)}
+                  disabled={savingResponsible}
+                >
+                  <X className="h-3.5 w-3.5" /> Cancelar
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={saveResponsible}
+                  disabled={savingResponsible || loadingResponsibleUsers || responsibleUsersError}
+                >
+                  <Save className="h-3.5 w-3.5" /> {savingResponsible ? "Salvando…" : "Salvar"}
+                </Button>
+              </div>
+            ) : (
+              <Button variant="ghost" size="sm" onClick={startEditResponsible}>
+                <Pencil className="h-3.5 w-3.5" /> Editar
+              </Button>
+            )}
           </div>
 
           <VisitTypeSelector
