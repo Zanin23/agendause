@@ -691,10 +691,10 @@ const EventCard = ({
           </div>
         )}
         {showConfirmation && !isDone && (
-          <div className="agenda-event-confirmation mt-1.5 flex items-center justify-center gap-1.5 flex-wrap">
+          <div className="agenda-event-confirmation mt-1.5 flex items-center justify-start gap-1.5 flex-wrap">
             {!teamConfirmed && (
               <span
-                className="inline-flex h-4 items-center gap-1 rounded-full px-1.5 text-[9px] font-semibold uppercase tracking-wide leading-none border"
+                className="inline-flex h-4 items-center justify-center gap-1 whitespace-nowrap rounded-full border px-1.5 text-center text-[9px] font-semibold uppercase leading-none tracking-wide"
                 style={
                   confirmed
                     ? { color: GREEN, borderColor: GREEN, background: "#EAF7EF" }
@@ -716,7 +716,7 @@ const EventCard = ({
               }}
               onMouseDown={(e) => e.stopPropagation()}
               draggable={false}
-              className="no-print inline-flex h-4 items-center gap-1 rounded-full px-2 text-[9px] font-semibold uppercase tracking-wide leading-none border transition-colors"
+              className="no-print inline-flex h-4 items-center justify-center gap-1 whitespace-nowrap rounded-full border px-2 text-center text-[9px] font-semibold uppercase leading-none tracking-wide transition-colors"
               style={
                 teamConfirmed
                   ? { color: GREEN, borderColor: GREEN, background: "white" }
