@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { AlarmClock, ArrowUpRight, Check, Clock, Link2, MapPin, X } from "lucide-react";
+import { AlarmClock, ArrowUpRight, Check, Clock, Link2, MapPin, X, UserCheck } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { publicUrl } from "@/lib/publicUrl";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { getVisitType } from "@/lib/visitType";
+import { responsibleDisplayName, type ResponsibleProfile } from "@/lib/trainingResponsible";
 
 type Row = {
   id: string;
@@ -18,6 +19,8 @@ type Row = {
   visit_type: string;
   status: string;
   requires_acceptance: boolean;
+  responsible_user_id?: string | null;
+  responsible_profile?: ResponsibleProfile;
 };
 
 const hhmm = (iso: string) =>
@@ -38,7 +41,7 @@ export const TodayVisitsCard = ({ className = "" }: { className?: string }) => {
       end.setDate(end.getDate() + 1);
       const { data, error } = await supabase
         .from("trainings")
-        .select("id,title,client,scheduled_at,duration_minutes,location,visit_type,status,requires_acceptance")
+        .select("id,title,client,scheduled_at,duration_minutes,location,visit_type,status,requires_acceptance,responsible_user_id,responsible_profile:profiles!trainings_responsible_user_id_fkey(id,full_name,email)")
         .gte("scheduled_at", start.toISOString())
         .lt("scheduled_at", end.toISOString())
         .order("scheduled_at");
@@ -194,6 +197,10 @@ export const TodayVisitsCard = ({ className = "" }: { className?: string }) => {
                         </span>
                       )}
                       <span className="text-foreground">{vt.short}</span>
+                      <span className="inline-flex items-center gap-1">
+                        <UserCheck className="h-3 w-3" />
+                        Responsável: {responsibleDisplayName(v.responsible_profile)}
+                      </span>
                     </span>
                   </span>
                   <ArrowUpRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:-translate-y-0.5 group-hover:text-primary" />

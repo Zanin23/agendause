@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { format, isSameDay, isAfter, startOfDay, differenceInCalendarDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CalendarPlus, MapPin, Clock, CheckCircle2, Printer, XCircle, CalendarDays, ChevronRight, BadgeCheck } from "lucide-react";
+import { CalendarPlus, MapPin, Clock, CheckCircle2, Printer, XCircle, CalendarDays, ChevronRight, BadgeCheck, UserCheck } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -14,6 +14,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CreateTrainingDialog } from "@/components/CreateTrainingDialog";
 import { BackButton } from "@/components/BackButton";
+import { responsibleDisplayName, type ResponsibleProfile } from "@/lib/trainingResponsible";
 
 type Training = {
   id: string;
@@ -23,6 +24,8 @@ type Training = {
   duration_minutes: number;
   location: string | null;
   created_by: string;
+  responsible_user_id?: string | null;
+  responsible_profile?: ResponsibleProfile;
   status?: string;
   cancellation_reason?: string | null;
   approval_status?: string | null;
@@ -39,7 +42,7 @@ const Dashboard = () => {
   const load = async () => {
     const { data: t } = await supabase
       .from("trainings")
-      .select("*")
+      .select("*, responsible_profile:profiles!trainings_responsible_user_id_fkey(id, full_name, email)")
       .order("scheduled_at", { ascending: true });
     setTrainings((t as Training[]) || []);
     if (user) {
@@ -152,6 +155,9 @@ const Dashboard = () => {
                       <span className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
                         {format(new Date(t.scheduled_at), "d MMM • HH:mm", { locale: ptBR })}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <UserCheck className="h-3 w-3" /> Responsável: {responsibleDisplayName(t.responsible_profile)}
                       </span>
                       {t.requested_by && <span>Solicitado por {t.requested_by}</span>}
                     </div>
@@ -346,6 +352,10 @@ const TrainingCard = ({ training, accepted }: { training: Training; accepted: bo
                   {training.location}
                 </span>
               )}
+              <span className="flex items-center gap-1">
+                <UserCheck className="h-3 w-3" />
+                Responsável: {responsibleDisplayName(training.responsible_profile)}
+              </span>
             </div>
             {isCancelled && training.cancellation_reason && (
               <p className="text-xs text-destructive">
@@ -485,6 +495,10 @@ const UpcomingRow = ({ training, accepted }: { training: Training; accepted: boo
                   <span className="truncate">{training.location}</span>
                 </span>
               )}
+              <span className="flex items-center gap-1">
+                <UserCheck className="h-3 w-3" />
+                Responsável: {responsibleDisplayName(training.responsible_profile)}
+              </span>
             </div>
           </div>
           <ChevronRight className="h-4 w-4 text-muted-foreground/60 group-hover:text-primary group-hover:translate-x-0.5 transition-all shrink-0" />
