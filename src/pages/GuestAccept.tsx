@@ -248,33 +248,40 @@ const GuestAccept = () => {
                 <h2 className="text-sm uppercase tracking-wider text-neutral-600 mb-3">
                   Participantes que confirmaram o recebimento (1)
                 </h2>
-                <table className="w-full text-sm border-collapse">
+                <table className="guest-acceptance-table w-full table-fixed border-collapse text-xs sm:text-sm">
+                  <colgroup>
+                    <col className="w-[5%]" />
+                    <col className="w-[22%]" />
+                    <col className="w-[27%]" />
+                    <col className="w-[20%]" />
+                    <col className="w-[26%]" />
+                  </colgroup>
                   <thead>
                     <tr className="text-left text-xs uppercase tracking-wider text-neutral-600 border-b border-neutral-300">
-                      <th className="py-2 pr-3">#</th>
-                      <th className="py-2 pr-3">Nome</th>
-                      <th className="py-2 pr-3">E-mail</th>
-                      <th className="py-2 pr-3">Data do aceite</th>
-                      <th className="py-2">Assinatura</th>
+                      <th className="break-words py-2 pr-1 sm:pr-3">#</th>
+                      <th className="break-words py-2 pr-1 sm:pr-3">Nome</th>
+                      <th className="break-words py-2 pr-1 sm:pr-3">E-mail</th>
+                      <th className="break-words py-2 pr-1 sm:pr-3">Data do aceite</th>
+                      <th className="break-words py-2">Assinatura</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr className="border-b border-neutral-200 avoid-break">
-                      <td className="py-2 pr-3 text-neutral-500">1</td>
-                      <td className="py-2 pr-3 font-medium">{done.name}</td>
-                      <td className="py-2 pr-3 text-neutral-700">{done.email}</td>
-                      <td className="py-2 pr-3 text-neutral-700">
+                      <td className="break-words py-2 pr-1 text-neutral-500 sm:pr-3">1</td>
+                      <td className="break-words py-2 pr-1 font-medium sm:pr-3">{done.name}</td>
+                      <td className="break-words py-2 pr-1 text-neutral-700 sm:pr-3">{done.email}</td>
+                      <td className="break-words py-2 pr-1 text-neutral-700 sm:pr-3">
                         {format(new Date(done.at), "d MMM yyyy 'às' HH:mm", { locale: ptBR })}
                       </td>
-                      <td className="py-2">
+                      <td className="min-w-0 overflow-hidden py-2">
                         {done.signature ? (
                           <img
                             src={done.signature}
                             alt={`Assinatura de ${done.name}`}
-                            className="h-12 w-auto max-w-[180px] object-contain"
+                            className="block h-12 w-full max-w-full object-contain object-left"
                           />
                         ) : (
-                          <span className="text-neutral-400 italic text-xs">sem assinatura</span>
+                          <span className="break-words text-[10px] text-neutral-400 italic">sem assinatura</span>
                         )}
                       </td>
                     </tr>
