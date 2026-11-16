@@ -1174,6 +1174,49 @@ export type Database = {
           },
         ]
       }
+      training_responsibles: {
+        Row: {
+          created_at: string
+          responsible_user_id: string
+          training_id: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          responsible_user_id: string
+          training_id: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          responsible_user_id?: string
+          training_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_responsibles_responsible_user_id_fkey"
+            columns: ["responsible_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_responsibles_training_id_fkey"
+            columns: ["training_id"]
+            isOneToOne: false
+            referencedRelation: "trainings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_responsibles_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trainings: {
         Row: {
           approval_status: string
@@ -1443,6 +1486,28 @@ export type Database = {
           full_name: string | null
           user_id: string
         }[]
+      }
+      create_training_with_responsibles: {
+        Args: {
+          _client: string | null
+          _description: string | null
+          _duration_minutes: number
+          _internal_notes: string | null
+          _location: string | null
+          _requires_acceptance: boolean
+          _responsible_user_ids: string[]
+          _scheduled_at: string
+          _title: string
+          _visit_type: string
+        }
+        Returns: string
+      }
+      set_training_responsibles: {
+        Args: {
+          _responsible_user_ids: string[]
+          _training_id: string
+        }
+        Returns: undefined
       }
       get_handoff_by_token: { Args: { _token: string }; Returns: Json }
       get_public_training: {

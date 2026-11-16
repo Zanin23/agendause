@@ -93,7 +93,7 @@ const GuestAccept = () => {
       return;
     }
     if (!signature) {
-      toast.error("Assine no campo de assinatura para confirmar.");
+      toast.error("Desenhe a assinatura ou envie um PDF para confirmar.");
       return;
     }
     const acceptedAt = new Date().toISOString();
@@ -318,6 +318,7 @@ const GuestAccept = () => {
             <SignaturePad
               label="Assinatura do participante *"
               onChange={setSignature}
+              allowPdf
             />
             <Button type="submit" disabled={submitting} className="w-full">
               <CheckCircle2 className="h-4 w-4" />
