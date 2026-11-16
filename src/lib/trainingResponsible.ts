@@ -98,24 +98,47 @@ export const getTrainingResponsibleIds = (
       : [];
 };
 
-/** Retorna os nomes atribuídos; null indica que o treinamento está sem responsável. */
+/** Treinamento em formato suficiente para exibir suas atribuições, sem exigir joins protegidos por RLS. */
+export type TrainingResponsibleSource = {
+  responsible_user_id?: string | null;
+  responsible_profile?: ResponsibleProfile;
+  training_responsibles?: TrainingResponsibleAssignment[] | null;
+};
+
+/** Retorna nomes via lista autorizada da RPC ou perfis já disponíveis; null indica ausência de responsável. */
 export const trainingResponsibleNames = (
-  assignments: TrainingResponsibleAssignment[] | null | undefined,
-  legacyProfile?: ResponsibleProfile,
+  training: TrainingResponsibleSource,
+  availableResponsibles: readonly TrainingResponsibleOption[] = [],
 ): string | null => {
-  const assignedProfiles = (assignments ?? [])
-    .map((assignment) => assignment.responsible_profile)
-    .filter((profile): profile is Exclude<ResponsibleProfile, null> => Boolean(profile))
-    .filter((profile) => Boolean(profile.full_name?.trim() || profile.email?.trim()));
+  const assignedIds = getTrainingResponsibleIds(
+    training.training_responsibles,
+    training.responsible_user_id,
+  );
+  const optionById = new Map(availableResponsibles.map((option) => [option.user_id, option]));
+  const profileById = new Map<string, Exclude<ResponsibleProfile, null>>();
 
-  if (assignedProfiles.length > 0) {
-    const names = Array.from(new Set(assignedProfiles.map(responsibleDisplayName)));
-    return names.join(", ");
+  for (const assignment of training.training_responsibles ?? []) {
+    const profile = assignment.responsible_profile;
+    const userId = assignment.responsible_user_id ?? profile?.user_id ?? profile?.id;
+    if (userId && profile) profileById.set(userId, profile);
   }
 
-  if (legacyProfile?.full_name?.trim() || legacyProfile?.email?.trim()) {
-    return responsibleDisplayName(legacyProfile);
+  const legacyId = training.responsible_user_id ?? training.responsible_profile?.user_id ?? training.responsible_profile?.id;
+  if (legacyId && training.responsible_profile) {
+    profileById.set(legacyId, training.responsible_profile);
   }
 
-  return null;
+  const names = assignedIds
+    .map((userId) => {
+      const option = optionById.get(userId);
+      if (option) return option.display_name || responsibleOptionLabel(option);
+
+      const profile = profileById.get(userId);
+      return profile && (profile.full_name?.trim() || profile.email?.trim())
+        ? responsibleDisplayName(profile)
+        : null;
+    })
+    .filter((name): name is string => Boolean(name));
+
+  return names.length > 0 ? Array.from(new Set(names)).join(", ") : null;
 };
