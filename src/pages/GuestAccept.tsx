@@ -137,19 +137,19 @@ const GuestAccept = () => {
   const date = new Date(training.scheduled_at);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="guest-accept-page min-h-screen bg-background">
       <SEO
         title={`Aceite: ${training.title} — TreinaCheck`}
         description={`Confirme o recebimento do treinamento "${training.title}"${training.client ? ` para ${training.client}` : ""}.`}
         path={`/aceite/${id ?? ""}`}
       />
-      <main className="max-w-xl mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-6">
-        <header className="space-y-1">
+      <main className="guest-accept-main max-w-xl mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-6">
+        <header className="no-print space-y-1">
           <p className="text-xs uppercase tracking-wider text-muted-foreground">Confirmação de recebimento</p>
           <h1 className="text-2xl font-semibold tracking-tight">{training.title}</h1>
         </header>
 
-        <Card>
+        <Card className="no-print">
           <CardContent className="p-5 space-y-2 text-sm">
             {training.client && (
               <p className="flex items-center gap-2"><Building2 className="h-4 w-4 text-muted-foreground" />{training.client}</p>
@@ -166,7 +166,7 @@ const GuestAccept = () => {
         </Card>
 
         {attachments.length > 0 && (
-          <Card>
+          <Card className="no-print">
             <CardContent className="p-5 space-y-2">
               <h3 className="font-semibold text-sm flex items-center gap-2">
                 <Paperclip className="h-4 w-4" /> Materiais do treinamento
@@ -211,10 +211,10 @@ const GuestAccept = () => {
             </Card>
 
             {/* Termo imprimível — mesmo layout do termo interno */}
-            <div className="print-term bg-white text-black px-8 py-10 rounded-lg border border-neutral-200">
+            <div className="print-term max-w-3xl mx-auto bg-white text-black px-10 py-12 rounded-lg border border-neutral-200">
               <header className="text-center mb-10 pb-6 border-b-2 border-black">
                 <p className="text-xs uppercase tracking-[0.3em] text-neutral-600">Use Sistemas</p>
-                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight mt-2 uppercase">
+                <h1 className="text-3xl font-bold tracking-tight mt-2 uppercase">
                   Termo de Recebimento de Treinamento
                 </h1>
               </header>
@@ -289,15 +289,34 @@ const GuestAccept = () => {
             </div>
             <style>{`
               @media print {
-                body * { visibility: hidden !important; }
-                .print-term, .print-term * { visibility: visible !important; }
-                .print-term {
-                  position: absolute; left: 0; top: 0; width: 100%;
-                  border: none !important; box-shadow: none !important;
-                  color: #000 !important; background: #fff !important;
-                }
                 @page { size: A4 portrait; margin: 18mm; }
-                .print-term { padding: 0 !important; }
+                .no-print { display: none !important; }
+                html, body, .guest-accept-page {
+                  min-height: 0 !important;
+                  margin: 0 !important;
+                  padding: 0 !important;
+                  color: #000 !important;
+                  background: #fff !important;
+                }
+                .guest-accept-main {
+                  width: 100% !important;
+                  max-width: none !important;
+                  margin: 0 !important;
+                  padding: 0 !important;
+                }
+                .guest-accept-main > * + * { margin-top: 0 !important; }
+                .print-term {
+                  position: static !important;
+                  width: 100% !important;
+                  max-width: 48rem !important;
+                  margin: 0 auto !important;
+                  padding: 3rem 2.5rem !important;
+                  border: none !important;
+                  border-radius: 0 !important;
+                  box-shadow: none !important;
+                  color: #000 !important;
+                  background: #fff !important;
+                }
                 .avoid-break { break-inside: avoid; page-break-inside: avoid; }
               }
             `}</style>
