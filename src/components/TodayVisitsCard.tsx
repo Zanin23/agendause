@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { publicUrl } from "@/lib/publicUrl";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { getVisitType } from "@/lib/visitType";
-import { responsibleDisplayName, type ResponsibleProfile } from "@/lib/trainingResponsible";
+import { trainingResponsibleNames, type ResponsibleProfile, type TrainingResponsibleAssignment } from "@/lib/trainingResponsible";
 
 type Row = {
   id: string;
@@ -21,6 +21,7 @@ type Row = {
   requires_acceptance: boolean;
   responsible_user_id?: string | null;
   responsible_profile?: ResponsibleProfile;
+  training_responsibles?: TrainingResponsibleAssignment[];
 };
 
 const hhmm = (iso: string) =>
@@ -41,7 +42,7 @@ export const TodayVisitsCard = ({ className = "" }: { className?: string }) => {
       end.setDate(end.getDate() + 1);
       const { data, error } = await supabase
         .from("trainings")
-        .select("id,title,client,scheduled_at,duration_minutes,location,visit_type,status,requires_acceptance,responsible_user_id,responsible_profile:profiles!trainings_responsible_user_id_fkey(id,full_name,email)")
+        .select("id,title,client,scheduled_at,duration_minutes,location,visit_type,status,requires_acceptance,responsible_user_id,responsible_profile:profiles!trainings_responsible_user_id_fkey(id,full_name,email),training_responsibles:training_responsibles(responsible_user_id,responsible_profile:profiles!training_responsibles_responsible_user_id_fkey(id,full_name,email))")
         .gte("scheduled_at", start.toISOString())
         .lt("scheduled_at", end.toISOString())
         .order("scheduled_at");
@@ -197,10 +198,12 @@ export const TodayVisitsCard = ({ className = "" }: { className?: string }) => {
                         </span>
                       )}
                       <span className="text-foreground">{vt.short}</span>
-                      <span className="inline-flex items-center gap-1">
-                        <UserCheck className="h-3 w-3" />
-                        Responsável: {responsibleDisplayName(v.responsible_profile)}
-                      </span>
+                      {trainingResponsibleNames(v.training_responsibles, v.responsible_profile) && (
+                        <span className="inline-flex items-center gap-1">
+                          <UserCheck className="h-3 w-3" />
+                          Responsáveis: {trainingResponsibleNames(v.training_responsibles, v.responsible_profile)}
+                        </span>
+                      )}
                     </span>
                   </span>
                   <ArrowUpRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:-translate-y-0.5 group-hover:text-primary" />

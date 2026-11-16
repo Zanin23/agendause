@@ -14,7 +14,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CreateTrainingDialog } from "@/components/CreateTrainingDialog";
 import { BackButton } from "@/components/BackButton";
-import { responsibleDisplayName, type ResponsibleProfile } from "@/lib/trainingResponsible";
+import { trainingResponsibleNames, type ResponsibleProfile, type TrainingResponsibleAssignment } from "@/lib/trainingResponsible";
 
 type Training = {
   id: string;
@@ -26,6 +26,7 @@ type Training = {
   created_by: string;
   responsible_user_id?: string | null;
   responsible_profile?: ResponsibleProfile;
+  training_responsibles?: TrainingResponsibleAssignment[];
   status?: string;
   cancellation_reason?: string | null;
   approval_status?: string | null;
@@ -42,7 +43,7 @@ const Dashboard = () => {
   const load = async () => {
     const { data: t } = await supabase
       .from("trainings")
-      .select("*, responsible_profile:profiles!trainings_responsible_user_id_fkey(id, full_name, email)")
+      .select("*, responsible_profile:profiles!trainings_responsible_user_id_fkey(id, full_name, email), training_responsibles:training_responsibles(responsible_user_id,responsible_profile:profiles!training_responsibles_responsible_user_id_fkey(id,full_name,email))")
       .order("scheduled_at", { ascending: true });
     setTrainings((t as Training[]) || []);
     if (user) {
@@ -156,9 +157,11 @@ const Dashboard = () => {
                         <Clock className="h-3 w-3" />
                         {format(new Date(t.scheduled_at), "d MMM • HH:mm", { locale: ptBR })}
                       </span>
-                      <span className="flex items-center gap-1">
-                        <UserCheck className="h-3 w-3" /> Responsável: {responsibleDisplayName(t.responsible_profile)}
-                      </span>
+                      {trainingResponsibleNames(t.training_responsibles, t.responsible_profile) && (
+                        <span className="flex items-center gap-1">
+                          <UserCheck className="h-3 w-3" /> Responsáveis: {trainingResponsibleNames(t.training_responsibles, t.responsible_profile)}
+                        </span>
+                      )}
                       {t.requested_by && <span>Solicitado por {t.requested_by}</span>}
                     </div>
                   </div>
@@ -352,10 +355,12 @@ const TrainingCard = ({ training, accepted }: { training: Training; accepted: bo
                   {training.location}
                 </span>
               )}
-              <span className="flex items-center gap-1">
-                <UserCheck className="h-3 w-3" />
-                Responsável: {responsibleDisplayName(training.responsible_profile)}
-              </span>
+              {trainingResponsibleNames(training.training_responsibles, training.responsible_profile) && (
+                <span className="flex items-center gap-1">
+                  <UserCheck className="h-3 w-3" />
+                  Responsáveis: {trainingResponsibleNames(training.training_responsibles, training.responsible_profile)}
+                </span>
+              )}
             </div>
             {isCancelled && training.cancellation_reason && (
               <p className="text-xs text-destructive">
@@ -495,10 +500,12 @@ const UpcomingRow = ({ training, accepted }: { training: Training; accepted: boo
                   <span className="truncate">{training.location}</span>
                 </span>
               )}
-              <span className="flex items-center gap-1">
-                <UserCheck className="h-3 w-3" />
-                Responsável: {responsibleDisplayName(training.responsible_profile)}
-              </span>
+              {trainingResponsibleNames(training.training_responsibles, training.responsible_profile) && (
+                <span className="flex items-center gap-1">
+                  <UserCheck className="h-3 w-3" />
+                  Responsáveis: {trainingResponsibleNames(training.training_responsibles, training.responsible_profile)}
+                </span>
+              )}
             </div>
           </div>
           <ChevronRight className="h-4 w-4 text-muted-foreground/60 group-hover:text-primary group-hover:translate-x-0.5 transition-all shrink-0" />

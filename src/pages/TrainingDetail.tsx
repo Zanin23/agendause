@@ -26,7 +26,13 @@ import {
 import { toast } from "sonner";
 import { VISIT_TYPES, type VisitType } from "@/lib/visitType";
 import { useTrainingResponsibles } from "@/hooks/useTrainingResponsibles";
-import { responsibleDisplayName, responsibleOptionLabel, type ResponsibleProfile } from "@/lib/trainingResponsible";
+import {
+  getTrainingResponsibleIds,
+  responsibleOptionLabel,
+  trainingResponsibleNames,
+  type ResponsibleProfile,
+  type TrainingResponsibleAssignment,
+} from "@/lib/trainingResponsible";
 
 type Training = {
   id: string;
@@ -39,6 +45,7 @@ type Training = {
   created_by: string;
   responsible_user_id?: string | null;
   responsible_profile?: ResponsibleProfile;
+  training_responsibles?: TrainingResponsibleAssignment[];
   status: string;
   cancellation_reason: string | null;
   cancelled_at: string | null;
@@ -118,7 +125,7 @@ const TrainingDetail = () => {
   const [titleDraft, setTitleDraft] = useState("");
   const [savingTitle, setSavingTitle] = useState(false);
   const [editingResponsible, setEditingResponsible] = useState(false);
-  const [responsibleDraft, setResponsibleDraft] = useState("");
+  const [responsibleDraft, setResponsibleDraft] = useState<string[]>([]);
   const [savingResponsible, setSavingResponsible] = useState(false);
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [schedDate, setSchedDate] = useState("");
@@ -131,7 +138,7 @@ const TrainingDetail = () => {
     if (!id) return;
     const { data: t } = await supabase
       .from("trainings")
-      .select("*, responsible_profile:profiles!trainings_responsible_user_id_fkey(id, full_name, email)")
+      .select("*, responsible_profile:profiles!trainings_responsible_user_id_fkey(id, full_name, email), training_responsibles:training_responsibles(responsible_user_id,responsible_profile:profiles!training_responsibles_responsible_user_id_fkey(id,full_name,email))")
       .eq("id", id)
       .maybeSingle();
     setTraining(t as Training | null);
@@ -285,27 +292,35 @@ const TrainingDetail = () => {
 
   const startEditResponsible = () => {
     if (!training) return;
-    setResponsibleDraft(training.responsible_user_id ?? "");
+    const availableIds = new Set(responsibleUsers.map((responsible) => responsible.user_id));
+    setResponsibleDraft(
+      getTrainingResponsibleIds(training.training_responsibles, training.responsible_user_id)
+        .filter((userId) => availableIds.has(userId)),
+    );
     setEditingResponsible(true);
   };
 
   const saveResponsible = async () => {
     if (!id || !training) return;
-    const nextResponsible = responsibleDraft || null;
-    if (nextResponsible === (training.responsible_user_id ?? null)) {
+    const currentIds = getTrainingResponsibleIds(training.training_responsibles, training.responsible_user_id);
+    const currentSet = new Set(currentIds);
+    if (
+      responsibleDraft.length === currentSet.size &&
+      responsibleDraft.every((userId) => currentSet.has(userId))
+    ) {
       setEditingResponsible(false);
       return;
     }
 
     setSavingResponsible(true);
-    const { error } = await supabase
-      .from("trainings")
-      .update({ responsible_user_id: nextResponsible })
-      .eq("id", id);
+    const { error } = await supabase.rpc("set_training_responsibles", {
+      _training_id: id,
+      _responsible_user_ids: responsibleDraft,
+    });
     setSavingResponsible(false);
     if (error) return toast.error(error.message);
 
-    toast.success("Responsável atualizado");
+    toast.success("Responsáveis atualizados");
     setEditingResponsible(false);
     await load();
   };
@@ -615,39 +630,47 @@ const TrainingDetail = () => {
                 <UserCheck className="h-5 w-5" />
               </span>
               <div className="min-w-0">
-                <p className="text-xs uppercase tracking-wider text-muted-foreground">Responsável pelo treinamento</p>
+                <p className="text-xs uppercase tracking-wider text-muted-foreground">Responsáveis pelo treinamento</p>
                 {editingResponsible ? (
-                  <div className="mt-1.5 space-y-1.5">
-                    <select
-                      id="training-responsible"
-                      value={responsibleDraft}
-                      onChange={(e) => setResponsibleDraft(e.target.value)}
-                      disabled={loadingResponsibleUsers}
-                      className="h-10 w-full max-w-sm rounded-md border border-input bg-background px-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      <option value="">— Sem responsável —</option>
-                      {responsibleUsers.map((responsible) => (
-                        <option key={responsible.user_id} value={responsible.user_id}>
-                          {responsibleOptionLabel(responsible)}
-                        </option>
-                      ))}
-                      {training.responsible_user_id &&
-                        training.responsible_profile &&
-                        !responsibleUsers.some((responsible) => responsible.user_id === training.responsible_user_id) && (
-                          <option value={training.responsible_user_id}>
-                            {responsibleOptionLabel(training.responsible_profile)}
-                          </option>
-                        )}
-                    </select>
+                  <div className="mt-1.5 space-y-2">
+                    <div className="grid gap-2 sm:grid-cols-2" role="group" aria-label="Responsáveis pelo treinamento">
+                      {responsibleUsers.map((responsible) => {
+                        const checkboxId = `detail-training-responsible-${responsible.user_id}`;
+                        return (
+                          <label
+                            key={responsible.user_id}
+                            htmlFor={checkboxId}
+                            className="flex min-h-10 cursor-pointer items-center gap-2.5 rounded-lg border border-border bg-background px-3 py-2 text-sm transition-colors hover:border-primary/50"
+                          >
+                            <input
+                              id={checkboxId}
+                              type="checkbox"
+                              checked={responsibleDraft.includes(responsible.user_id)}
+                              onChange={() => setResponsibleDraft((selected) =>
+                                selected.includes(responsible.user_id)
+                                  ? selected.filter((userId) => userId !== responsible.user_id)
+                                  : [...selected, responsible.user_id],
+                              )}
+                              disabled={loadingResponsibleUsers || savingResponsible}
+                              className="h-4 w-4 shrink-0 accent-primary"
+                            />
+                            <span>{responsibleOptionLabel(responsible)}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Selecione uma ou mais pessoas. Desmarque todas para deixar sem responsável.
+                    </p>
                     {responsibleUsersError && (
                       <p role="alert" className="text-xs text-destructive">
-                        Não foi possível carregar os usuários. Tente novamente.
+                        Não foi possível carregar os responsáveis. Tente novamente.
                       </p>
                     )}
                   </div>
                 ) : (
-                  <p className="mt-0.5 truncate text-sm font-medium text-foreground">
-                    {responsibleDisplayName(training.responsible_profile)}
+                  <p className="mt-0.5 whitespace-normal text-sm font-medium text-foreground">
+                    {trainingResponsibleNames(training.training_responsibles, training.responsible_profile) ?? "Não definido"}
                   </p>
                 )}
               </div>
