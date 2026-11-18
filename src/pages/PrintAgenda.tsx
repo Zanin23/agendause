@@ -1,7 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  addDays,
   addWeeks,
   endOfWeek,
   format,
@@ -31,6 +30,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { getVisitType, VISIT_TYPES } from "@/lib/visitType";
 import { trainingResponsibleNames, type TrainingResponsibleAssignment, type TrainingResponsibleOption } from "@/lib/trainingResponsible";
+import { getWeeklyAgendaDays } from "@/lib/weeklyAgenda";
 
 type Training = {
   id: string;
@@ -48,7 +48,6 @@ type Training = {
   training_responsibles?: TrainingResponsibleAssignment[];
 };
 
-const DAY_LABELS = ["SEG", "TER", "QUA", "QUI", "SEX"];
 const ORANGE = "#F26B1F";
 const BLUE = "#6F7FB8";
 const RED = "#E22B2B";
@@ -82,6 +81,11 @@ const PrintAgenda = () => {
         scale: 2,
         backgroundColor: "#ffffff",
         useCORS: true,
+        windowWidth: 1200, // Keep all days in one row, even when exporting from mobile.
+        onclone: (clonedDocument) => {
+          // html2canvas also reads the body background, whose theme color is OKLCH.
+          clonedDocument.body.style.backgroundColor = "#ffffff";
+        },
       });
       const imgData = canvas.toDataURL("image/png");
       const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
@@ -113,10 +117,7 @@ const PrintAgenda = () => {
         supabase.from("guest_acceptances").select("training_id"),
       ]);
       setTrainings((data as Training[]) || []);
-      const ids = new Set<string>();
-      ((ua as any[]) || []).forEach((r) => ids.add(r.training_id));
-      ((ga as any[]) || []).forEach((r) => ids.add(r.training_id));
-      setConfirmedIds(ids);
+      setConfirmedIds(new Set([...(ua ?? []), ...(ga ?? [])].map(({ training_id }) => training_id)));
     })();
   }, []);
 
@@ -134,22 +135,10 @@ const PrintAgenda = () => {
     toast({ title: isConfirmed ? "Confirmação removida" : "Agendamento confirmado" });
   };
 
-  const weekDays = useMemo(
-    () => Array.from({ length: 5 }, (_, i) => addDays(weekStart, i)),
-    [weekStart]
+  const agendaDays = useMemo(
+    () => getWeeklyAgendaDays(weekStart, trainings),
+    [weekStart, trainings],
   );
-
-  const eventsByDay = useMemo(() => {
-    return weekDays.map((day) =>
-      trainings
-        .filter((t) => isSameDay(new Date(t.scheduled_at), day))
-        .sort(
-          (a, b) =>
-            new Date(a.scheduled_at).getTime() -
-            new Date(b.scheduled_at).getTime()
-        )
-    );
-  }, [weekDays, trainings]);
 
   const weekLabel = `${format(weekStart, "d MMM", { locale: ptBR })} – ${format(
     endOfWeek(weekStart, { weekStartsOn: 1 }),
@@ -202,9 +191,17 @@ const PrintAgenda = () => {
         path="/agenda/imprimir"
       />
       <style>{`
+        /* Use a hex border fallback so html2canvas can render agenda elements. */
+        .agenda-page { --color-border: #e5e5e5; }
         .agenda-title { font-family: 'Clash Display', 'Archivo', sans-serif; font-weight: 700; letter-spacing: -0.02em; }
         .agenda-sub { font-family: 'Clash Display', 'Archivo', sans-serif; font-weight: 600; font-style: italic; }
         .day-head { font-family: 'Clash Display', 'Archivo', sans-serif; font-weight: 700; letter-spacing: 0.01em; }
+        .agenda-grid { grid-template-columns: repeat(var(--agenda-columns), minmax(0, 1fr)); }
+        /* Wrap the extended grid on narrower screens so cards stay readable. */
+        @media screen and (min-width: 768px) {
+          .agenda-grid--weekend { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+          .agenda-grid--weekend .day-head { font-size: 24px; padding-inline: 8px; white-space: nowrap; }
+        }
         /* Mobile screen styles — must NOT apply during print. */
         @media screen and (max-width: 767px) {
           .agenda-page { padding: 16px !important; }
@@ -264,8 +261,6 @@ const PrintAgenda = () => {
           }
           .agenda-grid {
             display: grid !important;
-            grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
-            grid-auto-flow: column !important;
             gap: 2mm !important;
             flex: 1 1 auto !important;
             min-height: 0 !important;
@@ -382,14 +377,17 @@ const PrintAgenda = () => {
         </header>
 
         {/* Week grid */}
-        <div className="agenda-grid grid grid-cols-1 sm:grid-cols-5 gap-3">
-          {weekDays.map((day, idx) => {
-            const events = eventsByDay[idx];
+        <div
+          className={`agenda-grid grid gap-3${agendaDays.length > 5 ? " agenda-grid--weekend" : ""}`}
+          style={{ "--agenda-columns": agendaDays.length } as CSSProperties}
+        >
+          {agendaDays.map(({ day, label, events }) => {
+            const dayKey = day.getTime();
             const isToday = isSameDay(day, new Date());
-            const isOver = dropTarget === idx;
+            const isOver = dropTarget === dayKey;
             return (
               <div
-                key={idx}
+                key={dayKey}
                 className="agenda-day border-[3px] rounded-md flex flex-col transition-colors"
                 style={{
                   borderColor: isOver ? BLUE : ORANGE,
@@ -400,10 +398,10 @@ const PrintAgenda = () => {
                   if (!dragId) return;
                   e.preventDefault();
                   e.dataTransfer.dropEffect = "move";
-                  if (dropTarget !== idx) setDropTarget(idx);
+                  if (!isOver) setDropTarget(dayKey);
                 }}
                 onDragLeave={() => {
-                  if (dropTarget === idx) setDropTarget(null);
+                  if (isOver) setDropTarget(null);
                 }}
                 onDrop={(e) => {
                   e.preventDefault();
@@ -414,7 +412,7 @@ const PrintAgenda = () => {
                   className="day-head bg-pattern-hex-light text-[28px] px-3 pt-2 pb-2 border-b-[3px]"
                   style={{ borderColor: ORANGE, color: isToday ? ORANGE : "#111" }}
                 >
-                  {format(day, "dd")} {DAY_LABELS[idx]}
+                  {format(day, "dd")} {label}
                 </div>
                 <div className="agenda-day-body p-2 space-y-2 flex-1 overflow-hidden">
                   {(() => {
@@ -617,7 +615,7 @@ const EventCard = ({
             </span>
           );
         })()}
-        <div className="flex items-start gap-1.5 pr-7">
+        <div className="flex items-start gap-1.5 pr-5">
           {isDone && (
             <span
               className="font-bold text-[15px] leading-none mt-0.5"
@@ -644,7 +642,7 @@ const EventCard = ({
             />
           )}
           <span
-            className="agenda-event-title font-semibold"
+            className="agenda-event-title min-w-0 break-words font-semibold"
             style={{
               color: isCancelled ? RED : isDone ? BLUE : "#000",
               textDecoration: isCancelled ? "line-through" : "none",
