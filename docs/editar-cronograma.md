@@ -124,3 +124,28 @@ node scripts/testes/exclusao-itens-cronograma-sql.mjs                   # exclus
 node scripts/testes/cronogramas-livres-sql.mjs                          # status no relatório (Postgres real)
 npm install --no-save @electric-sql/pglite                              # só para os dois últimos
 ```
+
+---
+
+## 4. Termo de Passagem para o Suporte — impressão
+
+O termo sai em **A4 retrato** pelo botão *Imprimir / PDF* (`/cronogramas/<id>/termo`).
+O cliente também pode imprimir pelo link público (`/t/<token>`).
+
+O que mudou na impressão (por que antes “quase cortava”):
+
+- O papel era montado escondendo o resto da tela com `visibility: hidden` e
+  jogando a folha em `position: absolute; left: 0; right: 0` **sem padding** —
+  o conteúdo começava na borda da área útil e a última coluna de cada linha
+  (data, “documento nº”, rodapé) ficava no limite do papel.
+- Agora a folha mantém margem própria (`@page: A4; margin: 14mm 16mm 16mm` +
+  3 mm de respiro), nada é posicionado em absoluto no papel e o fundo do app
+  (escuro) não vai mais para o papel: só a folha fica visível, com fundo branco.
+- Nome de cliente, módulos e textos longos quebram dentro da própria coluna em
+  vez de empurrar a linha para fora da margem.
+- O diálogo “Concluir o cronograma?” e o cabeçalho do app nunca são impressos.
+- O link público ganhou o mesmo CSS de papel e um botão *Imprimir / PDF*.
+
+Dica: na janela de impressão do navegador, deixe **Margens: Padrão** (ou
+“Mínimo”) e **Gráficos de plano de fundo** ligado, para as linhas do documento
+saírem no PDF.

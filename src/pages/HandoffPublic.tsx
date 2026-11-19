@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Printer } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { SEO } from "@/components/SEO";
 import { Button } from "@/components/ui/button";
@@ -52,12 +52,50 @@ export default function HandoffPublic() {
   if (!data) return <div className="p-10 text-sm">Termo não encontrado.</div>;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background termo-publico">
       <SEO title={`Termo de passagem — ${data.client_name}`} description="Termo de passagem para o suporte" path={`/t/${token}`} />
-      <header className="border-b border-border bg-card/40 backdrop-blur">
+      {/* O cliente também imprime este termo: as margens evitam que o texto
+          encoste na borda do papel (cabeçalho e botões saem na impressão). */}
+      <style>{`
+        @media print {
+          .no-print { display: none !important; }
+          @page { size: A4; margin: 14mm 16mm 16mm; }
+          html, body, #root, body > div, .termo-publico {
+            background: #fff !important;
+            color: #111 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            min-height: 0 !important;
+          }
+          body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          .termo-publico main {
+            display: block !important;
+            position: static !important;
+            width: auto !important;
+            max-width: 100% !important;
+            margin: 0 !important;
+            padding: 0 3mm !important;
+            box-sizing: border-box !important;
+            color: #111 !important;
+          }
+          /* os cartões viram blocos do documento, sem moldura nem padding
+             extra encostando na margem */
+          .termo-publico .rounded-lg.border,
+          .termo-publico .rounded-xl.border {
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+          }
+          .avoid-break { break-inside: avoid; page-break-inside: avoid; }
+        }
+      `}</style>
+      <header className="no-print border-b border-border bg-card/40 backdrop-blur">
         <div className="max-w-3xl mx-auto px-4 h-14 flex items-center gap-3">
           <img src={logoAsset.url} alt="Use Sistemas" className="h-7 w-auto" />
           <span className="font-semibold tracking-tight">Use Sistemas · Termo de Passagem</span>
+          <Button variant="ghost" size="sm" className="ml-auto gap-1.5" onClick={() => window.print()}>
+            <Printer className="h-4 w-4" /> Imprimir / PDF
+          </Button>
         </div>
       </header>
       <main className="max-w-3xl mx-auto px-4 py-8 space-y-5">
