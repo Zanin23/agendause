@@ -77,10 +77,50 @@ Aplicar grava só as etapas que realmente mudam de data.
 
 ---
 
+## 3. Remover etapas e fases — e o que sai na impressão
+
+A etapa removida aqui **sai também do PDF/impressão**: a tela de impressão
+(`/cronogramas/<id>/imprimir`) relê o banco toda vez que abre, então o papel
+mostra exatamente o que está no cronograma naquele momento.
+
+- **Uma etapa**: abra os detalhes da etapa (clique no título) e use **Remover**.
+  Pede confirmação.
+- **Várias de uma vez**: marque as caixinhas à esquerda das etapas — aparece a
+  faixa *“N etapa(s) selecionada(s)”* com **Remover selecionadas**. É uma única
+  chamada ao banco (`schedule_items_delete`), então ou sai tudo ou o app avisa
+  quantas saíram.
+- **Fase inteira**: lixeira no cabeçalho da fase (pede confirmação e apaga as
+  etapas junto).
+- **Só a data prevista**: nos detalhes da etapa, o **X** ao lado do campo
+  “Prevista” limpa a data (a etapa continua, sem data).
+
+No papel, além das datas, cada etapa leva a etiqueta de status. Etapas
+**“Não aplicável” ficam fora do PDF** por padrão (documento do cliente); o botão
+*Mostrar “não aplicável”* acima da folha inclui elas quando for preciso.
+
+### Quando a exclusão/edição não é autorizada
+
+Se o servidor negar a operação, **nada é apagado e o cronograma é recarregado**,
+com um aviso na tela — antes o app atualizava a tela como se tivesse apagado, e
+o item reaparecia na impressão (o banco responde “sucesso” mesmo quando o RLS
+bloqueia; só a contagem de linhas afetadas revela). O mesmo vale para datas,
+ordem das etapas, status e título: toda gravação agora confere as linhas
+realmente gravadas.
+
+Quem pode remover/editar: administrador, quem tem a tela `schedules` com escrita
+ou quem tem permissão específica naquele cronograma — e sempre dentro da base
+ativa. A migração `20261119120000_acesso_e_exclusao_itens_cronograma.sql` aplica
+essas regras; antes dela as políticas de exclusão dependiam de
+`implementation_schedules.owner_id`, e cronogramas cujo dono já não existe em
+`auth.users` não podiam ser apagados por ninguém.
+
+---
+
 ## Testes
 
 ```bash
-node --experimental-strip-types scripts/testes/remarcar-fase.mjs   # regras puras
-node scripts/testes/cronogramas-livres-sql.mjs                     # status no relatório (Postgres real)
-npm install --no-save @electric-sql/pglite                         # só para o segundo
+node --experimental-strip-types scripts/testes/remarcar-fase.mjs        # regras puras
+node scripts/testes/exclusao-itens-cronograma-sql.mjs                   # exclusão de item/fase (Postgres real)
+node scripts/testes/cronogramas-livres-sql.mjs                          # status no relatório (Postgres real)
+npm install --no-save @electric-sql/pglite                              # só para os dois últimos
 ```

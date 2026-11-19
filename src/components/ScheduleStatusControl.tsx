@@ -71,7 +71,8 @@ export function ScheduleStatusControl({ schedule, items, canEdit, onChanged }: P
           supabase
             .from("schedule_items")
             .update({ status: "done", done_date: hoje })
-            .eq("id", i.id),
+            .eq("id", i.id)
+            .select("id"),
         ),
       );
       const erroEtapas = resultados.find((r) => r.error)?.error;
@@ -80,12 +81,34 @@ export function ScheduleStatusControl({ schedule, items, canEdit, onChanged }: P
         toast.error(`Não foi possível concluir as etapas pendentes: ${erroEtapas.message}`);
         return;
       }
+      // O RLS pode devolver "sucesso" sem gravar nada: conta as linhas de fato.
+      const fechadas = resultados.filter((r) => (r.data?.length ?? 0) > 0).length;
+      if (fechadas === 0) {
+        setSalvando(false);
+        toast.error(
+          "O servidor não autorizou concluir as etapas pendentes. O status não foi alterado.",
+        );
+        onChanged();
+        return;
+      }
+      if (fechadas < pendentes.length) {
+        toast.warning(`${fechadas} de ${pendentes.length} etapa(s) pendente(s) foram concluídas.`);
+      }
     }
 
-    const { error } = await supabase.from("implementation_schedules").update(patch as never).eq("id", schedule.id);
+    const { data: salvo, error } = await supabase
+      .from("implementation_schedules")
+      .update(patch as never)
+      .eq("id", schedule.id)
+      .select("id");
     setSalvando(false);
     if (error) {
       toast.error(`Não foi possível mudar o status: ${error.message}`);
+      onChanged();
+      return;
+    }
+    if (!salvo || salvo.length === 0) {
+      toast.error("O status não foi salvo: o servidor não autorizou a alteração.");
       onChanged();
       return;
     }
