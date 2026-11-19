@@ -81,9 +81,12 @@ export function PhaseDateShiftDialog({ open, onOpenChange, fase, items, onApplie
   const aplicar = async () => {
     if (!plano.alteracoes.length) return;
     setSalvando(true);
+    // `.select("id")` devolve as linhas realmente gravadas: o banco responde
+    // "sucesso" mesmo quando o RLS bloqueia a alteração (0 linhas), e sem essa
+    // conferência o app diria que remarcou uma fase que continua na data antiga.
     const resultados = await Promise.all(
       plano.alteracoes.map((a) =>
-        supabase.from("schedule_items").update({ planned_date: a.para }).eq("id", a.id),
+        supabase.from("schedule_items").update({ planned_date: a.para }).eq("id", a.id).select("id"),
       ),
     );
     setSalvando(false);
@@ -93,9 +96,22 @@ export function PhaseDateShiftDialog({ open, onOpenChange, fase, items, onApplie
       onApplied();
       return;
     }
-    toast.success(
-      `${plano.alteracoes.length} etapa(s) de "${fase}" ${descreveDeslocamento(plano.deslocamento)}`,
-    );
+    const gravadas = resultados.filter((r) => (r.data?.length ?? 0) > 0).length;
+    if (gravadas === 0) {
+      toast.error("Nada foi remarcado: o servidor não autorizou a alteração das datas.");
+      onOpenChange(false);
+      onApplied();
+      return;
+    }
+    if (gravadas < plano.alteracoes.length) {
+      toast.warning(
+        `${gravadas} de ${plano.alteracoes.length} etapa(s) de "${fase}" ${descreveDeslocamento(plano.deslocamento)} — o restante não foi salvo.`,
+      );
+    } else {
+      toast.success(
+        `${plano.alteracoes.length} etapa(s) de "${fase}" ${descreveDeslocamento(plano.deslocamento)}`,
+      );
+    }
     onOpenChange(false);
     onApplied();
   };

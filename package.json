@@ -11,7 +11,8 @@
     "test:levantamento-comercial": "node scripts/testes/levantamento-comercial.mjs",
     "test:levantamento-comercial-sql": "node scripts/testes/levantamento-comercial-sql.mjs",
     "preview": "vite preview",
-    "test:bases-de-dados-sql": "node scripts/testes/bases-de-dados-sql.mjs"
+    "test:bases-de-dados-sql": "node scripts/testes/bases-de-dados-sql.mjs",
+    "test:exclusao-itens-cronograma-sql": "node scripts/testes/exclusao-itens-cronograma-sql.mjs"
   },
   "dependencies": {
     "@hello-pangea/dnd": "^18.0.1",

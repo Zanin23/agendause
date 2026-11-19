@@ -6,7 +6,7 @@ import { ptBR } from "date-fns/locale";
 import {
   ArrowUp, ArrowDown, Plus, Trash2, Copy, Printer, Link2, Download, Save,
   ChevronDown, ChevronRight, CheckCircle2, Circle, Clock, Ban, CalendarClock, Settings2,
-  CalendarDays, Flag, Unlink, Handshake, FileText, Network, ListPlus, ClipboardPaste
+  CalendarDays, Flag, Unlink, Handshake, FileText, Network, ListPlus, ClipboardPaste, X
 } from "lucide-react";
 import { toast } from "sonner";
 import { PhaseReorderDialog } from "@/components/PhaseReorderDialog";
@@ -82,6 +82,8 @@ export default function ScheduleEditor() {
   const [commercialAssessmentId, setCommercialAssessmentId] = useState<string | null>(null);
   const [colarAberto, setColarAberto] = useState(false);
   const [remarcarFaseId, setRemarcarFaseId] = useState<string | null>(null);
+  /** Etapas marcadas para remoção em lote, por fase. */
+  const [selecionados, setSelecionados] = useState<Record<string, string[]>>({});
 
   const load = async () => {
     if (!id) return;
@@ -185,10 +187,25 @@ export default function ScheduleEditor() {
   const updateSchedule = async (patch: Partial<Schedule>) => {
     if (!canEdit) return toast.error("Sem permissão para alterar este cronograma");
     if (!schedule) return;
+    const anterior = schedule;
     const next = { ...schedule, ...patch };
     setSchedule(next);
-    const { error } = await supabase.from("implementation_schedules").update(patch as any).eq("id", schedule.id);
-    if (error) toast.error(error.message);
+    // A cópia otimista vale só se o servidor confirmar; `.select("id")` diz se
+    // alguma linha foi gravada (o RLS pode descartar a alteração sem erro).
+    const { data, error } = await supabase
+      .from("implementation_schedules")
+      .update(patch as any)
+      .eq("id", schedule.id)
+      .select("id");
+    if (error) {
+      setSchedule(anterior);
+      toast.error(error.message);
+      return;
+    }
+    if (!data || data.length === 0) {
+      setSchedule(anterior);
+      toast.error("A alteração não foi salva: o servidor não autorizou. Nada foi alterado.");
+    }
   };
 
   // --- Phases ---
@@ -203,17 +220,43 @@ export default function ScheduleEditor() {
     setPhases([...phases, { ...(data as any), items: [] }]);
   };
   const updatePhase = async (phaseId: string, patch: Partial<Phase>) => {
-    setPhases((prev) => prev.map((p) => p.id === phaseId ? { ...p, ...patch } : p));
-    const { items, ...dbPatch } = patch as any;
     if (!canEdit) return toast.error("Sem permissão para alterar este cronograma");
-    const { error } = await supabase.from("schedule_phases").update(dbPatch).eq("id", phaseId);
-    if (error) toast.error(error.message);
+    const { items, ...dbPatch } = patch as any;
+    const { error } = await supabase
+      .from("schedule_phases")
+      .update(dbPatch)
+      .eq("id", phaseId)
+      .select("id");
+    if (error) {
+      toast.error(error.message);
+      await load();
+      return;
+    }
+    setPhases((prev) => prev.map((p) => p.id === phaseId ? { ...p, ...patch } : p));
   };
   const removePhase = async (phaseId: string) => {
     if (!canEdit) return toast.error("Sem permissão para alterar este cronograma");
     if (!confirm("Remover esta fase e todos os itens?")) return;
-    const { error } = await supabase.from("schedule_phases").delete().eq("id", phaseId);
-    if (error) return toast.error(error.message);
+    const { data, error } = await supabase
+      .from("schedule_phases")
+      .delete()
+      .eq("id", phaseId)
+      .select("id");
+    if (error) {
+      toast.error(error.message);
+      await load();
+      return;
+    }
+    if (!data || data.length === 0) {
+      // O banco responde "sucesso" mesmo quando o RLS bloqueia a exclusão.
+      // Sem conferir as linhas afetadas, a fase sumia da tela mas continuava
+      // aparecendo na impressão/PDF — por isso recarregamos e avisamos.
+      toast.error(
+        "A fase não foi removida: o servidor não autorizou a exclusão. Nada foi apagado — o cronograma foi recarregado.",
+      );
+      await load();
+      return;
+    }
     setPhases((prev) => prev.filter((p) => p.id !== phaseId));
   };
   const movePhase = async (idx: number, dir: -1 | 1) => {
@@ -233,14 +276,19 @@ export default function ScheduleEditor() {
     setPhases(sortedPhases);
     
     // Persist all positions in a single batch
-    const updates = sortedPhases.map((p) => 
-      supabase.from("schedule_phases").update({ position: p.position }).eq("id", p.id)
+    const updates = sortedPhases.map((p) =>
+      supabase.from("schedule_phases").update({ position: p.position }).eq("id", p.id).select("id"),
     );
     const results = await Promise.all(updates);
     const firstError = results.find(r => r.error)?.error;
     if (firstError) {
       toast.error("Erro ao salvar nova ordem das fases: " + firstError.message);
       load(); // Reload to original state on error
+      return;
+    }
+    if (results.some((r) => !r.data || r.data.length === 0)) {
+      toast.error("A nova ordem das fases não foi salva pelo servidor.");
+      load();
     }
   };
 
@@ -321,12 +369,62 @@ export default function ScheduleEditor() {
       await load();
     }
   };
+
+  /** Apaga etapas de uma vez e confirma no servidor que elas saíram mesmo. */
+  const removeItems = async (phaseId: string, itemIds: string[]) => {
+    if (!canEdit) return toast.error("Sem permissão para alterar este cronograma");
+    if (itemIds.length === 0) return;
+    const { data, error } = await (supabase.rpc as any)("schedule_items_delete", { _ids: itemIds });
+    if (error) {
+      toast.error(error.message);
+      await load();
+      return;
+    }
+    const apagadas = typeof data === "number" ? data : Number(data) || 0;
+    if (apagadas === 0) {
+      toast.error(
+        "Nada foi apagado: o servidor não autorizou a exclusão. O cronograma foi recarregado.",
+      );
+      await load();
+      return;
+    }
+    setPhases((prev) =>
+      prev.map((p) =>
+        p.id === phaseId ? { ...p, items: p.items.filter((i) => !itemIds.includes(i.id)) } : p,
+      ),
+    );
+    setSelecionados({});
+    if (apagadas < itemIds.length) {
+      toast.warning(`${apagadas} de ${itemIds.length} etapa(s) removida(s). O restante foi mantido.`);
+      await load();
+    } else {
+      toast.success(itemIds.length > 1 ? `${apagadas} etapas removidas` : "Etapa removida");
+    }
+  };
   const removeItem = async (phaseId: string, itemId: string) => {
     if (!canEdit) return toast.error("Sem permissão para alterar este cronograma");
-    const { error } = await supabase.from("schedule_items").delete().eq("id", itemId);
-    if (error) return toast.error(error.message);
-    setPhases((prev) => prev.map((p) => p.id === phaseId
-      ? { ...p, items: p.items.filter((i) => i.id !== itemId) } : p));
+    await removeItems(phaseId, [itemId]);
+  };
+  /** Botão "Remover" dos detalhes da etapa: confirma antes de apagar. */
+  const confirmarRemocaoDaEtapa = async (phaseId: string, itemId: string) => {
+    if (!confirm("Remover esta etapa do cronograma? Ela também sai da impressão/PDF.")) return;
+    await removeItem(phaseId, itemId);
+  };
+  const selecionadosDaFase = (phaseId: string) => selecionados[phaseId] ?? [];
+  const alternarSelecao = (phaseId: string, itemId: string) =>
+    setSelecionados((s) => {
+      const atuais = s[phaseId] ?? [];
+      const proximos = atuais.includes(itemId)
+        ? atuais.filter((id) => id !== itemId)
+        : [...atuais, itemId];
+      return { ...s, [phaseId]: proximos };
+    });
+  const limparSelecao = (phaseId: string) => setSelecionados((s) => ({ ...s, [phaseId]: [] }));
+  const removerSelecionadas = async (phase: Phase) => {
+    const ids = selecionadosDaFase(phase.id);
+    if (!ids.length) return;
+    if (!confirm(`Remover ${ids.length} etapa(s) selecionada(s)? Elas também saem da impressão/PDF.`)) return;
+    await removeItems(phase.id, ids);
   };
   const duplicateItem = async (phase: Phase, item: Item) => {
     const { data, error } = await supabase.from("schedule_items")
@@ -353,11 +451,19 @@ export default function ScheduleEditor() {
     
     // Persist all item positions for this phase
     const updates = updatedItems.map((it) =>
-      supabase.from("schedule_items").update({ position: it.position }).eq("id", it.id)
+      supabase.from("schedule_items").update({ position: it.position }).eq("id", it.id).select("id"),
     );
     const results = await Promise.all(updates);
     const firstError = results.find(r => r.error)?.error;
-    if (firstError) toast.error("Erro ao salvar ordem dos itens: " + firstError.message);
+    if (firstError) {
+      toast.error("Erro ao salvar ordem dos itens: " + firstError.message);
+      await load();
+      return;
+    }
+    if (results.some((r) => !r.data || r.data.length === 0)) {
+      toast.error("A ordem das etapas não foi salva pelo servidor.");
+      await load();
+    }
   };
 
   const copyPublicLink = async () => {
@@ -805,6 +911,27 @@ export default function ScheduleEditor() {
                       )}
                     </div>
 
+                    {/* Ações das etapas selecionadas para remoção */}
+                    {canEdit && selecionadosDaFase(phase.id).length > 0 && (
+                      <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-destructive/40 bg-destructive/5 px-3 py-2">
+                        <span className="text-xs text-foreground">
+                          <strong>{selecionadosDaFase(phase.id).length}</strong> etapa(s) selecionada(s)
+                        </span>
+                        <div className="flex items-center gap-1">
+                          <Button variant="ghost" size="sm" onClick={() => limparSelecao(phase.id)}>
+                            Limpar seleção
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => void removerSelecionadas(phase)}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" /> Remover selecionadas
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Items list */}
                     <ul className="divide-y divide-border -mx-2">
                       {phase.items.map((item, ii) => {
@@ -819,6 +946,16 @@ export default function ScheduleEditor() {
                           <li key={item.id} className="px-2 py-2.5">
                             {/* Compact row */}
                             <div className="flex items-start sm:items-center gap-2">
+                              {canEdit && (
+                                <input
+                                  type="checkbox"
+                                  checked={selecionadosDaFase(phase.id).includes(item.id)}
+                                  onChange={() => alternarSelecao(phase.id, item.id)}
+                                  className="mt-1.5 sm:mt-0 h-4 w-4 shrink-0 rounded border-input accent-primary"
+                                  title="Selecionar para remover"
+                                  aria-label={`Selecionar “${item.title}” para remover`}
+                                />
+                              )}
                               <button
                                 onClick={() => updateItem(phase.id, item.id, {
                                   status: item.status === "done" ? "pending" : "done",
@@ -871,7 +1008,21 @@ export default function ScheduleEditor() {
                                 <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-2">
                                   <div className="space-y-1">
                                     <label className="text-[10px] uppercase text-muted-foreground">Prevista</label>
-                                    <Input type="date" value={item.planned_date || ""} onChange={(e) => updateItem(phase.id, item.id, { planned_date: e.target.value || null })} disabled={!canEdit} />
+                                    <div className="flex items-center gap-1">
+                                      <Input type="date" value={item.planned_date || ""} onChange={(e) => updateItem(phase.id, item.id, { planned_date: e.target.value || null })} disabled={!canEdit} />
+                                      {canEdit && item.planned_date && (
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-9 w-9 shrink-0 text-muted-foreground"
+                                          title="Tirar a data prevista"
+                                          aria-label="Tirar a data prevista"
+                                          onClick={() => updateItem(phase.id, item.id, { planned_date: null })}
+                                        >
+                                          <X className="h-4 w-4" />
+                                        </Button>
+                                      )}
+                                    </div>
                                   </div>
                                   <div className="space-y-1">
                                     <label className="text-[10px] uppercase text-muted-foreground">Conclusão</label>
@@ -956,7 +1107,7 @@ export default function ScheduleEditor() {
                                       <Button variant="ghost" size="sm" onClick={() => duplicateItem(phase, item)}>
                                         <Copy className="h-3 w-3" /> Duplicar
                                       </Button>
-                                      <Button variant="ghost" size="sm" onClick={() => removeItem(phase.id, item.id)} className="text-destructive">
+                                      <Button variant="ghost" size="sm" onClick={() => void confirmarRemocaoDaEtapa(phase.id, item.id)} className="text-destructive">
                                         <Trash2 className="h-3 w-3" /> Remover
                                       </Button>
                                     </div>

@@ -88,18 +88,35 @@ export default function Schedules() {
 
   const remove = async (id: string) => {
     if (!confirm("Remover este cronograma?")) return;
-    const { error } = await supabase.from("implementation_schedules").delete().eq("id", id);
+    // `.select("id")` mostra se a exclusão aconteceu: RLS bloqueado não é erro,
+    // é "zero linhas" — e o cronograma continuaria aparecendo.
+    const { data, error } = await supabase
+      .from("implementation_schedules")
+      .delete()
+      .eq("id", id)
+      .select("id");
     if (error) return toast.error(error.message);
+    if (!data || data.length === 0) {
+      toast.error("O cronograma não foi removido: o servidor não autorizou a exclusão.");
+      load();
+      return;
+    }
     toast.success("Cronograma removido");
     load();
   };
 
   const changeStatus = async (id: string, status: string, msg: string) => {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from("implementation_schedules")
       .update({ status })
-      .eq("id", id);
+      .eq("id", id)
+      .select("id");
     if (error) return toast.error(error.message);
+    if (!data || data.length === 0) {
+      toast.error("O status não foi salvo: o servidor não autorizou a alteração.");
+      load();
+      return;
+    }
     toast.success(msg);
     load();
   };

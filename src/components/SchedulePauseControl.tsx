@@ -57,18 +57,30 @@ export function SchedulePauseControl({ schedule, items, canEdit, onChanged, part
 
   const resume = async () => {
     setBusy(true);
+    let remanejadas = 0;
+    let falharam = 0;
     if (shift !== 0) {
+      // `.select("id")` confirma linha a linha: o RLS pode descartar a alteração
+      // sem devolver erro, e aí o cronograma voltaria com as datas antigas.
       const results = await Promise.all(open.map((i) =>
-        supabase.from("schedule_items").update({ planned_date: iso(toBusinessDay(addDays(d0(i.planned_date!), shift))) }).eq("id", i.id)));
+        supabase.from("schedule_items")
+          .update({ planned_date: iso(toBusinessDay(addDays(d0(i.planned_date!), shift))) })
+          .eq("id", i.id)
+          .select("id")));
       const err = results.find((r) => r.error)?.error;
       if (err) { setBusy(false); return toast.error(err.message); }
+      remanejadas = results.filter((r) => (r.data?.length ?? 0) > 0).length;
+      falharam = results.length - remanejadas;
     }
     const { error } = await supabase.from("implementation_schedules")
       .update({ status: "active", paused_at: null, pause_reason: null } as never).eq("id", schedule.id);
     setBusy(false);
     if (error) return toast.error(error.message);
     const erroRelatorio = await publicarStatusNoRelatorio(schedule.workspace_id);
-    toast.success(shift ? `Cronograma retomado — ${open.length} etapas remanejadas` : "Cronograma retomado");
+    toast.success(shift ? `Cronograma retomado — ${remanejadas} etapas remanejadas` : "Cronograma retomado");
+    if (falharam > 0) {
+      toast.warning(`${falharam} etapa(s) não puderam ser remanejadas e ficaram na data antiga.`);
+    }
     if (erroRelatorio) toast.warning(`O cronograma foi retomado, mas o relatório de implantações não atualizou: ${erroRelatorio}`);
     setOpenResume(false); onChanged();
   };
