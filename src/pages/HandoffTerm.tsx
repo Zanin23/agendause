@@ -166,7 +166,7 @@ export default function HandoffTerm() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background termo-root">
       <SEO
         title={`Termo de passagem — ${schedule.client_name}`}
         description={`Termo de passagem do cliente ${schedule.client_name} para o suporte.`}
@@ -174,20 +174,56 @@ export default function HandoffTerm() {
       />
       <style>{`
         @media print {
+          /*
+            Antes o termo era impresso com "body * { visibility: hidden }" +
+            "position: absolute; left: 0; right: 0", e o padding da folha era
+            zerado — o texto encostava na margem e a última coluna de cada
+            linha (data, nº do documento, rodapé) ficava no limite do papel.
+            Agora o resto do app é escondido com display: none e a folha
+            mantém a própria margem, dentro da área útil do @page.
+          */
           .no-print { display: none !important; }
-          @page { size: A4; margin: 12mm 14mm; }
-          html, body { background: white !important; }
+          @page { size: A4; margin: 14mm 16mm 16mm; }
+          html, body, #root, body > div, .termo-root {
+            background: #fff !important;
+            color: #111 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            /* sem min-h-screen no papel: evita folha em branco no fim */
+            min-height: 0 !important;
+          }
           body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          body * { visibility: hidden; }
-          main.print-surface, main.print-surface * { visibility: visible; }
-          main.print-surface { position: absolute; left: 0; top: 0; right: 0; }
-          main.print-surface { max-width: 100% !important; padding: 0 !important; }
+          main.print-surface {
+            display: block !important;
+            position: static !important;
+            inset: auto !important;
+            float: none !important;
+            transform: none !important;
+            width: auto !important;
+            max-width: 100% !important;
+            margin: 0 !important;
+            /* margem de segurança extra para o papel: nada colado na borda,
+               mesmo quando a janela de impressão usa "margens: nenhuma" */
+            padding: 0 3mm !important;
+            box-sizing: border-box !important;
+          }
           main.print-surface > * { margin-top: 0 !important; }
           main.print-surface > * + * { margin-top: 10px !important; }
+          /* o diálogo "concluir cronograma" (portal, overlay preto em
+             position: fixed) nunca vai para o papel; o overlay dele é o único
+             fixed inset-0 da página */
+          [role="dialog"] { display: none !important; }
+          .fixed.inset-0:not(.print-surface) {
+            position: static !important;
+            display: none !important;
+          }
+          .termo-root { position: static !important; }
           .print-surface {
             background: white !important;
             color: #111 !important;
             font-family: 'Georgia', 'Times New Roman', serif !important;
+            overflow-wrap: anywhere;
+            word-break: normal;
           }
           .print-surface h1, .print-surface h2, .print-surface h3 {
             font-family: 'Georgia', 'Times New Roman', serif !important;
@@ -210,13 +246,24 @@ export default function HandoffTerm() {
           .print-compact-header h1 { font-size: 22pt !important; line-height: 1.1 !important; }
           .print-compact-header h1 span { font-size: 12pt !important; }
           .print-compact-header .print-hero-rule { margin-top: 8px !important; }
-          .print-fields { margin-top: 10px !important; padding: 8px 0 !important; gap: 6px 24px !important; }
+          .print-fields { margin-top: 10px !important; padding: 8px 0 !important; gap: 6px 20px !important; }
           .print-fields dd { font-size: 10.5pt !important; margin-top: 2px !important; }
           .print-modules { margin-top: 8px !important; }
           .print-modules li { padding: 3px 0 !important; font-size: 10pt !important; }
-          .print-signatures { margin-top: 24px !important; padding-top: 0 !important; gap: 32px !important; }
+          /* respiro entre a coluna esquerda e a direita: nenhuma linha
+             encosta na borda da folha */
+          .print-modules > li { padding-right: 4mm !important; }
+          .print-signatures { margin-top: 24px !important; padding-top: 0 !important; gap: 24px !important; }
           .print-signatures .sig-space { min-height: 44px !important; }
-          .print-footer { padding-top: 10px !important; margin-top: 10px !important; }
+          .print-signatures > * { min-width: 0 !important; }
+          .print-footer {
+            padding-top: 10px !important;
+            margin-top: 10px !important;
+            break-inside: avoid !important;
+            page-break-inside: avoid !important;
+          }
+          /* o rodapé do papel não precisa da margem interna extra */
+          .print-footer > div { padding-right: 2mm !important; padding-left: 2mm !important; }
         }
         .doc-serif { font-family: 'Georgia', 'Times New Roman', serif; }
       `}</style>
@@ -296,7 +343,7 @@ export default function HandoffTerm() {
                 <span className="text-[11px] tabular-nums text-muted-foreground print-muted w-6">
                   {String(i + 1).padStart(2, "0")}.
                 </span>
-                <span className="flex-1">{m.name}</span>
+                <span className="flex-1 min-w-0 break-words">{m.name}</span>
                 <button
                   onClick={() => removeModule(i)}
                   className="no-print opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition"
@@ -378,7 +425,7 @@ export default function HandoffTerm() {
         </section>
 
         <footer className="pt-8 mt-6 border-t border-foreground/20 print-hairline print-footer">
-          <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.3em] text-muted-foreground print-muted">
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-[10px] uppercase tracking-[0.22em] text-muted-foreground print-muted">
             <span>Use Sistemas</span>
             <span>Termo de Passagem</span>
             <span>{format(new Date(), "dd/MM/yyyy")}</span>
@@ -410,11 +457,13 @@ export default function HandoffTerm() {
 }
 
 const DocField = ({ label, value }: { label: string; value: string }) => (
-  <div>
+  <div className="min-w-0">
     <dt className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground print-muted">
       {label}
     </dt>
-    <dd className="doc-serif text-[15px] mt-1">{value}</dd>
+    {/* nome de cliente/modalidade comprido quebra dentro da própria coluna,
+        sem empurrar a linha para fora da margem do papel */}
+    <dd className="doc-serif text-[15px] mt-1 break-words">{value}</dd>
   </div>
 );
 
@@ -423,7 +472,7 @@ const SectionTitle = ({ numeral, title }: { numeral: string; title: string }) =>
     <span className="doc-serif text-sm italic text-muted-foreground print-muted tabular-nums">
       {numeral}.
     </span>
-    <h2 className="doc-serif text-lg font-normal tracking-tight">{title}</h2>
+    <h2 className="doc-serif text-lg font-normal tracking-tight break-words min-w-0">{title}</h2>
   </div>
 );
 
@@ -449,7 +498,7 @@ const SignatureBlock = ({
         </span>
       )}
     </div>
-    <div className="border-t border-foreground/70 print-sig-line pt-2 text-center">
+    <div className="border-t border-foreground/70 print-sig-line pt-2 text-center break-words">
       <p className="doc-serif text-[13px] font-medium">{role}</p>
       {at ? (
         <p className="text-[11px] text-muted-foreground print-muted mt-0.5">
