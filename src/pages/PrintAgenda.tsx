@@ -29,7 +29,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { getVisitType, VISIT_TYPES } from "@/lib/visitType";
 import { trainingResponsibleNames, type TrainingResponsibleAssignment, type TrainingResponsibleOption } from "@/lib/trainingResponsible";
-import { getWeeklyAgendaDays, positionOverlappingEvents } from "@/lib/weeklyAgenda";
+import { getWeeklyAgendaDays } from "@/lib/weeklyAgenda";
 import { createWeeklyAgendaPdf, type WeeklyAgendaPdfStatus } from "@/lib/weeklyAgendaPdf";
 
 type Training = {
@@ -51,10 +51,18 @@ type Training = {
 const BLUE = "#6F7FB8";
 const RED = "#E22B2B";
 const GREEN = "#1F9D55";
-const CALENDAR_HOUR_HEIGHT = 60;
-const CALENDAR_TIME_AXIS_WIDTH = 60;
-const CALENDAR_BASE_DAY_WIDTH = 210;
-const CALENDAR_LANE_WIDTH = 155;
+const CALENDAR_CARD_WIDTH = 205;
+const CALENDAR_CARD_GAP = 10;
+const CALENDAR_DAY_GAP = 12;
+const MAX_CARDS_PER_LANE = 3;
+
+const splitIntoLanes = <T,>(items: T[], maxPerLane: number) => {
+  const lanes: T[][] = [];
+  for (let index = 0; index < items.length; index += maxPerLane) {
+    lanes.push(items.slice(index, index + maxPerLane));
+  }
+  return lanes;
+};
 
 const PrintAgenda = () => {
   const navigate = useNavigate();
@@ -114,38 +122,48 @@ const PrintAgenda = () => {
   const calendarDays = useMemo(
     () => agendaDays.map((agendaDay) => {
       const allDay = agendaDay.events.filter((event) => Number(event.duration_minutes) >= 480);
-      const positioned = positionOverlappingEvents(
-        agendaDay.events.filter((event) => Number(event.duration_minutes) < 480),
-      );
-      const laneCount = Math.max(1, ...positioned.map((event) => event.laneCount));
-      return { ...agendaDay, allDay, positioned, laneCount };
+      const morning = agendaDay.events.filter((event) => {
+        if (Number(event.duration_minutes) >= 480) return false;
+        return new Date(event.scheduled_at).getHours() < 12;
+      });
+      const afternoon = agendaDay.events.filter((event) => {
+        if (Number(event.duration_minutes) >= 480) return false;
+        return new Date(event.scheduled_at).getHours() >= 12;
+      });
+      const visiblePeriods = [allDay, morning, afternoon].filter((period) => period.length).length;
+      const maxPerLane = visiblePeriods >= 3
+        ? 1
+        : visiblePeriods === 2
+          ? 2
+          : MAX_CARDS_PER_LANE;
+      const allDayLanes = splitIntoLanes(allDay, maxPerLane);
+      const morningLanes = splitIntoLanes(morning, maxPerLane);
+      const afternoonLanes = splitIntoLanes(afternoon, maxPerLane);
+      const laneCount = Math.max(1, allDayLanes.length, morningLanes.length, afternoonLanes.length);
+      return {
+        ...agendaDay,
+        allDay,
+        morning,
+        afternoon,
+        allDayLanes,
+        morningLanes,
+        afternoonLanes,
+        laneCount,
+      };
     }),
     [agendaDays],
   );
-  const calendarRange = useMemo(() => {
-    const events = calendarDays.flatMap((day) => day.positioned);
-    const earliest = events.length ? Math.min(...events.map((event) => event.startMinute)) : 8 * 60;
-    const latest = events.length ? Math.max(...events.map((event) => event.endMinute)) : 18 * 60;
-    const startMinute = Math.max(0, Math.min(8 * 60, Math.floor(earliest / 60) * 60));
-    const endMinute = Math.min(24 * 60, Math.max(18 * 60, Math.ceil(latest / 60) * 60));
-    return { startMinute, endMinute, duration: Math.max(60, endMinute - startMinute) };
-  }, [calendarDays]);
   const agendaDayWidths = useMemo(
-    () => calendarDays.map(({ laneCount }) => Math.max(CALENDAR_BASE_DAY_WIDTH, laneCount * CALENDAR_LANE_WIDTH)),
+    () => calendarDays.map(({ laneCount }) =>
+      laneCount * CALENDAR_CARD_WIDTH + Math.max(0, laneCount - 1) * CALENDAR_CARD_GAP + 24),
     [calendarDays],
   );
   const agendaScreenWidth = Math.max(
     1200,
-    agendaDayWidths.reduce((total, width) => total + width, 0) + CALENDAR_TIME_AXIS_WIDTH + 64,
+    agendaDayWidths.reduce((total, width) => total + width, 0)
+      + Math.max(0, agendaDayWidths.length - 1) * CALENDAR_DAY_GAP
+      + 64,
   );
-  const calendarHours = useMemo(
-    () => Array.from(
-      { length: Math.ceil(calendarRange.duration / 60) + 1 },
-      (_, index) => calendarRange.startMinute / 60 + index,
-    ),
-    [calendarRange],
-  );
-  const calendarBodyHeight = (calendarRange.duration / 60) * CALENDAR_HOUR_HEIGHT;
 
   const weekLabel = `${format(weekStart, "d MMM", { locale: ptBR })} – ${format(
     endOfWeek(weekStart, { weekStartsOn: 1 }),
@@ -174,20 +192,22 @@ const PrintAgenda = () => {
                 : training.confirmed_at || confirmedIds.has(training.id)
                   ? "Confirmada"
                   : "Pendente";
+          const description = training.description?.trim();
           const note = training.status === "cancelado" && training.cancellation_reason
             ? `Cancelamento: ${training.cancellation_reason}`
-            : training.status === "reagendado" && training.description
-              ? `Reagendamento: ${training.description}`
-              : null;
+            : training.status === "reagendado" && description
+              ? `Reagendamento: ${description}`
+              : description
+                ? `Observação: ${description}`
+                : null;
 
           return {
             startMinute: scheduledAt.getHours() * 60 + scheduledAt.getMinutes(),
-            durationMinutes: Number(training.duration_minutes) || 0,
             allDay: isAllDay,
             time: isAllDay ? "Dia inteiro" : format(scheduledAt, "HH:mm"),
             client: client || title,
             activity: client && title && client !== title ? title : null,
-            durationLabel: isAllDay ? "08:00 às 18:00" : `${training.duration_minutes} min`,
+            durationLabel: isAllDay ? "Duração integral" : `${training.duration_minutes} min`,
             modality: getVisitType(training.visit_type).label,
             location: training.location?.trim() || null,
             responsibles: trainingResponsibleNames(training, responsibleUsers) || null,
@@ -260,8 +280,7 @@ const PrintAgenda = () => {
         }
         .agenda-sub { font-family: 'Archivo', sans-serif; }
         .agenda-scroll-shell { scrollbar-gutter: stable; }
-        .calendar-time-grid { display: grid; }
-        .calendar-event { isolation: isolate; }
+        .agenda-event-card { isolation: isolate; }
 
         @media screen and (max-width: 767px) {
           .agenda-page { padding: 16px !important; }
@@ -301,22 +320,19 @@ const PrintAgenda = () => {
           .agenda-legend-print { margin-top: 1mm !important; }
           .agenda-legend-items { gap: 1mm !important; font-size: 5.5pt !important; }
           .agenda-layers-print { width: 15mm !important; height: 15mm !important; }
-          .calendar-time-grid {
+          .agenda-board {
             width: 100% !important;
-            grid-template-columns: 12mm repeat(var(--agenda-columns), minmax(0, 1fr)) !important;
-            border-radius: 0 !important;
+            grid-template-columns: repeat(var(--agenda-columns), minmax(0, 1fr)) !important;
+            gap: 1.5mm !important;
           }
-          .calendar-time-axis, .calendar-day-body { height: 155mm !important; }
-          .calendar-day-header { padding: 1.5mm !important; }
-          .calendar-day-header p, .calendar-day-header span:last-child { font-size: 5pt !important; }
-          .calendar-all-day-cell { min-height: 7mm !important; padding: 0.7mm !important; }
-          .calendar-event {
+          .agenda-board-day { min-height: 0 !important; border-radius: 1mm !important; }
+          .agenda-event-card {
             min-height: 0 !important;
+            padding: 1mm !important;
             border-radius: 1mm !important;
             box-shadow: none !important;
             transform: none !important;
           }
-          .calendar-event-secondary { display: none !important; }
           .agenda-tip { display: none !important; }
         }
       `}</style>
@@ -413,87 +429,50 @@ const PrintAgenda = () => {
           </div>
         </header>
 
-        {/* Grade semanal inspirada em Google Calendar, Notion Calendar e Fantastical. */}
+        {/* Quadro semanal compacto: poucos níveis, cartões grandes e leitura rápida. */}
         <div
-          className="calendar-time-grid overflow-hidden rounded-2xl border border-neutral-200 bg-white"
+          className="agenda-board grid items-stretch gap-3"
           style={{
             "--agenda-columns": calendarDays.length,
-            gridTemplateColumns: `${CALENDAR_TIME_AXIS_WIDTH}px ${agendaDayWidths.map((width) => `${width}px`).join(" ")}`,
+            gridTemplateColumns: agendaDayWidths.map((width) => `${width}px`).join(" "),
           } as CSSProperties}
         >
-          <div className="calendar-corner flex items-end justify-center border-b border-r border-neutral-200 bg-neutral-50 px-2 py-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-neutral-400">
-            Horário
-          </div>
-          {calendarDays.map(({ day, label, events }) => {
-            const today = isSameDay(day, new Date());
-            return (
-              <div
-                key={`header-${day.getTime()}`}
-                className="calendar-day-header border-b border-r border-neutral-200 bg-neutral-50 px-4 py-3 last:border-r-0"
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-neutral-500">{label}</span>
-                    <span
-                      className={`text-2xl font-semibold tracking-tight ${today ? "text-orange-600" : "text-neutral-900"}`}
-                    >
-                      {format(day, "dd")}
-                    </span>
-                  </div>
-                  <span className="rounded-full bg-white px-2 py-1 text-[10px] font-medium text-neutral-500 shadow-sm ring-1 ring-neutral-200">
-                    {events.length} {events.length === 1 ? "item" : "itens"}
-                  </span>
-                </div>
-                <p className="mt-1 text-[11px] capitalize text-neutral-500">
-                  {format(day, "EEEE", { locale: ptBR })}
-                </p>
-              </div>
-            );
-          })}
-
-          <div className="calendar-all-day-label flex items-center justify-end border-b border-r border-neutral-200 bg-white px-2 py-2 text-[10px] font-medium text-neutral-400">
-            Dia inteiro
-          </div>
-          {calendarDays.map(({ day, allDay }) => (
-            <div
-              key={`all-day-${day.getTime()}`}
-              className="calendar-all-day-cell min-h-10 space-y-1 border-b border-r border-neutral-200 bg-white p-1.5 last:border-r-0"
-            >
-              {allDay.map((training) => (
-                <AllDayEventChip
-                  key={training.id}
-                  training={training}
-                  confirmed={confirmedIds.has(training.id)}
-                  onOpen={() => navigate(`/treinamento/${training.id}`)}
-                />
-              ))}
-            </div>
-          ))}
-
-          <div className="calendar-time-axis relative border-r border-neutral-200 bg-neutral-50" style={{ height: calendarBodyHeight }}>
-            {calendarHours.map((hour, index) => (
-              <span
-                key={hour}
-                className="absolute right-2 -translate-y-1/2 text-[10px] tabular-nums text-neutral-400"
-                style={{ top: `${(index / Math.max(1, calendarHours.length - 1)) * 100}%` }}
-              >
-                {String(hour).padStart(2, "0")}:00
-              </span>
-            ))}
-          </div>
-
-          {calendarDays.map(({ day, positioned }, dayIndex) => {
+          {calendarDays.map(({
+            day,
+            label,
+            events,
+            allDay,
+            morning,
+            afternoon,
+            allDayLanes,
+            morningLanes,
+            afternoonLanes,
+            laneCount,
+          }) => {
             const dayKey = day.getTime();
+            const today = isSameDay(day, new Date());
             const isOver = dropTarget === dayKey;
-            return (
-              <div
-                key={`body-${dayKey}`}
-                className="calendar-day-body relative border-r border-neutral-200 last:border-r-0"
-                style={{
-                  height: calendarBodyHeight,
-                  backgroundColor: isOver ? "#FFF7ED" : "#FFFFFF",
-                  backgroundImage: `repeating-linear-gradient(to bottom, transparent 0, transparent ${CALENDAR_HOUR_HEIGHT / 2 - 1}px, #F0F1F3 ${CALENDAR_HOUR_HEIGHT / 2 - 1}px, #F0F1F3 ${CALENDAR_HOUR_HEIGHT / 2}px, transparent ${CALENDAR_HOUR_HEIGHT / 2}px, transparent ${CALENDAR_HOUR_HEIGHT - 1}px, #E1E4E8 ${CALENDAR_HOUR_HEIGHT - 1}px, #E1E4E8 ${CALENDAR_HOUR_HEIGHT}px)`,
+            const renderCard = (training: Training) => (
+              <AgendaEventCard
+                key={training.id}
+                training={training}
+                responsibleUsers={responsibleUsers}
+                confirmed={confirmedIds.has(training.id)}
+                onToggleConfirm={() => toggleConfirm(training)}
+                onDragStart={() => setDragId(training.id)}
+                onDragEnd={() => {
+                  setDragId(null);
+                  setDropTarget(null);
                 }}
+                onOpen={() => navigate(`/treinamento/${training.id}`)}
+              />
+            );
+
+            return (
+              <section
+                key={dayKey}
+                className="agenda-board-day flex min-h-[470px] flex-col overflow-hidden rounded-2xl border bg-white transition-colors"
+                style={{ borderColor: isOver ? "#F26B1F" : "#E5E7EB", background: isOver ? "#FFF7ED" : "#FFFFFF" }}
                 onDragOver={(event) => {
                   if (!dragId) return;
                   event.preventDefault();
@@ -508,41 +487,84 @@ const PrintAgenda = () => {
                   handleDropOnDay(day);
                 }}
               >
-                {positioned.map((positionedEvent) => {
-                  const visibleStart = Math.max(calendarRange.startMinute, positionedEvent.startMinute);
-                  const visibleEnd = Math.min(calendarRange.endMinute, positionedEvent.endMinute);
-                  if (visibleEnd <= visibleStart) return null;
-                  const top = ((visibleStart - calendarRange.startMinute) / calendarRange.duration) * 100;
-                  const height = ((visibleEnd - visibleStart) / calendarRange.duration) * 100;
-                  const laneWidth = 100 / positionedEvent.laneCount;
-                  return (
-                    <CalendarEventBlock
-                      key={positionedEvent.event.id}
-                      training={positionedEvent.event}
-                      responsibleUsers={responsibleUsers}
-                      confirmed={confirmedIds.has(positionedEvent.event.id)}
-                      onToggleConfirm={() => toggleConfirm(positionedEvent.event)}
-                      onDragStart={() => setDragId(positionedEvent.event.id)}
-                      onDragEnd={() => {
-                        setDragId(null);
-                        setDropTarget(null);
-                      }}
-                      onOpen={() => navigate(`/treinamento/${positionedEvent.event.id}`)}
-                      style={{
-                        top: `calc(${top}% + 2px)`,
-                        height: `calc(${height}% - 4px)`,
-                        left: `calc(${positionedEvent.lane * laneWidth}% + 3px)`,
-                        width: `calc(${laneWidth}% - 6px)`,
-                      }}
-                    />
-                  );
-                })}
-                {positioned.length === 0 && (
-                  <div className="absolute inset-x-4 top-6 rounded-xl border border-dashed border-neutral-200 px-3 py-4 text-center text-xs text-neutral-400">
-                    Sem compromissos neste dia
+                <header className="border-b border-neutral-200 bg-neutral-50 px-4 py-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-neutral-500">{label}</span>
+                      <span className={`text-2xl font-semibold tracking-tight ${today ? "text-orange-600" : "text-neutral-900"}`}>
+                        {format(day, "dd")}
+                      </span>
+                    </div>
+                    <span className="rounded-full bg-white px-2 py-1 text-[10px] font-medium text-neutral-500 shadow-sm ring-1 ring-neutral-200">
+                      {events.length} {events.length === 1 ? "item" : "itens"}
+                    </span>
                   </div>
-                )}
-              </div>
+                  <p className="mt-1 text-[11px] capitalize text-neutral-500">{format(day, "EEEE", { locale: ptBR })}</p>
+                </header>
+
+                <div className="flex-1 space-y-5 p-3">
+                  {allDay.length > 0 && (
+                    <section>
+                      <PeriodTitle label="Dia inteiro" count={allDay.length} />
+                      <div
+                        className="mt-2 grid gap-2.5"
+                        style={{ gridTemplateColumns: `repeat(${laneCount}, minmax(0, 1fr))` }}
+                      >
+                        {allDayLanes.map((lane, laneIndex) => (
+                          <div key={`all-day-lane-${laneIndex}`} className="space-y-2.5">
+                            {lane.map((training) => (
+                              <AllDayEventChip
+                                key={training.id}
+                                training={training}
+                                confirmed={confirmedIds.has(training.id)}
+                                onOpen={() => navigate(`/treinamento/${training.id}`)}
+                              />
+                            ))}
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                  )}
+
+                  {morning.length > 0 && (
+                    <section>
+                      <PeriodTitle label="Manhã" count={morning.length} />
+                      <div
+                        className="mt-2 grid gap-2.5"
+                        style={{ gridTemplateColumns: `repeat(${laneCount}, minmax(0, 1fr))` }}
+                      >
+                        {morningLanes.map((lane, laneIndex) => (
+                          <div key={`morning-lane-${laneIndex}`} className="space-y-2.5">
+                            {lane.map(renderCard)}
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                  )}
+
+                  {afternoon.length > 0 && (
+                    <section>
+                      <PeriodTitle label="Tarde" count={afternoon.length} />
+                      <div
+                        className="mt-2 grid gap-2.5"
+                        style={{ gridTemplateColumns: `repeat(${laneCount}, minmax(0, 1fr))` }}
+                      >
+                        {afternoonLanes.map((lane, laneIndex) => (
+                          <div key={`afternoon-lane-${laneIndex}`} className="space-y-2.5">
+                            {lane.map(renderCard)}
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                  )}
+
+                  {events.length === 0 && (
+                    <div className="rounded-xl border border-dashed border-neutral-200 px-4 py-8 text-center text-xs text-neutral-400">
+                      Sem compromissos neste dia
+                    </div>
+                  )}
+                </div>
+              </section>
             );
           })}
         </div>
@@ -618,7 +640,7 @@ const trainingVisual = (training: Training, confirmed: boolean) => {
   return { label: "Pendente", accent: "#D4A72C", border: "#E9D28B", background: "#FFFBEC", text: "#8B6500" };
 };
 
-const CalendarEventBlock = ({
+const AgendaEventCard = ({
   training,
   responsibleUsers,
   confirmed,
@@ -626,7 +648,6 @@ const CalendarEventBlock = ({
   onDragStart,
   onDragEnd,
   onOpen,
-  style,
 }: {
   training: Training;
   responsibleUsers: TrainingResponsibleOption[];
@@ -635,7 +656,6 @@ const CalendarEventBlock = ({
   onDragStart: () => void;
   onDragEnd: () => void;
   onOpen: () => void;
-  style: CSSProperties;
 }) => {
   const scheduledAt = new Date(training.scheduled_at);
   const hour = format(scheduledAt, "HH:mm");
@@ -645,23 +665,22 @@ const CalendarEventBlock = ({
   const visual = trainingVisual(training, confirmed);
   const visitType = getVisitType(training.visit_type);
   const VisitIcon = visitType.icon;
-  const compact = Number(training.duration_minutes) < 45;
-  const showResponsible = Number(training.duration_minutes) >= 90;
+  const cardNote = training.status === "cancelado" && training.cancellation_reason
+    ? training.cancellation_reason
+    : training.description?.trim() || null;
   const details = [
     `${hour} — ${client}`,
     activity,
     `${training.duration_minutes} min · ${visitType.label}`,
     training.location,
     responsibleNames ? `Responsáveis: ${responsibleNames}` : null,
-    training.cancellation_reason ? `Cancelamento: ${training.cancellation_reason}` : null,
+    cardNote ? `${training.status === "cancelado" ? "Cancelamento" : "Observação"}: ${cardNote}` : null,
   ].filter(Boolean).join("\n");
 
   return (
     <div
-      className="calendar-event group absolute z-10 cursor-grab overflow-hidden rounded-xl border shadow-sm transition hover:z-20 hover:-translate-y-px hover:shadow-md active:cursor-grabbing"
+      className="agenda-event-card group relative min-h-[112px] cursor-grab rounded-xl border p-3 shadow-sm transition hover:-translate-y-px hover:shadow-md active:cursor-grabbing"
       style={{
-        ...style,
-        minHeight: 28,
         borderColor: visual.border,
         borderLeftColor: visual.accent,
         borderLeftWidth: 4,
@@ -687,43 +706,47 @@ const CalendarEventBlock = ({
       role="button"
       tabIndex={0}
     >
-      <div className="flex h-full min-h-0 flex-col px-2 py-1.5">
-        <div className="flex min-w-0 items-start gap-1.5 pr-5">
-          <span className="shrink-0 text-[11px] font-bold tabular-nums text-neutral-800">{hour}</span>
-          <span
-            className="min-w-0 truncate text-[11px] font-semibold"
-            style={{ color: visual.text, textDecoration: training.status === "cancelado" ? "line-through" : "none" }}
-          >
-            {client}
-          </span>
-        </div>
+      <div className="flex items-start gap-2 pr-6">
+        <span className="shrink-0 text-xs font-bold tabular-nums text-neutral-800">{hour}</span>
         <span
-          className="absolute right-1.5 top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-white/80"
-          style={{ color: visitType.color }}
-          title={visitType.label}
+          className="line-clamp-2 min-w-0 break-words text-xs font-semibold leading-snug"
+          style={{ color: visual.text, textDecoration: training.status === "cancelado" ? "line-through" : "none" }}
         >
-          <VisitIcon className="h-2.5 w-2.5" strokeWidth={2.4} />
+          {client}
         </span>
+      </div>
+      <span
+        className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-white/80"
+        style={{ color: visitType.color }}
+        title={visitType.label}
+      >
+        <VisitIcon className="h-3 w-3" strokeWidth={2.4} />
+      </span>
 
-        {!compact && activity && (
-          <p className="calendar-event-secondary mt-0.5 truncate text-[10px] text-neutral-600">{activity}</p>
-        )}
-        {showResponsible && responsibleNames && (
-          <p className="calendar-event-secondary mt-0.5 truncate text-[9px] text-neutral-500">{responsibleNames}</p>
-        )}
+      {activity && <p className="mt-1 line-clamp-2 break-words text-[10px] leading-snug text-neutral-600">{activity}</p>}
+      <p className="mt-1 line-clamp-2 text-[9px] text-neutral-500">
+        {training.duration_minutes} min · {visitType.label}{training.location ? ` · ${training.location}` : ""}
+      </p>
+      {responsibleNames && (
+        <p className="mt-1 line-clamp-2 break-words text-[9px] leading-snug text-neutral-500">{responsibleNames}</p>
+      )}
+      {cardNote && (
+        <p
+          className="mt-1 line-clamp-2 break-words text-[9px] italic leading-snug"
+          style={{ color: training.status === "cancelado" ? visual.text : "#6B7280" }}
+        >
+          {cardNote}
+        </p>
+      )}
 
-        {!compact && (
-          <div className="mt-auto flex min-w-0 items-center gap-1.5 pt-1">
-            <span
-              className="inline-flex min-w-0 items-center gap-1 truncate rounded-full px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wide"
-              style={{ color: visual.text, background: `${visual.accent}18` }}
-            >
-              <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: visual.accent }} />
-              {visual.label}
-            </span>
-            <span className="truncate text-[8px] text-neutral-500">{training.duration_minutes} min</span>
-          </div>
-        )}
+      <div className="mt-2 flex items-center gap-1.5 pr-7">
+        <span
+          className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[8px] font-semibold uppercase tracking-wide"
+          style={{ color: visual.text, background: `${visual.accent}18` }}
+        >
+          <span className="h-1.5 w-1.5 rounded-full" style={{ background: visual.accent }} />
+          {visual.label}
+        </span>
       </div>
 
       {training.status !== "cancelado" && training.status !== "realizado" && training.status !== "concluido" && (
@@ -732,7 +755,7 @@ const CalendarEventBlock = ({
           data-pdf-hidden="true"
           aria-label={training.confirmed_at ? "Remover confirmação" : "Confirmar visita"}
           title={training.confirmed_at ? "Remover confirmação interna" : "Confirmar visita"}
-          className="no-print absolute bottom-1.5 right-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-white text-neutral-500 opacity-0 shadow-sm ring-1 ring-neutral-200 transition hover:text-emerald-600 group-hover:opacity-100 focus:opacity-100"
+          className="no-print absolute bottom-2 right-2 flex h-7 w-7 items-center justify-center rounded-full bg-white text-neutral-500 opacity-0 shadow-sm ring-1 ring-neutral-200 transition hover:text-emerald-600 group-hover:opacity-100 focus:opacity-100"
           onClick={(event) => {
             event.stopPropagation();
             onToggleConfirm();
@@ -740,12 +763,20 @@ const CalendarEventBlock = ({
           onMouseDown={(event) => event.stopPropagation()}
           draggable={false}
         >
-          <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
+          <Check className="h-4 w-4" strokeWidth={2.5} />
         </button>
       )}
     </div>
   );
 };
+
+const PeriodTitle = ({ label, count }: { label: string; count: number }) => (
+  <div className="flex items-center gap-2">
+    <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-orange-600">{label}</span>
+    <span className="h-px flex-1 bg-orange-100" />
+    <span className="text-[9px] tabular-nums text-neutral-400">{count}</span>
+  </div>
+);
 
 const AllDayEventChip = ({
   training,
@@ -757,6 +788,10 @@ const AllDayEventChip = ({
   onOpen: () => void;
 }) => {
   const visual = trainingVisual(training, confirmed);
+  const client = training.client?.trim() || training.title;
+  const activity = training.client?.trim() && training.title !== training.client.trim() ? training.title : null;
+  const visitType = getVisitType(training.visit_type);
+  const VisitIcon = visitType.icon;
   return (
     <div
       onClick={onOpen}
@@ -765,13 +800,32 @@ const AllDayEventChip = ({
       }}
       role="button"
       tabIndex={0}
-      className="flex w-full cursor-pointer items-center gap-2 rounded-lg border px-2 py-1 text-left text-[10px] font-medium transition hover:brightness-[0.98]"
-      style={{ borderColor: visual.border, background: visual.background, color: visual.text }}
-      title={`${training.client?.trim() || training.title} · ${visual.label}`}
+      className="relative min-h-[68px] w-full cursor-pointer rounded-xl border p-2.5 text-left transition hover:-translate-y-px hover:shadow-sm"
+      style={{
+        borderColor: visual.border,
+        borderLeftColor: visual.accent,
+        borderLeftWidth: 4,
+        background: visual.background,
+        color: visual.text,
+      }}
+      title={`${client} · Dia inteiro · ${visual.label}`}
     >
-      <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: visual.accent }} />
-      <span className="truncate">{training.client?.trim() || training.title}</span>
-      <span className="ml-auto shrink-0 text-[8px] uppercase">{visual.label}</span>
+      <div className="flex items-start gap-2 pr-5">
+        <span className="line-clamp-2 min-w-0 break-words text-[11px] font-semibold leading-snug">{client}</span>
+      </div>
+      <span
+        className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-white/80"
+        style={{ color: visitType.color }}
+        title={visitType.label}
+      >
+        <VisitIcon className="h-3 w-3" strokeWidth={2.4} />
+      </span>
+      {activity && <p className="mt-1 truncate text-[9px] text-neutral-600">{activity}</p>}
+      <div className="mt-2 flex items-center gap-1.5 text-[8px] font-semibold uppercase tracking-wide">
+        <span>Dia inteiro</span>
+        <span className="text-neutral-300">•</span>
+        <span>{visual.label}</span>
+      </div>
     </div>
   );
 };
