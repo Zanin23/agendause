@@ -51,18 +51,8 @@ type Training = {
 const BLUE = "#6F7FB8";
 const RED = "#E22B2B";
 const GREEN = "#1F9D55";
-const CALENDAR_CARD_WIDTH = 205;
-const CALENDAR_CARD_GAP = 10;
+const CALENDAR_DAY_WIDTH = 320;
 const CALENDAR_DAY_GAP = 12;
-const MAX_CARDS_PER_LANE = 3;
-
-const splitIntoLanes = <T,>(items: T[], maxPerLane: number) => {
-  const lanes: T[][] = [];
-  for (let index = 0; index < items.length; index += maxPerLane) {
-    lanes.push(items.slice(index, index + maxPerLane));
-  }
-  return lanes;
-};
 
 const PrintAgenda = () => {
   const navigate = useNavigate();
@@ -130,32 +120,12 @@ const PrintAgenda = () => {
         if (Number(event.duration_minutes) >= 480) return false;
         return new Date(event.scheduled_at).getHours() >= 12;
       });
-      const visiblePeriods = [allDay, morning, afternoon].filter((period) => period.length).length;
-      const maxPerLane = visiblePeriods >= 3
-        ? 1
-        : visiblePeriods === 2
-          ? 2
-          : MAX_CARDS_PER_LANE;
-      const allDayLanes = splitIntoLanes(allDay, maxPerLane);
-      const morningLanes = splitIntoLanes(morning, maxPerLane);
-      const afternoonLanes = splitIntoLanes(afternoon, maxPerLane);
-      const laneCount = Math.max(1, allDayLanes.length, morningLanes.length, afternoonLanes.length);
-      return {
-        ...agendaDay,
-        allDay,
-        morning,
-        afternoon,
-        allDayLanes,
-        morningLanes,
-        afternoonLanes,
-        laneCount,
-      };
+      return { ...agendaDay, allDay, morning, afternoon };
     }),
     [agendaDays],
   );
   const agendaDayWidths = useMemo(
-    () => calendarDays.map(({ laneCount }) =>
-      laneCount * CALENDAR_CARD_WIDTH + Math.max(0, laneCount - 1) * CALENDAR_CARD_GAP + 24),
+    () => calendarDays.map(() => CALENDAR_DAY_WIDTH),
     [calendarDays],
   );
   const agendaScreenWidth = Math.max(
@@ -219,7 +189,7 @@ const PrintAgenda = () => {
 
       const pdf = createWeeklyAgendaPdf({ weekLabel, days });
       pdf.save(`agenda-${format(weekStart, "yyyy-MM-dd")}.pdf`);
-      toast({ title: "PDF gerado", description: "Agenda exportada em formato leve, horizontal e sem cortes." });
+      toast({ title: "PDF gerado", description: "Agenda exportada em formato leve, vetorial e sem cortes." });
     } catch (e) {
       toast({ title: "Erro ao gerar PDF", description: String(e), variant: "destructive" });
     } finally {
@@ -437,18 +407,7 @@ const PrintAgenda = () => {
             gridTemplateColumns: agendaDayWidths.map((width) => `${width}px`).join(" "),
           } as CSSProperties}
         >
-          {calendarDays.map(({
-            day,
-            label,
-            events,
-            allDay,
-            morning,
-            afternoon,
-            allDayLanes,
-            morningLanes,
-            afternoonLanes,
-            laneCount,
-          }) => {
+          {calendarDays.map(({ day, label, events, allDay, morning, afternoon }) => {
             const dayKey = day.getTime();
             const today = isSameDay(day, new Date());
             const isOver = dropTarget === dayKey;
@@ -506,21 +465,14 @@ const PrintAgenda = () => {
                   {allDay.length > 0 && (
                     <section>
                       <PeriodTitle label="Dia inteiro" count={allDay.length} />
-                      <div
-                        className="mt-2 grid gap-2.5"
-                        style={{ gridTemplateColumns: `repeat(${laneCount}, minmax(0, 1fr))` }}
-                      >
-                        {allDayLanes.map((lane, laneIndex) => (
-                          <div key={`all-day-lane-${laneIndex}`} className="space-y-2.5">
-                            {lane.map((training) => (
-                              <AllDayEventChip
-                                key={training.id}
-                                training={training}
-                                confirmed={confirmedIds.has(training.id)}
-                                onOpen={() => navigate(`/treinamento/${training.id}`)}
-                              />
-                            ))}
-                          </div>
+                      <div className="mt-2 space-y-2.5">
+                        {allDay.map((training) => (
+                          <AllDayEventChip
+                            key={training.id}
+                            training={training}
+                            confirmed={confirmedIds.has(training.id)}
+                            onOpen={() => navigate(`/treinamento/${training.id}`)}
+                          />
                         ))}
                       </div>
                     </section>
@@ -529,15 +481,8 @@ const PrintAgenda = () => {
                   {morning.length > 0 && (
                     <section>
                       <PeriodTitle label="Manhã" count={morning.length} />
-                      <div
-                        className="mt-2 grid gap-2.5"
-                        style={{ gridTemplateColumns: `repeat(${laneCount}, minmax(0, 1fr))` }}
-                      >
-                        {morningLanes.map((lane, laneIndex) => (
-                          <div key={`morning-lane-${laneIndex}`} className="space-y-2.5">
-                            {lane.map(renderCard)}
-                          </div>
-                        ))}
+                      <div className="mt-2 space-y-2.5">
+                        {morning.map(renderCard)}
                       </div>
                     </section>
                   )}
@@ -545,15 +490,8 @@ const PrintAgenda = () => {
                   {afternoon.length > 0 && (
                     <section>
                       <PeriodTitle label="Tarde" count={afternoon.length} />
-                      <div
-                        className="mt-2 grid gap-2.5"
-                        style={{ gridTemplateColumns: `repeat(${laneCount}, minmax(0, 1fr))` }}
-                      >
-                        {afternoonLanes.map((lane, laneIndex) => (
-                          <div key={`afternoon-lane-${laneIndex}`} className="space-y-2.5">
-                            {lane.map(renderCard)}
-                          </div>
-                        ))}
+                      <div className="mt-2 space-y-2.5">
+                        {afternoon.map(renderCard)}
                       </div>
                     </section>
                   )}

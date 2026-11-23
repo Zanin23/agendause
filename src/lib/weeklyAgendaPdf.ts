@@ -45,7 +45,7 @@ type CardLayout = {
 };
 
 type PeriodLayout = {
-  lanes: CardLayout[][];
+  cards: CardLayout[];
   height: number;
 };
 
@@ -54,18 +54,18 @@ type DayLayout = {
   allDay: PeriodLayout;
   morning: PeriodLayout;
   afternoon: PeriodLayout;
+  contentHeight: number;
   width: number;
 };
 
-const PAGE_HEIGHT = 230;
+const MIN_PAGE_HEIGHT = 230;
 const PAGE_MARGIN = 8;
 const DAY_TOP = 32;
 const DAY_HEADER_HEIGHT = 12;
-const DAY_BOTTOM = PAGE_HEIGHT - PAGE_MARGIN;
 const DAY_PADDING = 2;
 const DAY_GAP = 2.5;
-const LANE_WIDTH = 50;
-const LANE_GAP = 2;
+const DAY_WIDTH = 78;
+const CARD_WIDTH = DAY_WIDTH - DAY_PADDING * 2;
 const CARD_GAP = 2;
 const CARD_PADDING = 2.4;
 const STATUS_HEIGHT = 4.5;
@@ -109,7 +109,7 @@ function statusColors(status: WeeklyAgendaPdfStatus) {
 
 function buildCardLayout(pdf: jsPDF, event: WeeklyAgendaPdfEvent): CardLayout {
   const blocks: TextBlock[] = [];
-  const contentWidth = LANE_WIDTH - CARD_PADDING * 2;
+  const contentWidth = CARD_WIDTH - CARD_PADDING * 2;
   const colors = statusColors(event.status);
 
   const addBlock = (
@@ -164,17 +164,14 @@ function buildCardLayout(pdf: jsPDF, event: WeeklyAgendaPdfEvent): CardLayout {
   };
 }
 
-function packPeriod(cards: CardLayout[], maxPerLane: number): PeriodLayout {
-  if (!cards.length) return { lanes: [], height: 0 };
-  const lanes: CardLayout[][] = [];
-  for (let index = 0; index < cards.length; index += maxPerLane) {
-    lanes.push(cards.slice(index, index + maxPerLane));
-  }
-  const height = Math.max(...lanes.map((lane) => lane.reduce(
-    (total, card, index) => total + card.height + (index ? CARD_GAP : 0),
-    0,
-  )));
-  return { lanes, height };
+function stackPeriod(cards: CardLayout[]): PeriodLayout {
+  return {
+    cards,
+    height: cards.reduce(
+      (total, card, index) => total + card.height + (index ? CARD_GAP : 0),
+      0,
+    ),
+  };
 }
 
 function buildDayLayout(pdf: jsPDF, day: WeeklyAgendaPdfDay): DayLayout {
@@ -190,36 +187,22 @@ function buildDayLayout(pdf: jsPDF, day: WeeklyAgendaPdfDay): DayLayout {
     .filter((event) => !event.allDay && event.startMinute >= 12 * 60)
     .sort((a, b) => a.startMinute - b.startMinute)
     .map((event) => buildCardLayout(pdf, event));
-  const availableHeight = DAY_BOTTOM - DAY_TOP - DAY_HEADER_HEIGHT - DAY_PADDING * 2;
+  const allDay = stackPeriod(allDayCards);
+  const morning = stackPeriod(morningCards);
+  const afternoon = stackPeriod(afternoonCards);
+  const visiblePeriods = [allDay, morning, afternoon].filter((period) => period.cards.length);
+  const contentHeight = visiblePeriods.reduce(
+    (total, period) => total + PERIOD_LABEL_HEIGHT + period.height,
+    Math.max(0, visiblePeriods.length - 1) * 3,
+  );
 
-  let maxPerLane = 3;
-  let allDay = packPeriod(allDayCards, maxPerLane);
-  let morning = packPeriod(morningCards, maxPerLane);
-  let afternoon = packPeriod(afternoonCards, maxPerLane);
-  const requiredHeight = () => {
-    const visiblePeriods = [allDay, morning, afternoon].filter((period) => period.lanes.length);
-    return visiblePeriods.reduce(
-      (total, period) => total + PERIOD_LABEL_HEIGHT + period.height,
-      Math.max(0, visiblePeriods.length - 1) * 3,
-    );
-  };
-
-  // Mantém no máximo três cartões na vertical. Se os textos exigirem mais
-  // altura, abre novas faixas laterais em vez de reduzir a tipografia.
-  while (maxPerLane > 1 && requiredHeight() > availableHeight) {
-    maxPerLane -= 1;
-    allDay = packPeriod(allDayCards, maxPerLane);
-    morning = packPeriod(morningCards, maxPerLane);
-    afternoon = packPeriod(afternoonCards, maxPerLane);
-  }
-
-  const laneCount = Math.max(1, allDay.lanes.length, morning.lanes.length, afternoon.lanes.length);
   return {
     day,
     allDay,
     morning,
     afternoon,
-    width: DAY_PADDING * 2 + laneCount * LANE_WIDTH + Math.max(0, laneCount - 1) * LANE_GAP,
+    contentHeight,
+    width: DAY_WIDTH,
   };
 }
 
@@ -228,7 +211,7 @@ function drawCard(pdf: jsPDF, card: CardLayout, x: number, y: number) {
   pdf.setFillColor(...colors.fill);
   pdf.setDrawColor(...LIGHT_BORDER);
   pdf.setLineWidth(0.25);
-  pdf.roundedRect(x, y, LANE_WIDTH, card.height, 1.8, 1.8, "FD");
+  pdf.roundedRect(x, y, CARD_WIDTH, card.height, 1.8, 1.8, "FD");
   pdf.setFillColor(...colors.accent);
   pdf.roundedRect(x, y, 1.3, card.height, 0.65, 0.65, "F");
 
@@ -247,7 +230,7 @@ function drawCard(pdf: jsPDF, card: CardLayout, x: number, y: number) {
 
   pdf.setFont("helvetica", "bold");
   pdf.setFontSize(5.8);
-  const statusWidth = Math.min(LANE_WIDTH - CARD_PADDING * 2, pdf.getTextWidth(card.event.status.toUpperCase()) + 4.5);
+  const statusWidth = Math.min(CARD_WIDTH - CARD_PADDING * 2, pdf.getTextWidth(card.event.status.toUpperCase()) + 4.5);
   const statusY = y + card.height - CARD_PADDING - STATUS_HEIGHT;
   pdf.setFillColor(...colors.fill);
   pdf.setDrawColor(...colors.accent);
@@ -265,7 +248,7 @@ function drawPeriod(
   dayWidth: number,
   startY: number,
 ) {
-  if (!period.lanes.length) return startY;
+  if (!period.cards.length) return startY;
   pdf.setFont("helvetica", "bold");
   pdf.setFontSize(5.8);
   pdf.setTextColor(...ORANGE);
@@ -276,13 +259,10 @@ function drawPeriod(
   const lineStart = dayX + DAY_PADDING + pdf.getTextWidth(heading) + 2;
   pdf.line(lineStart, startY + 2.8, dayX + dayWidth - DAY_PADDING, startY + 2.8);
 
-  period.lanes.forEach((lane, laneIndex) => {
-    const laneX = dayX + DAY_PADDING + laneIndex * (LANE_WIDTH + LANE_GAP);
-    let cardY = startY + PERIOD_LABEL_HEIGHT;
-    lane.forEach((card) => {
-      drawCard(pdf, card, laneX, cardY);
-      cardY += card.height + CARD_GAP;
-    });
+  let cardY = startY + PERIOD_LABEL_HEIGHT;
+  period.cards.forEach((card) => {
+    drawCard(pdf, card, dayX + DAY_PADDING, cardY);
+    cardY += card.height + CARD_GAP;
   });
   return startY + PERIOD_LABEL_HEIGHT + period.height;
 }
@@ -299,10 +279,16 @@ export function createWeeklyAgendaPdf({
   const boardWidth = dayLayouts.reduce((total, day) => total + day.width, 0)
     + Math.max(0, dayLayouts.length - 1) * DAY_GAP;
   const requestedWidth = Math.max(297, boardWidth + PAGE_MARGIN * 2);
+  const minimumDayHeight = MIN_PAGE_HEIGHT - DAY_TOP - PAGE_MARGIN;
+  const requiredDayHeight = Math.max(
+    minimumDayHeight,
+    ...dayLayouts.map(({ contentHeight }) => DAY_HEADER_HEIGHT + DAY_PADDING * 2 + contentHeight),
+  );
+  const requestedHeight = DAY_TOP + requiredDayHeight + PAGE_MARGIN;
   const pdf = new jsPDF({
-    orientation: "landscape",
+    orientation: requestedWidth >= requestedHeight ? "landscape" : "portrait",
     unit: "mm",
-    format: [requestedWidth, PAGE_HEIGHT],
+    format: [requestedWidth, requestedHeight],
     compress: true,
     putOnlyUsedFonts: true,
   });
@@ -340,7 +326,7 @@ export function createWeeklyAgendaPdf({
 
   let dayX = boardStartX;
   dayLayouts.forEach(({ day, allDay, morning, afternoon, width }) => {
-    const dayHeight = DAY_BOTTOM - DAY_TOP;
+    const dayHeight = requiredDayHeight;
     pdf.setFillColor(255, 255, 255);
     pdf.roundedRect(dayX, DAY_TOP, width, dayHeight, 2.2, 2.2, "F");
     pdf.setFillColor(248, 249, 250);
@@ -372,7 +358,7 @@ export function createWeeklyAgendaPdf({
         { title: "Dia inteiro", layout: allDay },
         { title: "Manhã", layout: morning },
         { title: "Tarde", layout: afternoon },
-      ].filter(({ layout }) => layout.lanes.length);
+      ].filter(({ layout }) => layout.cards.length);
 
       periods.forEach(({ title, layout }, index) => {
         if (index > 0) cursorY += 3;
