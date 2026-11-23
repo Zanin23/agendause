@@ -83,10 +83,19 @@ const PrintAgenda = () => {
         scale: 2,
         backgroundColor: "#ffffff",
         useCORS: true,
-        windowWidth: 1200, // Keep all days in one row, even when exporting from mobile.
+        logging: false,
+        windowWidth: 1200, // Mantém todos os dias na mesma linha, inclusive ao exportar pelo celular.
+        ignoreElements: (element) =>
+          element.classList.contains("no-print") ||
+          element.tagName === "BUTTON" ||
+          element.getAttribute("data-pdf-hidden") === "true",
         onclone: (clonedDocument) => {
-          // html2canvas also reads the body background, whose theme color is OKLCH.
+          // A exportação recebe um layout próprio: compacto, sem ações e sem depender
+          // das regras de @media print, que o html2canvas não aplica.
           clonedDocument.body.style.backgroundColor = "#ffffff";
+          clonedDocument.body.style.margin = "0";
+          const exportPage = clonedDocument.querySelector<HTMLElement>(".agenda-page");
+          exportPage?.classList.add("agenda-export");
         },
       });
       const imgData = canvas.toDataURL("image/png");
@@ -99,7 +108,7 @@ const PrintAgenda = () => {
       const ratio = Math.min(maxW / canvas.width, maxH / canvas.height);
       const w = canvas.width * ratio;
       const h = canvas.height * ratio;
-      pdf.addImage(imgData, "PNG", (pageW - w) / 2, (pageH - h) / 2, w, h);
+      pdf.addImage(imgData, "PNG", (pageW - w) / 2, margin, w, h);
       pdf.save(`agenda-${format(weekStart, "yyyy-MM-dd")}.pdf`);
     } catch (e) {
       toast({ title: "Erro ao gerar PDF", description: String(e), variant: "destructive" });
@@ -201,6 +210,148 @@ const PrintAgenda = () => {
         .agenda-sub { font-family: 'Clash Display', 'Archivo', sans-serif; font-weight: 600; font-style: italic; }
         .day-head { font-family: 'Clash Display', 'Archivo', sans-serif; font-weight: 700; letter-spacing: 0.01em; }
         .agenda-grid { grid-template-columns: repeat(var(--agenda-columns), minmax(0, 1fr)); }
+        .agenda-export-only { display: none; }
+        /* O html2canvas não usa @media print. Esta classe é adicionada apenas
+           ao clone usado na exportação e mantém o PDF compacto e sem ações. */
+        .agenda-page.agenda-export {
+          width: 1120px !important;
+          max-width: none !important;
+          min-height: 0 !important;
+          margin: 0 !important;
+          padding: 22px !important;
+          border-radius: 0 !important;
+          box-shadow: none !important;
+          overflow: visible !important;
+        }
+        .agenda-export .no-print,
+        .agenda-export [data-pdf-hidden="true"],
+        .agenda-export button {
+          display: none !important;
+        }
+        .agenda-export .agenda-export-only { display: inline-flex !important; }
+        .agenda-export .agenda-header {
+          display: flex !important;
+          flex-direction: row !important;
+          align-items: flex-start !important;
+          justify-content: space-between !important;
+          gap: 20px !important;
+          margin-bottom: 12px !important;
+        }
+        .agenda-export .agenda-title {
+          font-size: 42px !important;
+          line-height: 0.9 !important;
+        }
+        .agenda-export .agenda-sub {
+          margin-top: 2px !important;
+          font-size: 15px !important;
+          line-height: 1.1 !important;
+        }
+        .agenda-export .agenda-week-label {
+          margin-top: 6px !important;
+          font-size: 12px !important;
+          line-height: 1.2 !important;
+        }
+        .agenda-export .agenda-note-print {
+          margin-top: 2px !important;
+          font-size: 9px !important;
+          line-height: 1.2 !important;
+        }
+        .agenda-export .agenda-legend-print {
+          margin-top: 6px !important;
+          padding-top: 0 !important;
+          font-size: 9px !important;
+        }
+        .agenda-export .agenda-legend-items {
+          column-gap: 10px !important;
+          row-gap: 3px !important;
+          font-size: 9px !important;
+        }
+        .agenda-export .agenda-legend-items > div { gap: 4px !important; }
+        .agenda-export .agenda-layers-print {
+          width: 72px !important;
+          height: 72px !important;
+          min-width: 72px !important;
+          min-height: 72px !important;
+        }
+        .agenda-export .agenda-grid {
+          gap: 8px !important;
+          align-items: stretch !important;
+          width: 100% !important;
+        }
+        .agenda-export .agenda-day {
+          min-height: 0 !important;
+          height: auto !important;
+          overflow: visible !important;
+          border-width: 2px !important;
+        }
+        .agenda-export .day-head {
+          padding: 5px 7px !important;
+          border-bottom-width: 2px !important;
+          font-size: 18px !important;
+          line-height: 1 !important;
+        }
+        .agenda-export .agenda-day-body {
+          padding: 6px !important;
+        }
+        .agenda-export .agenda-day-body > * + * { margin-top: 5px !important; }
+        .agenda-export .agenda-period--empty,
+        .agenda-export .agenda-period-divider--export-hidden {
+          display: none !important;
+        }
+        .agenda-export .agenda-period-label {
+          padding: 0 2px 3px !important;
+          font-size: 8px !important;
+          line-height: 1 !important;
+        }
+        .agenda-export .agenda-period-events > * + * { margin-top: 5px !important; }
+        .agenda-export .agenda-period-divider {
+          margin-top: 5px !important;
+          padding-top: 2px !important;
+        }
+        .agenda-export .agenda-event {
+          padding: 6px !important;
+          border-width: 1px !important;
+          font-size: 10px !important;
+          line-height: 1.2 !important;
+        }
+        .agenda-export .agenda-event * { line-height: 1.2 !important; }
+        .agenda-export .agenda-event-title {
+          font-size: 10px !important;
+          line-height: 1.2 !important;
+        }
+        .agenda-export .agenda-event-allday {
+          margin: -6px -6px 4px !important;
+          padding: 2px 20px 2px 6px !important;
+          font-size: 8px !important;
+        }
+        .agenda-export .agenda-event-type {
+          top: 4px !important;
+          right: 4px !important;
+          width: 16px !important;
+          height: 16px !important;
+        }
+        .agenda-export .agenda-event-type svg {
+          width: 9px !important;
+          height: 9px !important;
+        }
+        .agenda-export .agenda-event-extra,
+        .agenda-export .agenda-event-meta,
+        .agenda-export .agenda-event-responsible {
+          margin-top: 3px !important;
+          font-size: 8.5px !important;
+          white-space: normal !important;
+          overflow: visible !important;
+          text-overflow: clip !important;
+        }
+        .agenda-export .agenda-event-confirmation {
+          margin-top: 4px !important;
+          gap: 4px !important;
+        }
+        .agenda-export .agenda-event-confirmation > span {
+          height: 15px !important;
+          padding-inline: 5px !important;
+          font-size: 7.5px !important;
+        }
         /* Wrap the extended grid on narrower screens so cards stay readable. */
         @media screen and (min-width: 768px) {
           .agenda-grid--weekend { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
@@ -224,7 +375,9 @@ const PrintAgenda = () => {
            that the browser's PDF preview viewport might trigger. */
         @media print {
           @page { size: A4 landscape; margin: 5mm; }
-          .no-print { display: none !important; }
+          .no-print, [data-pdf-hidden="true"], button { display: none !important; }
+          .agenda-export-only { display: inline-flex !important; }
+          .agenda-period--empty, .agenda-period-divider--export-hidden { display: none !important; }
           html, body {
             background: white !important;
             width: auto !important;
@@ -239,55 +392,108 @@ const PrintAgenda = () => {
             margin: 0 !important;
             max-width: 100% !important;
             width: 100% !important;
-            height: 200mm !important;
-            overflow: hidden !important;
-            display: flex !important;
-            flex-direction: column !important;
-            page-break-inside: avoid !important;
-            break-inside: avoid !important;
+            height: auto !important;
+            min-height: 0 !important;
+            overflow: visible !important;
+            display: block !important;
+            page-break-inside: auto !important;
+            break-inside: auto !important;
           }
           .agenda-header {
             display: flex !important;
             flex-direction: row !important;
             align-items: flex-start !important;
             justify-content: space-between !important;
-            gap: 12px !important;
-            margin-bottom: 4mm !important;
-            flex: 0 0 auto !important;
+            gap: 8px !important;
+            margin-bottom: 2.5mm !important;
           }
-          .agenda-title { font-size: 22pt !important; line-height: 0.95 !important; }
-          .agenda-sub { font-size: 10pt !important; margin-top: 1mm !important; }
-          .agenda-note-print { font-size: 7pt !important; margin-top: 1mm !important; }
-          .agenda-legend-print { font-size: 7pt !important; }
+          .agenda-title { font-size: 20pt !important; line-height: 0.92 !important; }
+          .agenda-sub { font-size: 8pt !important; margin-top: 0.5mm !important; }
+          .agenda-week-label { font-size: 7pt !important; margin-top: 1mm !important; }
+          .agenda-note-print { font-size: 5.5pt !important; margin-top: 0.5mm !important; }
+          .agenda-legend-print { font-size: 6pt !important; margin-top: 1mm !important; padding-top: 0 !important; }
+          .agenda-legend-items { column-gap: 2.5mm !important; row-gap: 0.5mm !important; font-size: 6pt !important; }
+          .agenda-legend-items > div { gap: 1mm !important; }
           .agenda-layers-print {
-            width: 18mm !important; height: 18mm !important;
-            min-width: 18mm !important; min-height: 18mm !important;
+            width: 15mm !important; height: 15mm !important;
+            min-width: 15mm !important; min-height: 15mm !important;
           }
           .agenda-grid {
             display: grid !important;
-            gap: 2mm !important;
-            flex: 1 1 auto !important;
+            gap: 1.5mm !important;
             min-height: 0 !important;
             align-items: stretch !important;
             width: 100% !important;
           }
           .agenda-day {
             min-height: 0 !important;
-            height: 100% !important;
-            overflow: hidden !important;
+            height: auto !important;
+            overflow: visible !important;
+            border-width: 1.5px !important;
             page-break-inside: avoid !important;
             break-inside: avoid !important;
           }
-          .day-head { font-size: 11pt !important; padding: 1mm 2mm !important; }
-          .agenda-day-body { padding: 1.5mm !important; }
-          .agenda-day-body > * + * { margin-top: 1mm !important; }
-          .agenda-period-label { font-size: 6pt !important; padding: 0 1mm !important; }
+          .day-head {
+            border-bottom-width: 1.5px !important;
+            font-size: 10pt !important;
+            line-height: 1 !important;
+            padding: 1mm 1.5mm !important;
+          }
+          .agenda-day-body {
+            padding: 1mm !important;
+            overflow: visible !important;
+          }
+          .agenda-day-body > * + * { margin-top: 0.7mm !important; }
+          .agenda-period-events > * + * { margin-top: 0.8mm !important; }
+          .agenda-period-divider { margin-top: 0.8mm !important; padding-top: 0.4mm !important; }
+          .agenda-period-label {
+            font-size: 5.5pt !important;
+            line-height: 1 !important;
+            padding: 0 0.5mm 0.5mm !important;
+          }
           .agenda-event {
-            font-size: 7pt !important;
+            padding: 1mm 1.2mm !important;
+            border-width: 1px !important;
+            font-size: 6.5pt !important;
+            overflow: visible !important;
             page-break-inside: avoid !important;
             break-inside: avoid !important;
           }
-          .agenda-event * { line-height: 1.15 !important; }
+          .agenda-event * { line-height: 1.12 !important; }
+          .agenda-event-title,
+          .agenda-event-extra,
+          .agenda-event-meta,
+          .agenda-event-responsible {
+            max-width: none !important;
+            white-space: normal !important;
+            overflow: visible !important;
+            overflow-wrap: anywhere !important;
+            text-overflow: clip !important;
+          }
+          .agenda-event-extra,
+          .agenda-event-meta,
+          .agenda-event-responsible {
+            margin-top: 0.5mm !important;
+            font-size: 5.5pt !important;
+          }
+          .agenda-event-allday {
+            margin: -1mm -1.2mm 0.7mm !important;
+            padding: 0.5mm 5mm 0.5mm 1.2mm !important;
+            font-size: 5.5pt !important;
+          }
+          .agenda-event-type {
+            top: 0.8mm !important;
+            right: 0.8mm !important;
+            width: 4mm !important;
+            height: 4mm !important;
+          }
+          .agenda-event-type svg { width: 2.3mm !important; height: 2.3mm !important; }
+          .agenda-event-confirmation { margin-top: 0.7mm !important; gap: 0.7mm !important; }
+          .agenda-event-confirmation > span {
+            height: 3.5mm !important;
+            padding-inline: 1mm !important;
+            font-size: 5pt !important;
+          }
           .agenda-tip { display: none !important; }
         }
       `}</style>
@@ -365,6 +571,9 @@ const PrintAgenda = () => {
               style={{ color: ORANGE }}
             >
               visitas, reuniões e configurações internas
+            </p>
+            <p className="agenda-week-label mt-2 text-[13px] font-semibold capitalize text-neutral-800">
+              {weekLabel}
             </p>
             <p className="agenda-note-print text-[11px] text-neutral-600 mt-1">
               *Algumas visitas podem ainda não terem sido confirmadas, agenda
@@ -447,40 +656,48 @@ const PrintAgenda = () => {
                     );
                     return (
                       <>
+                        <section className={`agenda-period${morning.length === 0 ? " agenda-period--empty" : ""}`}>
+                          <div
+                            className="agenda-period-label text-[10px] font-bold uppercase tracking-wider px-1 pt-0.5 pb-1"
+                            style={{ color: ORANGE }}
+                          >
+                            Manhã
+                          </div>
+                          <div className="agenda-period-events space-y-2">
+                            {morning.length === 0 ? (
+                              <div className="text-[10px] text-neutral-400 italic px-1">
+                                —
+                              </div>
+                            ) : (
+                              morning.map(renderCard)
+                            )}
+                          </div>
+                        </section>
                         <div
-                          className="agenda-period-label text-[10px] font-bold uppercase tracking-wider px-1 pt-0.5 pb-1"
-                          style={{ color: ORANGE }}
-                        >
-                          Manhã
-                        </div>
-                        <div className="space-y-2">
-                          {morning.length === 0 ? (
-                            <div className="text-[10px] text-neutral-400 italic px-1">
-                              —
-                            </div>
-                          ) : (
-                            morning.map(renderCard)
-                          )}
-                        </div>
-                        <div
-                          className="agenda-period-divider border-t border-dashed mt-2 pt-1"
+                          className={`agenda-period-divider border-t border-dashed mt-2 pt-1${
+                            morning.length === 0 || afternoon.length === 0
+                              ? " agenda-period-divider--export-hidden"
+                              : ""
+                          }`}
                           style={{ borderColor: ORANGE }}
                         />
-                        <div
-                          className="agenda-period-label text-[10px] font-bold uppercase tracking-wider px-1 pb-1"
-                          style={{ color: ORANGE }}
-                        >
-                          Tarde
-                        </div>
-                        <div className="space-y-2">
-                          {afternoon.length === 0 ? (
-                            <div className="text-[10px] text-neutral-400 italic px-1">
-                              —
-                            </div>
-                          ) : (
-                            afternoon.map(renderCard)
-                          )}
-                        </div>
+                        <section className={`agenda-period${afternoon.length === 0 ? " agenda-period--empty" : ""}`}>
+                          <div
+                            className="agenda-period-label text-[10px] font-bold uppercase tracking-wider px-1 pb-1"
+                            style={{ color: ORANGE }}
+                          >
+                            Tarde
+                          </div>
+                          <div className="agenda-period-events space-y-2">
+                            {afternoon.length === 0 ? (
+                              <div className="text-[10px] text-neutral-400 italic px-1">
+                                —
+                              </div>
+                            ) : (
+                              afternoon.map(renderCard)
+                            )}
+                          </div>
+                        </section>
                       </>
                     );
                   })()}
@@ -720,8 +937,18 @@ const EventCard = ({
                 {confirmed ? "Confirmada" : "Pendente"}
               </span>
             )}
+            {teamConfirmed && (
+              <span
+                className="agenda-export-only h-4 items-center justify-center gap-1 whitespace-nowrap rounded-full border px-1.5 text-center text-[9px] font-semibold uppercase leading-none tracking-wide"
+                style={{ color: GREEN, borderColor: GREEN, background: "#EAF7EF" }}
+              >
+                <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: GREEN }} />
+                Confirmada
+              </span>
+            )}
             <button
               type="button"
+              data-pdf-hidden="true"
               onClick={(e) => {
                 e.stopPropagation();
                 onToggleConfirm();
@@ -746,7 +973,7 @@ const EventCard = ({
 };
 
 const Legend = () => (
-  <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[13px]">
+  <div className="agenda-legend-items flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[13px]">
     {VISIT_TYPES.map((vt) => {
       const Icon = vt.icon;
       return (
