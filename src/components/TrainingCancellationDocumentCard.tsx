@@ -161,6 +161,12 @@ export const TrainingCancellationDocumentCard = ({
 
   const signed = term.document_status === "signed";
   const documentNumber = term.id.replace(/-/g, "").slice(0, 10).toUpperCase();
+  const signerMeta = [
+    term.signer_email,
+    term.signed_at
+      ? format(new Date(term.signed_at), "d 'de' MMMM 'de' yyyy 'às' HH:mm", { locale: ptBR })
+      : null,
+  ].filter(Boolean).join(" · ");
 
   return (
     <Card className={signed ? "border-emerald-500/40 bg-emerald-500/[0.04]" : "border-amber-500/40 bg-amber-500/[0.04]"}>
@@ -197,16 +203,13 @@ export const TrainingCancellationDocumentCard = ({
               Assinado por {term.signer_name}
               {term.signer_role ? ` · ${term.signer_role}` : ""}
             </p>
-            <p className="mt-0.5 text-xs text-muted-foreground">
-              {term.signer_email}
-              {term.signed_at
-                ? ` · ${format(new Date(term.signed_at), "d 'de' MMMM 'de' yyyy 'às' HH:mm", { locale: ptBR })}`
-                : ""}
-            </p>
+            {signerMeta && (
+              <p className="mt-0.5 text-xs text-muted-foreground">{signerMeta}</p>
+            )}
           </div>
         ) : (
           <p className="text-sm text-muted-foreground">
-            Envie o link abaixo ao representante do cliente. Após a assinatura, o documento ficará registrado nesta visita.
+            Envie o link ao cliente. Ele poderá escolher quem fará a assinatura e, depois disso, o documento ficará registrado nesta visita.
           </p>
         )}
 

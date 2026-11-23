@@ -90,11 +90,10 @@ const CancellationTermPublic = () => {
   const sign = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!token || !term) return;
-    if (name.trim().length < 3) return toast.error("Informe seu nome completo.");
-    if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim())) {
-      return toast.error("Informe um e-mail válido.");
+    if (name.trim().length < 3) return toast.error("Informe o nome de quem vai assinar.");
+    if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim())) {
+      return toast.error("Confira o e-mail informado ou deixe o campo em branco.");
     }
-    if (!role.trim()) return toast.error("Informe seu cargo ou função na empresa.");
     if (!signature) return toast.error("Assine no campo indicado para continuar.");
     if (!agreed) return toast.error("Confirme que leu e concorda com o documento.");
 
@@ -145,7 +144,7 @@ const CancellationTermPublic = () => {
     <div className="cancellation-term-page min-h-screen bg-background">
       <SEO
         title={`Documento de cancelamento — ${term.client_name || term.training_title}`}
-        description="Documento de cancelamento de visita ou treinamento e ciência do impacto no cronograma."
+        description="Documento de cancelamento de visita ou treinamento e registro do ajuste necessário no cronograma."
         path={`/cancelamento/${token ?? ""}`}
       />
       <style>{`
@@ -255,22 +254,21 @@ const CancellationTermPublic = () => {
                 Termo de Cancelamento
               </h1>
               <p className="mt-1 text-sm italic text-neutral-600 print-muted">
-                de visita ou treinamento e ciência de impacto no cronograma
+                registro do cancelamento e do ajuste necessário no cronograma
               </p>
             </div>
           </header>
 
           <section className="mt-7 text-[14px] leading-relaxed sm:text-[15px]">
-            <p className="text-justify indent-8">
-              Pelo presente instrumento, o cliente <strong>{term.client_name || "identificado no agendamento"}</strong>,
-              por meio de seu representante ao final assinado, declara que solicitou o cancelamento da
-              {" "}<strong>{visitLabel}</strong> descrita neste documento, originalmente reservada pela
-              <strong> Use Sistemas</strong> para atendimento na data e horário indicados abaixo.
+            <p className="text-justify">
+              Este documento registra que o cliente <strong>{term.client_name || "identificado no agendamento"}</strong>
+              {" "}solicitou o cancelamento da <strong>{visitLabel}</strong> descrita abaixo. A data e o horário
+              estavam reservados pela <strong>Use Sistemas</strong> para esse atendimento.
             </p>
           </section>
 
           <section className="avoid-break mt-7">
-            <DocumentSectionTitle number="I" title="Identificação do compromisso cancelado" />
+            <DocumentSectionTitle number="I" title="Dados da visita ou treinamento cancelado" />
             <dl className="mt-4 grid gap-x-8 gap-y-3 border-y border-neutral-300 py-4 sm:grid-cols-2 print-border">
               <DocumentField label="Cliente" value={term.client_name || "Não informado"} />
               <DocumentField label="Modalidade" value={getVisitType(term.visit_type).label} />
@@ -308,20 +306,19 @@ const CancellationTermPublic = () => {
           <section className="mt-7">
             <DocumentSectionTitle
               number={term.schedule_name || term.schedule_item_title || term.schedule_start_date ? "III" : "II"}
-              title="Ciência sobre a reprogramação dos prazos"
+              title="Como o cancelamento afeta o cronograma"
             />
             <div className="mt-4 space-y-3 text-[14px] leading-relaxed sm:text-[15px]">
-              <p className="text-justify indent-8">
-                O cliente reconhece que o cancelamento impede a execução da atividade na data originalmente
-                prevista e exige a recomposição da agenda da equipe responsável. Por esse motivo, o período
-                compreendido entre a data originalmente agendada e a efetiva realização da atividade
-                reagendada poderá ser acrescido aos prazos das etapas subsequentes e à data final do cronograma.
+              <p className="text-justify">
+                Quando uma atividade é cancelada, a equipe precisa reorganizar sua agenda. Por isso, o tempo
+                entre a data originalmente marcada e a realização da atividade em uma nova data poderá ser
+                acrescentado às próximas etapas e ao prazo final do cronograma.
               </p>
-              <p className="text-justify indent-8">
-                Tal readequação não será considerada atraso, mora ou descumprimento imputável à
-                <strong> Use Sistemas</strong>. A nova data da visita ou treinamento será definida de comum
-                acordo, conforme a disponibilidade das partes, e o cronograma poderá ser atualizado para
-                refletir a nova sequência de execução.
+              <p className="text-justify">
+                Esse ajuste não será considerado atraso da <strong>Use Sistemas</strong>, pois foi necessário
+                por causa do cancelamento solicitado pelo cliente. A nova data da visita ou treinamento será
+                combinada entre as partes, de acordo com a disponibilidade de todos, e o cronograma poderá ser
+                atualizado para acompanhar essa mudança.
               </p>
             </div>
           </section>
@@ -329,11 +326,11 @@ const CancellationTermPublic = () => {
           <section className="avoid-break mt-8">
             <DocumentSectionTitle
               number={term.schedule_name || term.schedule_item_title || term.schedule_start_date ? "IV" : "III"}
-              title="Confirmação do representante do cliente"
+              title="Confirmação de quem assina"
             />
             <p className="mt-4 text-[14px] leading-relaxed sm:text-[15px]">
-              Declaro que li, compreendi e concordo com as informações deste termo, confirmando que o
-              cancelamento acima foi solicitado pelo cliente e que estou ciente de seus efeitos sobre o cronograma.
+              Ao assinar, a pessoa escolhida pelo cliente confirma que leu este documento, que o cancelamento
+              foi solicitado pelo cliente e que entendeu que as datas do cronograma poderão ser ajustadas.
             </p>
 
             <div className="mt-9 grid gap-8 sm:grid-cols-2">
@@ -342,20 +339,22 @@ const CancellationTermPublic = () => {
                   {term.signature && (
                     <img
                       src={term.signature}
-                      alt={`Assinatura de ${term.signer_name || "representante do cliente"}`}
+                      alt={`Assinatura de ${term.signer_name || "pessoa escolhida pelo cliente"}`}
                       className="max-h-24 max-w-full object-contain"
                     />
                   )}
                 </div>
                 <div className="border-t border-neutral-700 pt-2 text-center">
-                  <p className="break-words text-sm font-semibold">{term.signer_name || "Representante do cliente"}</p>
+                  <p className="break-words text-sm font-semibold">{term.signer_name || "Pessoa escolhida pelo cliente"}</p>
                   <p className="mt-0.5 break-words text-[11px] text-neutral-500 print-muted">
-                    {term.signer_role || "Nome, cargo e assinatura"}
+                    {term.signer_role || (signed ? "Pessoa indicada pelo cliente" : "Nome e assinatura")}
                   </p>
                 </div>
               </div>
               <div className="flex min-w-0 flex-col justify-end border-t border-neutral-700 pt-2 text-center sm:mt-24">
-                <p className="break-words text-sm font-semibold">{term.signer_email || "E-mail do representante"}</p>
+                <p className="break-words text-sm font-semibold">
+                  {term.signer_email || (signed ? "Assinatura registrada eletronicamente" : "E-mail (opcional)")}
+                </p>
                 <p className="mt-0.5 text-[11px] text-neutral-500 print-muted">
                   {term.signed_at
                     ? format(new Date(term.signed_at), "d 'de' MMMM 'de' yyyy 'às' HH:mm", { locale: ptBR })
@@ -385,9 +384,9 @@ const CancellationTermPublic = () => {
                   <FileSignature className="h-5 w-5" />
                 </span>
                 <div>
-                  <h2 className="font-semibold">Assinatura do representante do cliente</h2>
+                  <h2 className="font-semibold">Assinatura indicada pelo cliente</h2>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Preencha seus dados, leia o documento acima e assine para registrar a confirmação.
+                    O cliente pode escolher quem vai assinar. Basta que essa pessoa tenha conhecimento do cancelamento, leia o documento e confirme as informações.
                   </p>
                 </div>
               </div>
@@ -395,7 +394,7 @@ const CancellationTermPublic = () => {
               <form onSubmit={sign} className="space-y-5">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-1.5">
-                    <Label htmlFor="cancellation-signer-name">Nome completo *</Label>
+                    <Label htmlFor="cancellation-signer-name">Nome de quem vai assinar *</Label>
                     <Input
                       id="cancellation-signer-name"
                       value={name}
@@ -403,11 +402,11 @@ const CancellationTermPublic = () => {
                       autoComplete="name"
                       maxLength={160}
                       required
-                      placeholder="Nome do representante"
+                      placeholder="Nome completo"
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor="cancellation-signer-email">E-mail *</Label>
+                    <Label htmlFor="cancellation-signer-email">E-mail (opcional)</Label>
                     <Input
                       id="cancellation-signer-email"
                       type="email"
@@ -415,25 +414,23 @@ const CancellationTermPublic = () => {
                       onChange={(event) => setEmail(event.target.value)}
                       autoComplete="email"
                       maxLength={254}
-                      required
                       placeholder="nome@empresa.com"
                     />
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="cancellation-signer-role">Cargo ou função na empresa *</Label>
+                  <Label htmlFor="cancellation-signer-role">Relação com o cliente (opcional)</Label>
                   <Input
                     id="cancellation-signer-role"
                     value={role}
                     onChange={(event) => setRole(event.target.value)}
                     maxLength={120}
-                    required
-                    placeholder="Ex.: proprietário, gerente, responsável pela implantação"
+                    placeholder="Ex.: colaborador, sócio, gerente, contador"
                   />
                 </div>
 
                 <SignaturePad
-                  label="Assinatura do representante *"
+                  label="Assinatura *"
                   hint="Assine usando o dedo, uma caneta stylus ou o mouse. Também é possível importar a assinatura de um PDF."
                   onChange={setSignature}
                   allowPdf
@@ -447,7 +444,7 @@ const CancellationTermPublic = () => {
                     className="mt-1 h-4 w-4 shrink-0 accent-primary"
                   />
                   <span>
-                    Li e concordo com o termo, confirmo que o cancelamento foi solicitado pelo cliente e reconheço a necessidade de readequação do cronograma.
+                    Li e concordo com este documento. Confirmo que o cancelamento foi solicitado pelo cliente e entendo que, por causa disso, as datas do cronograma poderão ser ajustadas.
                   </span>
                 </label>
 
