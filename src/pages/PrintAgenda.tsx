@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   addWeeks,
@@ -8,8 +8,9 @@ import {
   startOfWeek,
 } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Printer, ChevronLeft, ChevronRight, X, Layers, FileDown } from "lucide-react";
+import { Printer, ChevronLeft, ChevronRight, X, FileDown, CalendarPlus } from "lucide-react";
 import { BackButton } from "@/components/BackButton";
+import { CreateTrainingDialog } from "@/components/CreateTrainingDialog";
 import useLogo from "@/assets/logo-use-sistemas-v2.png.asset.json";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
@@ -71,6 +72,7 @@ const PrintAgenda = () => {
   const [newTime, setNewTime] = useState<string>("09:00");
   const [saving, setSaving] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
   const exportPDF = async () => {
     const el = document.querySelector(".agenda-page") as HTMLElement | null;
@@ -106,20 +108,22 @@ const PrintAgenda = () => {
     }
   };
 
-  useEffect(() => {
-    (async () => {
-      const [{ data }, { data: ua }, { data: ga }] = await Promise.all([
-        supabase
-          .from("trainings")
-          .select("*, training_responsibles:training_responsibles(responsible_user_id)")
-          .order("scheduled_at", { ascending: true }),
-        supabase.from("training_acceptances").select("training_id"),
-        supabase.from("guest_acceptances").select("training_id"),
-      ]);
-      setTrainings((data as Training[]) || []);
-      setConfirmedIds(new Set([...(ua ?? []), ...(ga ?? [])].map(({ training_id }) => training_id)));
-    })();
+  const loadAgenda = useCallback(async () => {
+    const [{ data }, { data: ua }, { data: ga }] = await Promise.all([
+      supabase
+        .from("trainings")
+        .select("*, training_responsibles:training_responsibles(responsible_user_id)")
+        .order("scheduled_at", { ascending: true }),
+      supabase.from("training_acceptances").select("training_id"),
+      supabase.from("guest_acceptances").select("training_id"),
+    ]);
+    setTrainings((data as Training[]) || []);
+    setConfirmedIds(new Set([...(ua ?? []), ...(ga ?? [])].map(({ training_id }) => training_id)));
   }, []);
+
+  useEffect(() => {
+    void loadAgenda();
+  }, [loadAgenda]);
 
   const toggleConfirm = async (t: Training) => {
     const isConfirmed = !!t.confirmed_at;
@@ -332,12 +336,16 @@ const PrintAgenda = () => {
             </span>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <Button onClick={() => setCreateDialogOpen(true)}>
+              <CalendarPlus className="h-4 w-4" />
+              Novo treinamento
+            </Button>
             <Button variant="outline" onClick={exportPDF} disabled={exporting}>
               <FileDown className="h-4 w-4" />
               {exporting ? "Gerando..." : "Exportar PDF"}
             </Button>
-            <Button onClick={() => window.print()}>
+            <Button variant="outline" onClick={() => window.print()}>
               <Printer className="h-4 w-4" />
               Imprimir
             </Button>
@@ -485,6 +493,12 @@ const PrintAgenda = () => {
           Dica: arraste uma visita para outro dia para reagendar.
         </p>
       </main>
+
+      <CreateTrainingDialog
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
+        onCreated={() => void loadAgenda()}
+      />
 
       <Dialog open={!!rescheduleData} onOpenChange={(o) => !o && setRescheduleData(null)}>
         <DialogContent>
