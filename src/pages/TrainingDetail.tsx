@@ -1,10 +1,11 @@
 import { publicUrl } from "@/lib/publicUrl";
 import { useEffect, useState } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams, Link } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Calendar as CalIcon, Clock, MapPin, CheckCircle2, Trash2, Users, Building2, Link2, FileText, UserCheck, XCircle, RotateCcw, Lock, Pencil, Save, X, History, Paperclip, Upload, Download, File as FileIcon, Flag } from "lucide-react";
 import { BackButton } from "@/components/BackButton";
+import { TrainingCancellationDocumentCard } from "@/components/TrainingCancellationDocumentCard";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { AppHeader } from "@/components/AppHeader";
@@ -50,6 +51,7 @@ type Training = {
   internal_notes: string | null;
   visit_type: string | null;
   requires_acceptance: boolean;
+  approval_status: string;
 };
 
 type Acceptance = {
@@ -96,6 +98,7 @@ const formatBytes = (n: number | null) => {
 const TrainingDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
   const {
     data: responsibleUsers = [],
@@ -176,6 +179,15 @@ const TrainingDetail = () => {
     load();
   }, [id]);
 
+  const cancellationRequestedFromShortcut = searchParams.get("acao") === "cancelar";
+  useEffect(() => {
+    if (loading || !training || !cancellationRequestedFromShortcut) return;
+    if (training.status !== "cancelado") setCancelOpen(true);
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete("acao");
+    setSearchParams(nextParams, { replace: true });
+  }, [loading, training, cancellationRequestedFromShortcut, searchParams, setSearchParams]);
+
   const myAcceptance = acceptances.find((a) => a.user_id === user?.id);
 
   const accept = async () => {
@@ -204,7 +216,12 @@ const TrainingDetail = () => {
     if (!id) return;
     if (!confirm("Excluir este treinamento?")) return;
     const { error } = await supabase.from("trainings").delete().eq("id", id);
-    if (error) return toast.error(error.message);
+    if (error) {
+      if (error.message.includes("documento de cancelamento assinado")) {
+        return toast.error("Esta visita possui um documento de cancelamento assinado e não pode ser excluída.");
+      }
+      return toast.error(error.message);
+    }
     toast.success("Treinamento excluído");
     navigate("/");
   };
@@ -216,20 +233,18 @@ const TrainingDetail = () => {
       return;
     }
     setActing(true);
-    const { error } = await supabase
-      .from("trainings")
-      .update({
-        status: "cancelado",
-        cancellation_reason: cancelReason.trim(),
-        cancelled_at: new Date().toISOString(),
-      })
-      .eq("id", id);
+    const { error } = await supabase.rpc("cancel_training_with_term", {
+      _training_id: id,
+      _reason: cancelReason.trim(),
+    });
     setActing(false);
     if (error) return toast.error(error.message);
-    toast.success("Visita cancelada");
+    toast.success("Visita cancelada e documento emitido", {
+      description: "Copie o link do documento e envie ao representante do cliente para assinatura.",
+    });
     setCancelOpen(false);
     setCancelReason("");
-    load();
+    await load();
   };
 
   const reactivateTraining = async () => {
@@ -803,6 +818,13 @@ const TrainingDetail = () => {
             </div>
           )}
 
+          {training.approval_status !== "rejected" && (
+            <TrainingCancellationDocumentCard
+              trainingId={training.id}
+              canCreate={training.status === "cancelado"}
+            />
+          )}
+
           <div className="rounded-md border border-border bg-muted/40 p-4 space-y-2">
             <div className="flex items-center justify-between gap-2 flex-wrap">
               <h2 className="text-sm font-semibold flex items-center gap-2">
@@ -1049,24 +1071,31 @@ const TrainingDetail = () => {
       <Dialog open={cancelOpen} onOpenChange={setCancelOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Cancelar visita</DialogTitle>
+            <DialogTitle>Cancelar visita e emitir documento</DialogTitle>
             <DialogDescription>
-              Informe o motivo do cancelamento. Essa informação ficará registrada no treinamento.
+              Informe o motivo comunicado pelo cliente. Ao confirmar, a visita será cancelada e um documento para assinatura será emitido, registrando também o impacto no cronograma.
             </DialogDescription>
           </DialogHeader>
-          <Textarea
-            value={cancelReason}
-            onChange={(e) => setCancelReason(e.target.value)}
-            placeholder="Ex: cliente solicitou reagendamento..."
-            rows={4}
-            maxLength={500}
-          />
+          <div className="space-y-2">
+            <Label htmlFor="cancel-reason">Motivo do cancelamento *</Label>
+            <Textarea
+              id="cancel-reason"
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              placeholder="Ex.: cliente informou indisponibilidade da equipe e solicitou uma nova data..."
+              rows={4}
+              maxLength={1000}
+            />
+            <p className="text-xs text-muted-foreground">
+              O texto será exibido no documento enviado ao cliente.
+            </p>
+          </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setCancelOpen(false)} disabled={acting}>
               Voltar
             </Button>
             <Button variant="destructive" onClick={cancelTraining} disabled={acting}>
-              Confirmar cancelamento
+              {acting ? "Cancelando..." : "Cancelar e emitir documento"}
             </Button>
           </DialogFooter>
         </DialogContent>

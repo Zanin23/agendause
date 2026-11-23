@@ -20,6 +20,7 @@ const TrainingDetail = lazy(() => import("./pages/TrainingDetail"));
 const PrintAgenda = lazy(() => import("./pages/PrintAgenda"));
 const TrainingTerm = lazy(() => import("./pages/TrainingTerm"));
 const GuestAccept = lazy(() => import("./pages/GuestAccept"));
+const CancellationTermPublic = lazy(() => import("./pages/CancellationTermPublic"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Schedules = lazy(() => import("./pages/Schedules"));
 const ScheduleNew = lazy(() => import("./pages/ScheduleNew"));
@@ -79,6 +80,7 @@ const App = () => (
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/redefinir-senha" element={<ResetPassword />} />
                 <Route path="/aceite/:id" element={<GuestAccept />} />
+                <Route path="/cancelamento/:token" element={<CancellationTermPublic />} />
                 <Route path="/c/:token" element={<SchedulePublic />} />
                 <Route path="/q/:token" element={<SurveyPublic />} />
                 <Route path="/levantamentos/:id/relatorio" element={<ProtectedRoute><SurveyReport /></ProtectedRoute>} />

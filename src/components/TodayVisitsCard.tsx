@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { AlarmClock, ArrowUpRight, Check, Clock, Link2, MapPin, X, UserCheck } from "lucide-react";
 import { toast } from "sonner";
@@ -28,6 +28,7 @@ const hhmm = (iso: string) =>
   new Date(iso).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 
 export const TodayVisitsCard = ({ className = "" }: { className?: string }) => {
+  const navigate = useNavigate();
   const { activeId } = useWorkspace();
   const { data: responsibleUsers = [] } = useTrainingResponsibles();
 
@@ -73,13 +74,10 @@ export const TodayVisitsCard = ({ className = "" }: { className?: string }) => {
     }
   };
 
-  const cancel = async (id: string) => {
-    setBusy(id);
-    const { error } = await supabase.from("trainings").update({ status: "cancelado" }).eq("id", id);
-    setBusy(null);
-    if (error) return toast.error(error.message);
-    toast.success("Visita cancelada");
-    refetch();
+  const cancel = (id: string) => {
+    // O cancelamento precisa de motivo e gera um documento para assinatura.
+    // A tela de detalhes abre o fluxo completo automaticamente.
+    navigate(`/treinamento/${id}?acao=cancelar`);
   };
 
   const next = visits.find((v) => new Date(v.scheduled_at).getTime() + v.duration_minutes * 60000 > now);

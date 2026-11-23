@@ -1027,6 +1027,117 @@ export type Database = {
           },
         ]
       }
+      training_cancellation_terms: {
+        Row: {
+          cancellation_reason: string
+          cancelled_at: string
+          client_name: string | null
+          created_at: string
+          created_by: string | null
+          document_status: string
+          document_version: number
+          duration_minutes: number
+          id: string
+          location: string | null
+          public_token: string
+          schedule_id: string | null
+          schedule_item_planned_date: string | null
+          schedule_item_title: string | null
+          schedule_name: string | null
+          schedule_start_date: string | null
+          scheduled_at: string
+          signature: string | null
+          signed_at: string | null
+          signer_email: string | null
+          signer_name: string | null
+          signer_role: string | null
+          training_id: string
+          training_title: string
+          updated_at: string
+          visit_type: string
+          void_reason: string | null
+          voided_at: string | null
+          workspace_id: string
+        }
+        Insert: {
+          cancellation_reason: string
+          cancelled_at: string
+          client_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          document_status?: string
+          document_version?: number
+          duration_minutes: number
+          id?: string
+          location?: string | null
+          public_token?: string
+          schedule_id?: string | null
+          schedule_item_planned_date?: string | null
+          schedule_item_title?: string | null
+          schedule_name?: string | null
+          schedule_start_date?: string | null
+          scheduled_at: string
+          signature?: string | null
+          signed_at?: string | null
+          signer_email?: string | null
+          signer_name?: string | null
+          signer_role?: string | null
+          training_id: string
+          training_title: string
+          updated_at?: string
+          visit_type: string
+          void_reason?: string | null
+          voided_at?: string | null
+          workspace_id: string
+        }
+        Update: {
+          cancellation_reason?: string
+          cancelled_at?: string
+          client_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          document_status?: string
+          document_version?: number
+          duration_minutes?: number
+          id?: string
+          location?: string | null
+          public_token?: string
+          schedule_id?: string | null
+          schedule_item_planned_date?: string | null
+          schedule_item_title?: string | null
+          schedule_name?: string | null
+          schedule_start_date?: string | null
+          scheduled_at?: string
+          signature?: string | null
+          signed_at?: string | null
+          signer_email?: string | null
+          signer_name?: string | null
+          signer_role?: string | null
+          training_id?: string
+          training_title?: string
+          updated_at?: string
+          visit_type?: string
+          void_reason?: string | null
+          voided_at?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_cancellation_terms_training_id_fkey"
+            columns: ["training_id"]
+            isOneToOne: false
+            referencedRelation: "trainings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_cancellation_terms_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       training_acceptances: {
         Row: {
           accepted_at: string
@@ -1478,6 +1589,14 @@ export type Database = {
         Args: { _schedule_id: string }
         Returns: boolean
       }
+      cancel_training_with_term: {
+        Args: { _reason: string; _training_id: string }
+        Returns: string
+      }
+      create_training_cancellation_term: {
+        Args: { _training_id: string }
+        Returns: string
+      }
       current_workspace: { Args: never; Returns: string }
       list_workspace_training_responsibles: {
         Args: Record<PropertyKey, never>
@@ -1508,6 +1627,10 @@ export type Database = {
           _training_id: string
         }
         Returns: undefined
+      }
+      get_cancellation_term_by_token: {
+        Args: { _token: string }
+        Returns: Json
       }
       get_handoff_by_token: { Args: { _token: string }; Returns: Json }
       get_public_training: {
@@ -1592,6 +1715,16 @@ export type Database = {
           _finalize?: boolean
           _respondent_email: string
           _respondent_name: string
+          _token: string
+        }
+        Returns: Json
+      }
+      sign_cancellation_term: {
+        Args: {
+          _email: string
+          _name: string
+          _role: string
+          _signature: string
           _token: string
         }
         Returns: Json
