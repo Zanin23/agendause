@@ -8,12 +8,10 @@ import {
   startOfWeek,
 } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Printer, ChevronLeft, ChevronRight, X, FileDown, CalendarPlus } from "lucide-react";
+import { ChevronLeft, ChevronRight, FileDown, CalendarPlus, Check } from "lucide-react";
 import { BackButton } from "@/components/BackButton";
 import { CreateTrainingDialog } from "@/components/CreateTrainingDialog";
 import useLogo from "@/assets/logo-use-sistemas-v2.png.asset.json";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
 import { supabase } from "@/integrations/supabase/client";
 import { SEO } from "@/components/SEO";
 import { useAuth } from "@/hooks/useAuth";
@@ -32,6 +30,7 @@ import { toast } from "@/hooks/use-toast";
 import { getVisitType, VISIT_TYPES } from "@/lib/visitType";
 import { trainingResponsibleNames, type TrainingResponsibleAssignment, type TrainingResponsibleOption } from "@/lib/trainingResponsible";
 import { getWeeklyAgendaDays } from "@/lib/weeklyAgenda";
+import { createWeeklyAgendaPdf, type WeeklyAgendaPdfStatus } from "@/lib/weeklyAgendaPdf";
 
 type Training = {
   id: string;
@@ -49,10 +48,11 @@ type Training = {
   training_responsibles?: TrainingResponsibleAssignment[];
 };
 
-const ORANGE = "#F26B1F";
 const BLUE = "#6F7FB8";
 const RED = "#E22B2B";
 const GREEN = "#1F9D55";
+const CALENDAR_DAY_WIDTH = 320;
+const CALENDAR_DAY_GAP = 12;
 
 const PrintAgenda = () => {
   const navigate = useNavigate();
@@ -109,6 +109,31 @@ const PrintAgenda = () => {
     () => getWeeklyAgendaDays(weekStart, trainings),
     [weekStart, trainings],
   );
+  const calendarDays = useMemo(
+    () => agendaDays.map((agendaDay) => {
+      const allDay = agendaDay.events.filter((event) => Number(event.duration_minutes) >= 480);
+      const morning = agendaDay.events.filter((event) => {
+        if (Number(event.duration_minutes) >= 480) return false;
+        return new Date(event.scheduled_at).getHours() < 12;
+      });
+      const afternoon = agendaDay.events.filter((event) => {
+        if (Number(event.duration_minutes) >= 480) return false;
+        return new Date(event.scheduled_at).getHours() >= 12;
+      });
+      return { ...agendaDay, allDay, morning, afternoon };
+    }),
+    [agendaDays],
+  );
+  const agendaDayWidths = useMemo(
+    () => calendarDays.map(() => CALENDAR_DAY_WIDTH),
+    [calendarDays],
+  );
+  const agendaScreenWidth = Math.max(
+    1200,
+    agendaDayWidths.reduce((total, width) => total + width, 0)
+      + Math.max(0, agendaDayWidths.length - 1) * CALENDAR_DAY_GAP
+      + 64,
+  );
 
   const weekLabel = `${format(weekStart, "d MMM", { locale: ptBR })} – ${format(
     endOfWeek(weekStart, { weekStartsOn: 1 }),
@@ -119,34 +144,16 @@ const PrintAgenda = () => {
   const exportPDF = () => {
     setExporting(true);
     try {
-      const totalEvents = agendaDays.reduce((total, { events }) => total + events.length, 0);
-      const rows = agendaDays.flatMap(({ day, label: dayLabel, events }) => {
-        const date = `${format(day, "dd/MM")}\n${dayLabel}`;
-        if (events.length === 0) {
-          return [[date, "—", "Nenhum compromisso agendado", "—", "—", "—", "Livre"]];
-        }
-
-        return events.map((training) => {
+      const days = agendaDays.map(({ day, label, events }) => ({
+        dateLabel: format(day, "dd"),
+        dayLabel: label,
+        events: events.map((training) => {
           const scheduledAt = new Date(training.scheduled_at);
           const isAllDay = Number(training.duration_minutes) >= 480;
           const client = training.client?.trim();
           const title = training.title.trim();
-          const commitment = [
-            client || title,
-            client && title && client !== title ? title : null,
-            training.status === "cancelado" && training.cancellation_reason
-              ? `Motivo do cancelamento: ${training.cancellation_reason}`
-              : null,
-            training.status === "reagendado" && training.description
-              ? `Reagendamento: ${training.description}`
-              : null,
-          ].filter(Boolean).join("\n");
-          const durationAndLocation = [
-            isAllDay ? "Dia inteiro" : `${training.duration_minutes} min`,
-            training.location?.trim() || null,
-          ].filter(Boolean).join("\n");
           const isDone = training.status === "realizado" || training.status === "concluido";
-          const status = training.status === "cancelado"
+          const status: WeeklyAgendaPdfStatus = training.status === "cancelado"
             ? "Cancelada"
             : isDone
               ? "Realizada"
@@ -155,109 +162,34 @@ const PrintAgenda = () => {
                 : training.confirmed_at || confirmedIds.has(training.id)
                   ? "Confirmada"
                   : "Pendente";
+          const description = training.description?.trim();
+          const note = training.status === "cancelado" && training.cancellation_reason
+            ? `Cancelamento: ${training.cancellation_reason}`
+            : training.status === "reagendado" && description
+              ? `Reagendamento: ${description}`
+              : description
+                ? `Observação: ${description}`
+                : null;
 
-          return [
-            date,
-            isAllDay ? "Dia inteiro" : format(scheduledAt, "HH:mm"),
-            commitment,
-            getVisitType(training.visit_type).label,
-            durationAndLocation,
-            trainingResponsibleNames(training, responsibleUsers) || "Não informado",
+          return {
+            startMinute: scheduledAt.getHours() * 60 + scheduledAt.getMinutes(),
+            allDay: isAllDay,
+            time: isAllDay ? "Dia inteiro" : format(scheduledAt, "HH:mm"),
+            client: client || title,
+            activity: client && title && client !== title ? title : null,
+            durationLabel: isAllDay ? "Duração integral" : `${training.duration_minutes} min`,
+            modality: getVisitType(training.visit_type).label,
+            location: training.location?.trim() || null,
+            responsibles: trainingResponsibleNames(training, responsibleUsers) || null,
             status,
-          ];
-        });
-      });
+            note,
+          };
+        }),
+      }));
 
-      const pdf = new jsPDF({
-        orientation: "landscape",
-        unit: "mm",
-        format: "a4",
-        compress: true,
-        putOnlyUsedFonts: true,
-      });
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      const drawHeader = () => {
-        pdf.setFillColor(242, 107, 31);
-        pdf.rect(10, 8, 2.5, 18, "F");
-        pdf.setFont("helvetica", "bold");
-        pdf.setFontSize(17);
-        pdf.setTextColor(20, 20, 20);
-        pdf.text("AGENDA SEMANAL", 16, 14);
-        pdf.setFont("helvetica", "normal");
-        pdf.setFontSize(9);
-        pdf.setTextColor(90, 90, 90);
-        pdf.text(weekLabel.toUpperCase(), 16, 20);
-        pdf.setFontSize(7.5);
-        pdf.text(`${totalEvents} ${totalEvents === 1 ? "compromisso" : "compromissos"}`, 16, 24.5);
-        pdf.setFont("helvetica", "bold");
-        pdf.setFontSize(10);
-        pdf.setTextColor(242, 107, 31);
-        pdf.text("USE SISTEMAS", pageWidth - 10, 14, { align: "right" });
-        pdf.setDrawColor(225, 225, 225);
-        pdf.setLineWidth(0.25);
-        pdf.line(10, 28, pageWidth - 10, 28);
-      };
-
-      autoTable(pdf, {
-        startY: 32,
-        margin: { top: 32, right: 10, bottom: 10, left: 10 },
-        head: [["Data", "Horário", "Cliente / atividade", "Modalidade", "Duração / local", "Responsáveis", "Situação"]],
-        body: rows,
-        theme: "grid",
-        showHead: "everyPage",
-        rowPageBreak: "avoid",
-        styles: {
-          font: "helvetica",
-          fontSize: 7.2,
-          cellPadding: 1.7,
-          valign: "top",
-          overflow: "linebreak",
-          textColor: [35, 35, 35],
-          lineColor: [218, 218, 218],
-          lineWidth: 0.15,
-        },
-        headStyles: {
-          fillColor: [242, 107, 31],
-          textColor: [255, 255, 255],
-          fontStyle: "bold",
-          fontSize: 7.5,
-          cellPadding: 1.8,
-        },
-        alternateRowStyles: { fillColor: [250, 250, 250] },
-        columnStyles: {
-          0: { cellWidth: 20, fontStyle: "bold" },
-          1: { cellWidth: 20, fontStyle: "bold" },
-          2: { cellWidth: 75 },
-          3: { cellWidth: 25 },
-          4: { cellWidth: 38 },
-          5: { cellWidth: 68 },
-          6: { cellWidth: 31, fontStyle: "bold" },
-        },
-        didParseCell: ({ section, column, cell }) => {
-          if (section !== "body" || column.index !== 6) return;
-          const status = String(cell.raw);
-          if (status === "Cancelada") cell.styles.textColor = [190, 35, 35];
-          else if (status === "Confirmada" || status === "Realizada") cell.styles.textColor = [24, 130, 72];
-          else if (status === "Reagendada" || status === "Pendente") cell.styles.textColor = [160, 105, 0];
-          else cell.styles.textColor = [90, 90, 90];
-        },
-        didDrawPage: ({ pageNumber }) => {
-          drawHeader();
-          pdf.setFont("helvetica", "normal");
-          pdf.setFontSize(7);
-          pdf.setTextColor(130, 130, 130);
-          pdf.text(`Página ${pageNumber}`, pageWidth - 10, pageHeight - 5, { align: "right" });
-        },
-      });
-
-      pdf.setProperties({
-        title: `Agenda semanal — ${weekLabel}`,
-        subject: "Agenda de visitas, reuniões e configurações internas",
-        author: "Use Sistemas",
-      });
+      const pdf = createWeeklyAgendaPdf({ weekLabel, days });
       pdf.save(`agenda-${format(weekStart, "yyyy-MM-dd")}.pdf`);
-      toast({ title: "PDF gerado", description: "Agenda exportada em formato leve e sem cortes." });
+      toast({ title: "PDF gerado", description: "Agenda exportada em formato leve, vetorial e sem cortes." });
     } catch (e) {
       toast({ title: "Erro ao gerar PDF", description: String(e), variant: "destructive" });
     } finally {
@@ -310,19 +242,16 @@ const PrintAgenda = () => {
         path="/agenda/imprimir"
       />
       <style>{`
-        /* Cores explícitas mantêm a impressão consistente em qualquer tema. */
-        .agenda-page { --color-border: #e5e5e5; }
-        .agenda-title { font-family: 'Clash Display', 'Archivo', sans-serif; font-weight: 700; letter-spacing: -0.02em; }
-        .agenda-sub { font-family: 'Clash Display', 'Archivo', sans-serif; font-weight: 600; font-style: italic; }
-        .day-head { font-family: 'Clash Display', 'Archivo', sans-serif; font-weight: 700; letter-spacing: 0.01em; }
-        .agenda-grid { grid-template-columns: repeat(var(--agenda-columns), minmax(0, 1fr)); }
-        .agenda-export-only { display: none; }
-        /* Wrap the extended grid on narrower screens so cards stay readable. */
-        @media screen and (min-width: 768px) {
-          .agenda-grid--weekend { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
-          .agenda-grid--weekend .day-head { font-size: 24px; padding-inline: 8px; white-space: nowrap; }
+        .agenda-page { --color-border: #e5e7eb; }
+        .agenda-title {
+          font-family: 'Clash Display', 'Archivo', sans-serif;
+          font-weight: 700;
+          letter-spacing: -0.035em;
         }
-        /* Mobile screen styles — must NOT apply during print. */
+        .agenda-sub { font-family: 'Archivo', sans-serif; }
+        .agenda-scroll-shell { scrollbar-gutter: stable; }
+        .agenda-event-card { isolation: isolate; }
+
         @media screen and (max-width: 767px) {
           .agenda-page { padding: 16px !important; }
           .agenda-header {
@@ -330,19 +259,13 @@ const PrintAgenda = () => {
             gap: 12px !important;
             align-items: flex-start !important;
           }
-          .agenda-title { font-size: 36px !important; word-break: break-word; overflow-wrap: anywhere; }
-          .agenda-sub { font-size: 16px !important; word-break: break-word; }
-          .agenda-layers-print { width: 80px !important; height: 80px !important; }
-          .agenda-grid { grid-template-columns: 1fr !important; }
-          .agenda-day { min-height: 0 !important; }
+          .agenda-title { font-size: 36px !important; overflow-wrap: anywhere; }
+          .agenda-layers-print { width: 64px !important; height: 64px !important; }
         }
-        /* Print block placed LAST so it wins the cascade over any screen rule
-           that the browser's PDF preview viewport might trigger. */
+
         @media print {
           @page { size: A4 landscape; margin: 5mm; }
           .no-print, [data-pdf-hidden="true"], button { display: none !important; }
-          .agenda-export-only { display: inline-flex !important; }
-          .agenda-period--empty, .agenda-period-divider--export-hidden { display: none !important; }
           html, body {
             background: white !important;
             width: auto !important;
@@ -352,112 +275,33 @@ const PrintAgenda = () => {
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
           }
+          .agenda-scroll-shell { overflow: visible !important; padding: 0 !important; }
           .agenda-page {
-            padding: 0 !important;
-            margin: 0 !important;
+            width: 100% !important;
             max-width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+          }
+          .agenda-header { margin-bottom: 2.5mm !important; padding-bottom: 2.5mm !important; }
+          .agenda-title { font-size: 20pt !important; }
+          .agenda-sub, .agenda-week-label { font-size: 7pt !important; }
+          .agenda-legend-print { margin-top: 1mm !important; }
+          .agenda-legend-items { gap: 1mm !important; font-size: 5.5pt !important; }
+          .agenda-layers-print { width: 15mm !important; height: 15mm !important; }
+          .agenda-board {
             width: 100% !important;
-            height: auto !important;
-            min-height: 0 !important;
-            overflow: visible !important;
-            display: block !important;
-            page-break-inside: auto !important;
-            break-inside: auto !important;
-          }
-          .agenda-header {
-            display: flex !important;
-            flex-direction: row !important;
-            align-items: flex-start !important;
-            justify-content: space-between !important;
-            gap: 8px !important;
-            margin-bottom: 2.5mm !important;
-          }
-          .agenda-title { font-size: 20pt !important; line-height: 0.92 !important; }
-          .agenda-sub { font-size: 8pt !important; margin-top: 0.5mm !important; }
-          .agenda-week-label { font-size: 7pt !important; margin-top: 1mm !important; }
-          .agenda-note-print { font-size: 5.5pt !important; margin-top: 0.5mm !important; }
-          .agenda-legend-print { font-size: 6pt !important; margin-top: 1mm !important; padding-top: 0 !important; }
-          .agenda-legend-items { column-gap: 2.5mm !important; row-gap: 0.5mm !important; font-size: 6pt !important; }
-          .agenda-legend-items > div { gap: 1mm !important; }
-          .agenda-layers-print {
-            width: 15mm !important; height: 15mm !important;
-            min-width: 15mm !important; min-height: 15mm !important;
-          }
-          .agenda-grid {
-            display: grid !important;
+            grid-template-columns: repeat(var(--agenda-columns), minmax(0, 1fr)) !important;
             gap: 1.5mm !important;
+          }
+          .agenda-board-day { min-height: 0 !important; border-radius: 1mm !important; }
+          .agenda-event-card {
             min-height: 0 !important;
-            align-items: stretch !important;
-            width: 100% !important;
-          }
-          .agenda-day {
-            min-height: 0 !important;
-            height: auto !important;
-            overflow: visible !important;
-            border-width: 1.5px !important;
-            page-break-inside: avoid !important;
-            break-inside: avoid !important;
-          }
-          .day-head {
-            border-bottom-width: 1.5px !important;
-            font-size: 10pt !important;
-            line-height: 1 !important;
-            padding: 1mm 1.5mm !important;
-          }
-          .agenda-day-body {
             padding: 1mm !important;
-            overflow: visible !important;
-          }
-          .agenda-day-body > * + * { margin-top: 0.7mm !important; }
-          .agenda-period-events > * + * { margin-top: 0.8mm !important; }
-          .agenda-period-divider { margin-top: 0.8mm !important; padding-top: 0.4mm !important; }
-          .agenda-period-label {
-            font-size: 5.5pt !important;
-            line-height: 1 !important;
-            padding: 0 0.5mm 0.5mm !important;
-          }
-          .agenda-event {
-            padding: 1mm 1.2mm !important;
-            border-width: 1px !important;
-            font-size: 6.5pt !important;
-            overflow: visible !important;
-            page-break-inside: avoid !important;
-            break-inside: avoid !important;
-          }
-          .agenda-event * { line-height: 1.12 !important; }
-          .agenda-event-title,
-          .agenda-event-extra,
-          .agenda-event-meta,
-          .agenda-event-responsible {
-            max-width: none !important;
-            white-space: normal !important;
-            overflow: visible !important;
-            overflow-wrap: anywhere !important;
-            text-overflow: clip !important;
-          }
-          .agenda-event-extra,
-          .agenda-event-meta,
-          .agenda-event-responsible {
-            margin-top: 0.5mm !important;
-            font-size: 5.5pt !important;
-          }
-          .agenda-event-allday {
-            margin: -1mm -1.2mm 0.7mm !important;
-            padding: 0.5mm 5mm 0.5mm 1.2mm !important;
-            font-size: 5.5pt !important;
-          }
-          .agenda-event-type {
-            top: 0.8mm !important;
-            right: 0.8mm !important;
-            width: 4mm !important;
-            height: 4mm !important;
-          }
-          .agenda-event-type svg { width: 2.3mm !important; height: 2.3mm !important; }
-          .agenda-event-confirmation { margin-top: 0.7mm !important; gap: 0.7mm !important; }
-          .agenda-event-confirmation > span {
-            height: 3.5mm !important;
-            padding-inline: 1mm !important;
-            font-size: 5pt !important;
+            border-radius: 1mm !important;
+            box-shadow: none !important;
+            transform: none !important;
           }
           .agenda-tip { display: none !important; }
         }
@@ -516,158 +360,149 @@ const PrintAgenda = () => {
               <FileDown className="h-4 w-4" />
               {exporting ? "Gerando..." : "Exportar PDF"}
             </Button>
-            <Button variant="outline" onClick={() => window.print()}>
-              <Printer className="h-4 w-4" />
-              Imprimir
-            </Button>
           </div>
         </div>
       </div>
 
-      <main className="agenda-page max-w-[1200px] mx-auto px-4 sm:px-8 py-4 sm:py-8 bg-white text-black my-4 sm:my-8 rounded-xl shadow-xl print:my-0 print:rounded-none print:shadow-none">
+      <div className="agenda-scroll-shell w-full overflow-x-auto pb-3 print:overflow-visible print:pb-0">
+      <main
+        className="agenda-page max-w-none mx-auto px-4 sm:px-8 py-4 sm:py-8 bg-white text-black my-4 sm:my-8 rounded-xl shadow-xl print:my-0 print:rounded-none print:shadow-none"
+        style={{ width: agendaScreenWidth }}
+      >
         {/* Header */}
-        <header className="agenda-header flex flex-col md:flex-row md:items-start md:justify-between gap-4 md:gap-8 mb-6">
+        <header className="agenda-header mb-5 flex flex-col gap-5 border-b border-neutral-200 pb-5 md:flex-row md:items-start md:justify-between md:gap-8">
           <div className="min-w-0">
-            <h1 className="agenda-title agenda-title-print text-[40px] sm:text-[64px] leading-[0.95] uppercase break-words">
-              Agenda Semanal
+            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-orange-600">
+              Use Sistemas · Implantação
+            </p>
+            <h1 className="agenda-title agenda-title-print mt-2 break-words text-[36px] uppercase leading-none sm:text-[48px]">
+              Agenda semanal
             </h1>
-            <p
-              className="agenda-sub agenda-sub-print text-[16px] sm:text-[22px] mt-1 break-words"
-              style={{ color: ORANGE }}
-            >
-              visitas, reuniões e configurações internas
-            </p>
-            <p className="agenda-week-label mt-2 text-[13px] font-semibold capitalize text-neutral-800">
-              {weekLabel}
-            </p>
-            <p className="agenda-note-print text-[11px] text-neutral-600 mt-1">
-              *Algumas visitas podem ainda não terem sido confirmadas, agenda
-              pode mudar
-            </p>
-            <div className="agenda-legend-print mt-3">
+            <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1">
+              <p className="agenda-week-label text-[14px] font-semibold capitalize text-neutral-800">{weekLabel}</p>
+              <span className="text-neutral-300">•</span>
+              <p className="agenda-sub agenda-sub-print text-[13px] text-neutral-500">
+                visitas, reuniões e configurações internas
+              </p>
+            </div>
+            <div className="agenda-legend-print mt-4">
               <Legend />
             </div>
           </div>
 
-          <div className="agenda-legend-print flex items-center gap-6 pt-2 shrink-0 self-start">
+          <div className="agenda-legend-print flex shrink-0 items-center self-start rounded-2xl bg-neutral-50 px-4 py-3 ring-1 ring-neutral-200">
             <img
               src={useLogo.url}
               alt="Use Sistemas"
-              className="agenda-layers-print h-24 w-24 sm:h-36 sm:w-36 shrink-0 object-contain"
+              className="agenda-layers-print h-16 w-16 shrink-0 object-contain sm:h-20 sm:w-20"
             />
           </div>
         </header>
 
-        {/* Week grid */}
+        {/* Quadro semanal compacto: poucos níveis, cartões grandes e leitura rápida. */}
         <div
-          className={`agenda-grid grid gap-3${agendaDays.length > 5 ? " agenda-grid--weekend" : ""}`}
-          style={{ "--agenda-columns": agendaDays.length } as CSSProperties}
+          className="agenda-board grid items-stretch gap-3"
+          style={{
+            "--agenda-columns": calendarDays.length,
+            gridTemplateColumns: agendaDayWidths.map((width) => `${width}px`).join(" "),
+          } as CSSProperties}
         >
-          {agendaDays.map(({ day, label, events }) => {
+          {calendarDays.map(({ day, label, events, allDay, morning, afternoon }) => {
             const dayKey = day.getTime();
-            const isToday = isSameDay(day, new Date());
+            const today = isSameDay(day, new Date());
             const isOver = dropTarget === dayKey;
-            return (
-              <div
-                key={dayKey}
-                className="agenda-day border-[3px] rounded-md flex flex-col transition-colors"
-                style={{
-                  borderColor: isOver ? BLUE : ORANGE,
-                  minHeight: 520,
-                  background: isOver ? "#EEF1FB" : "transparent",
+            const renderCard = (training: Training) => (
+              <AgendaEventCard
+                key={training.id}
+                training={training}
+                responsibleUsers={responsibleUsers}
+                confirmed={confirmedIds.has(training.id)}
+                onToggleConfirm={() => toggleConfirm(training)}
+                onDragStart={() => setDragId(training.id)}
+                onDragEnd={() => {
+                  setDragId(null);
+                  setDropTarget(null);
                 }}
-                onDragOver={(e) => {
+                onOpen={() => navigate(`/treinamento/${training.id}`)}
+              />
+            );
+
+            return (
+              <section
+                key={dayKey}
+                className="agenda-board-day flex min-h-[470px] flex-col overflow-hidden rounded-2xl border bg-white transition-colors"
+                style={{ borderColor: isOver ? "#F26B1F" : "#E5E7EB", background: isOver ? "#FFF7ED" : "#FFFFFF" }}
+                onDragOver={(event) => {
                   if (!dragId) return;
-                  e.preventDefault();
-                  e.dataTransfer.dropEffect = "move";
+                  event.preventDefault();
+                  event.dataTransfer.dropEffect = "move";
                   if (!isOver) setDropTarget(dayKey);
                 }}
                 onDragLeave={() => {
                   if (isOver) setDropTarget(null);
                 }}
-                onDrop={(e) => {
-                  e.preventDefault();
+                onDrop={(event) => {
+                  event.preventDefault();
                   handleDropOnDay(day);
                 }}
               >
-                <div
-                  className="day-head bg-pattern-hex-light text-[28px] px-3 pt-2 pb-2 border-b-[3px]"
-                  style={{ borderColor: ORANGE, color: isToday ? ORANGE : "#111" }}
-                >
-                  {format(day, "dd")} {label}
+                <header className="border-b border-neutral-200 bg-neutral-50 px-4 py-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-neutral-500">{label}</span>
+                      <span className={`text-2xl font-semibold tracking-tight ${today ? "text-orange-600" : "text-neutral-900"}`}>
+                        {format(day, "dd")}
+                      </span>
+                    </div>
+                    <span className="rounded-full bg-white px-2 py-1 text-[10px] font-medium text-neutral-500 shadow-sm ring-1 ring-neutral-200">
+                      {events.length} {events.length === 1 ? "item" : "itens"}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-[11px] capitalize text-neutral-500">{format(day, "EEEE", { locale: ptBR })}</p>
+                </header>
+
+                <div className="flex-1 space-y-5 p-3">
+                  {allDay.length > 0 && (
+                    <section>
+                      <PeriodTitle label="Dia inteiro" count={allDay.length} />
+                      <div className="mt-2 space-y-2.5">
+                        {allDay.map((training) => (
+                          <AllDayEventChip
+                            key={training.id}
+                            training={training}
+                            confirmed={confirmedIds.has(training.id)}
+                            onOpen={() => navigate(`/treinamento/${training.id}`)}
+                          />
+                        ))}
+                      </div>
+                    </section>
+                  )}
+
+                  {morning.length > 0 && (
+                    <section>
+                      <PeriodTitle label="Manhã" count={morning.length} />
+                      <div className="mt-2 space-y-2.5">
+                        {morning.map(renderCard)}
+                      </div>
+                    </section>
+                  )}
+
+                  {afternoon.length > 0 && (
+                    <section>
+                      <PeriodTitle label="Tarde" count={afternoon.length} />
+                      <div className="mt-2 space-y-2.5">
+                        {afternoon.map(renderCard)}
+                      </div>
+                    </section>
+                  )}
+
+                  {events.length === 0 && (
+                    <div className="rounded-xl border border-dashed border-neutral-200 px-4 py-8 text-center text-xs text-neutral-400">
+                      Sem compromissos neste dia
+                    </div>
+                  )}
                 </div>
-                <div className="agenda-day-body p-2 space-y-2 flex-1 overflow-hidden">
-                  {(() => {
-                    const morning = events.filter(
-                      (e) => new Date(e.scheduled_at).getHours() < 12
-                    );
-                    const afternoon = events.filter(
-                      (e) => new Date(e.scheduled_at).getHours() >= 12
-                    );
-                    const renderCard = (t: Training) => (
-                      <EventCard
-                        key={t.id}
-                        t={t}
-                        responsibleUsers={responsibleUsers}
-                        confirmed={confirmedIds.has(t.id)}
-                        onToggleConfirm={() => toggleConfirm(t)}
-                        onDragStart={() => setDragId(t.id)}
-                        onDragEnd={() => {
-                          setDragId(null);
-                          setDropTarget(null);
-                        }}
-                        onOpen={() => navigate(`/treinamento/${t.id}`)}
-                      />
-                    );
-                    return (
-                      <>
-                        <section className={`agenda-period${morning.length === 0 ? " agenda-period--empty" : ""}`}>
-                          <div
-                            className="agenda-period-label text-[10px] font-bold uppercase tracking-wider px-1 pt-0.5 pb-1"
-                            style={{ color: ORANGE }}
-                          >
-                            Manhã
-                          </div>
-                          <div className="agenda-period-events space-y-2">
-                            {morning.length === 0 ? (
-                              <div className="text-[10px] text-neutral-400 italic px-1">
-                                —
-                              </div>
-                            ) : (
-                              morning.map(renderCard)
-                            )}
-                          </div>
-                        </section>
-                        <div
-                          className={`agenda-period-divider border-t border-dashed mt-2 pt-1${
-                            morning.length === 0 || afternoon.length === 0
-                              ? " agenda-period-divider--export-hidden"
-                              : ""
-                          }`}
-                          style={{ borderColor: ORANGE }}
-                        />
-                        <section className={`agenda-period${afternoon.length === 0 ? " agenda-period--empty" : ""}`}>
-                          <div
-                            className="agenda-period-label text-[10px] font-bold uppercase tracking-wider px-1 pb-1"
-                            style={{ color: ORANGE }}
-                          >
-                            Tarde
-                          </div>
-                          <div className="agenda-period-events space-y-2">
-                            {afternoon.length === 0 ? (
-                              <div className="text-[10px] text-neutral-400 italic px-1">
-                                —
-                              </div>
-                            ) : (
-                              afternoon.map(renderCard)
-                            )}
-                          </div>
-                        </section>
-                      </>
-                    );
-                  })()}
-                </div>
-              </div>
+              </section>
             );
           })}
         </div>
@@ -675,6 +510,7 @@ const PrintAgenda = () => {
           Dica: arraste uma visita para outro dia para reagendar.
         </p>
       </main>
+      </div>
 
       <CreateTrainingDialog
         open={createDialogOpen}
@@ -725,8 +561,25 @@ const PrintAgenda = () => {
   );
 };
 
-const EventCard = ({
-  t,
+const trainingVisual = (training: Training, confirmed: boolean) => {
+  const done = training.status === "realizado" || training.status === "concluido";
+  if (training.status === "cancelado") {
+    return { label: "Cancelada", accent: RED, border: "#F5B8B8", background: "#FFF4F4", text: "#B42323" };
+  }
+  if (done) {
+    return { label: "Realizada", accent: BLUE, border: "#C9D0E8", background: "#F5F7FC", text: "#52639D" };
+  }
+  if (training.status === "reagendado") {
+    return { label: "Reagendada", accent: "#D97706", border: "#F4CF9C", background: "#FFF8ED", text: "#9A5700" };
+  }
+  if (training.confirmed_at || confirmed) {
+    return { label: "Confirmada", accent: GREEN, border: "#AFE0C3", background: "#F1FAF5", text: "#177642" };
+  }
+  return { label: "Pendente", accent: "#D4A72C", border: "#E9D28B", background: "#FFFBEC", text: "#8B6500" };
+};
+
+const AgendaEventCard = ({
+  training,
   responsibleUsers,
   confirmed,
   onToggleConfirm,
@@ -734,7 +587,7 @@ const EventCard = ({
   onDragEnd,
   onOpen,
 }: {
-  t: Training;
+  training: Training;
   responsibleUsers: TrainingResponsibleOption[];
   confirmed: boolean;
   onToggleConfirm: () => void;
@@ -742,258 +595,199 @@ const EventCard = ({
   onDragEnd: () => void;
   onOpen: () => void;
 }) => {
-  const hour = format(new Date(t.scheduled_at), "HH:mm");
-  const label = t.client?.trim() ? t.client : t.title;
-  const isDone = t.status === "realizado" || t.status === "concluido";
-  const isResched = t.status === "reagendado";
-  const isCancelled = t.status === "cancelado";
-  const borderColor = isCancelled ? RED : isDone ? BLUE : ORANGE;
-  const showConfirmation = !isCancelled;
-  const teamConfirmed = !!t.confirmed_at;
-  const isAllDay = Number(t.duration_minutes) >= 480;
-  const responsibleNames = trainingResponsibleNames(t, responsibleUsers);
+  const scheduledAt = new Date(training.scheduled_at);
+  const hour = format(scheduledAt, "HH:mm");
+  const client = training.client?.trim() || training.title;
+  const activity = training.client?.trim() && training.title !== training.client.trim() ? training.title : null;
+  const responsibleNames = trainingResponsibleNames(training, responsibleUsers);
+  const visual = trainingVisual(training, confirmed);
+  const visitType = getVisitType(training.visit_type);
+  const VisitIcon = visitType.icon;
+  const cardNote = training.status === "cancelado" && training.cancellation_reason
+    ? training.cancellation_reason
+    : training.description?.trim() || null;
+  const details = [
+    `${hour} — ${client}`,
+    activity,
+    `${training.duration_minutes} min · ${visitType.label}`,
+    training.location,
+    responsibleNames ? `Responsáveis: ${responsibleNames}` : null,
+    cardNote ? `${training.status === "cancelado" ? "Cancelamento" : "Observação"}: ${cardNote}` : null,
+  ].filter(Boolean).join("\n");
+
   return (
     <div
-      className="block cursor-grab active:cursor-grabbing"
+      className="agenda-event-card group relative min-h-[112px] cursor-grab rounded-xl border p-3 shadow-sm transition hover:-translate-y-px hover:shadow-md active:cursor-grabbing"
+      style={{
+        borderColor: visual.border,
+        borderLeftColor: visual.accent,
+        borderLeftWidth: 4,
+        background: visual.background,
+      }}
+      title={details}
       draggable
-      onDragStart={(e) => {
-        const target = e.target as HTMLElement;
-        if (target.closest("button, .no-print")) {
-          e.preventDefault();
+      onDragStart={(event) => {
+        const target = event.target as HTMLElement;
+        if (target.closest("button")) {
+          event.preventDefault();
           return;
         }
-        e.dataTransfer.effectAllowed = "move";
-        e.dataTransfer.setData("text/plain", t.id);
+        event.dataTransfer.effectAllowed = "move";
+        event.dataTransfer.setData("text/plain", training.id);
         onDragStart();
       }}
       onDragEnd={onDragEnd}
       onClick={onOpen}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") onOpen();
+      }}
       role="button"
       tabIndex={0}
     >
-      <div
-        className={`agenda-event relative border-2 rounded-sm px-2.5 py-2 text-[13px] leading-snug bg-white ${isAllDay ? "" : "hover:brightness-[0.98]"}`}
-        style={{
-          borderColor,
-          background: isCancelled
-            ? "#FDECEC"
-            : isDone
-              ? "#EEF1FB"
-              : isAllDay
-                ? "#FFF4E8"
-                : "white",
-          borderLeftWidth: isAllDay ? 6 : undefined,
-        }}
-      >
-        {isAllDay && (
-          <div
-            className="agenda-event-allday -mx-2.5 -mt-2 mb-1.5 px-2.5 py-0.5 pr-7 text-[9.5px] font-bold uppercase tracking-widest flex items-center gap-1"
-            style={{ background: borderColor, color: "#fff" }}
-          >
-            <span aria-hidden>☀</span> Dia inteiro · 08:00 às 18:00
-          </div>
-        )}
-        {(() => {
-          const vt = getVisitType(t.visit_type);
-          const Icon = vt.icon;
-          return (
-            <span
-              className="agenda-event-type absolute top-1 right-1 inline-flex items-center justify-center h-5 w-5 rounded-full border"
-              style={{
-                color: isCancelled ? RED : vt.color,
-                borderColor: isCancelled ? RED : vt.color,
-                background: isCancelled ? "transparent" : vt.bg,
-              }}
-              title={vt.label}
-              aria-label={vt.label}
-            >
-              <Icon className="h-3 w-3" strokeWidth={2.5} />
-            </span>
-          );
-        })()}
-        <div className="flex items-start gap-1.5 pr-5">
-          {isDone && (
-            <span
-              className="font-bold text-[15px] leading-none mt-0.5"
-              style={{ color: BLUE }}
-              aria-label="Realizado"
-            >
-              *
-            </span>
-          )}
-          {isResched && (
-            <X
-              className="h-3.5 w-3.5 mt-0.5 shrink-0"
-              style={{ color: RED }}
-              strokeWidth={3}
-              aria-label="Reagendado"
-            />
-          )}
-          {isCancelled && (
-            <X
-              className="h-4 w-4 mt-0.5 shrink-0"
-              style={{ color: RED }}
-              strokeWidth={3.5}
-              aria-label="Cancelado"
-            />
-          )}
-          <span
-            className="agenda-event-title min-w-0 break-words font-semibold"
-            style={{
-              color: isCancelled ? RED : isDone ? BLUE : "#000",
-              textDecoration: isCancelled ? "line-through" : "none",
-            }}
-          >
-            {isAllDay ? label : `${hour} - ${label}`}
-          </span>
-        </div>
-        {t.client?.trim() && t.title && t.client.trim() !== t.title && (
-          <div
-            className="agenda-event-extra text-[10.5px] mt-0.5 text-neutral-700 truncate"
-            style={{ color: isCancelled ? RED : "#444" }}
-          >
-            {t.title}
-          </div>
-        )}
-        <div
-          className="agenda-event-meta text-[10px] mt-0.5 text-neutral-600 flex flex-wrap gap-x-2"
-          style={{ color: isCancelled ? RED : "#555" }}
+      <div className="flex items-start gap-2 pr-6">
+        <span className="shrink-0 text-xs font-bold tabular-nums text-neutral-800">{hour}</span>
+        <span
+          className="line-clamp-2 min-w-0 break-words text-xs font-semibold leading-snug"
+          style={{ color: visual.text, textDecoration: training.status === "cancelado" ? "line-through" : "none" }}
         >
-          {!isAllDay && <span>{t.duration_minutes} min</span>}
-          {t.location && <span>• {t.location}</span>}
-        </div>
-        {responsibleNames && (
-          <div className="agenda-event-responsible text-[10px] mt-0.5 truncate" style={{ color: isCancelled ? RED : "#555" }}>
-            Responsáveis: {responsibleNames}
-          </div>
-        )}
-        {isResched && t.description && (
-          <div
-            className="text-[10px] mt-0.5 flex items-center gap-1"
-            style={{ color: RED }}
-          >
-            <X className="h-2.5 w-2.5" strokeWidth={3} />
-            {t.description}
-          </div>
-        )}
-        {isCancelled && t.cancellation_reason && (
-          <div
-            className="text-[10px] mt-0.5 italic"
-            style={{ color: RED }}
-          >
-            Cancelado: {t.cancellation_reason}
-          </div>
-        )}
-        {showConfirmation && !isDone && (
-          <div className="agenda-event-confirmation mt-1.5 flex items-center justify-start gap-1.5 flex-wrap">
-            {!teamConfirmed && (
-              <span
-                className="inline-flex h-4 items-center justify-center gap-1 whitespace-nowrap rounded-full border px-1.5 text-center text-[9px] font-semibold uppercase leading-none tracking-wide"
-                style={
-                  confirmed
-                    ? { color: GREEN, borderColor: GREEN, background: "#EAF7EF" }
-                    : { color: "#9A6B00", borderColor: "#E0B84A", background: "#FFF7E0" }
-                }
-              >
-                <span
-                  className="inline-block w-1.5 h-1.5 rounded-full"
-                  style={{ background: confirmed ? GREEN : "#E0B84A" }}
-                />
-                {confirmed ? "Confirmada" : "Pendente"}
-              </span>
-            )}
-            {teamConfirmed && (
-              <span
-                className="agenda-export-only h-4 items-center justify-center gap-1 whitespace-nowrap rounded-full border px-1.5 text-center text-[9px] font-semibold uppercase leading-none tracking-wide"
-                style={{ color: GREEN, borderColor: GREEN, background: "#EAF7EF" }}
-              >
-                <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: GREEN }} />
-                Confirmada
-              </span>
-            )}
-            <button
-              type="button"
-              data-pdf-hidden="true"
-              onClick={(e) => {
-                e.stopPropagation();
-                onToggleConfirm();
-              }}
-              onMouseDown={(e) => e.stopPropagation()}
-              draggable={false}
-              className="no-print inline-flex h-4 items-center justify-center gap-1 whitespace-nowrap rounded-full border px-2 text-center text-[9px] font-semibold uppercase leading-none tracking-wide transition-colors"
-              style={
-                teamConfirmed
-                  ? { color: GREEN, borderColor: GREEN, background: "white" }
-                  : { color: "white", borderColor: ORANGE, background: ORANGE }
-              }
-              title={teamConfirmed ? "Clique para desfazer a confirmação interna" : "Confirmar agendamento com o cliente"}
-            >
-              {teamConfirmed ? "✓ Confirmado" : "Confirmar"}
-            </button>
-          </div>
-        )}
+          {client}
+        </span>
+      </div>
+      <span
+        className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-white/80"
+        style={{ color: visitType.color }}
+        title={visitType.label}
+      >
+        <VisitIcon className="h-3 w-3" strokeWidth={2.4} />
+      </span>
+
+      {activity && <p className="mt-1 line-clamp-2 break-words text-[10px] leading-snug text-neutral-600">{activity}</p>}
+      <p className="mt-1 line-clamp-2 text-[9px] text-neutral-500">
+        {training.duration_minutes} min · {visitType.label}{training.location ? ` · ${training.location}` : ""}
+      </p>
+      {responsibleNames && (
+        <p className="mt-1 line-clamp-2 break-words text-[9px] leading-snug text-neutral-500">{responsibleNames}</p>
+      )}
+      {cardNote && (
+        <p
+          className="mt-1 line-clamp-2 break-words text-[9px] italic leading-snug"
+          style={{ color: training.status === "cancelado" ? visual.text : "#6B7280" }}
+        >
+          {cardNote}
+        </p>
+      )}
+
+      <div className="mt-2 flex items-center gap-1.5 pr-7">
+        <span
+          className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[8px] font-semibold uppercase tracking-wide"
+          style={{ color: visual.text, background: `${visual.accent}18` }}
+        >
+          <span className="h-1.5 w-1.5 rounded-full" style={{ background: visual.accent }} />
+          {visual.label}
+        </span>
+      </div>
+
+      {training.status !== "cancelado" && training.status !== "realizado" && training.status !== "concluido" && (
+        <button
+          type="button"
+          data-pdf-hidden="true"
+          aria-label={training.confirmed_at ? "Remover confirmação" : "Confirmar visita"}
+          title={training.confirmed_at ? "Remover confirmação interna" : "Confirmar visita"}
+          className="no-print absolute bottom-2 right-2 flex h-7 w-7 items-center justify-center rounded-full bg-white text-neutral-500 opacity-0 shadow-sm ring-1 ring-neutral-200 transition hover:text-emerald-600 group-hover:opacity-100 focus:opacity-100"
+          onClick={(event) => {
+            event.stopPropagation();
+            onToggleConfirm();
+          }}
+          onMouseDown={(event) => event.stopPropagation()}
+          draggable={false}
+        >
+          <Check className="h-4 w-4" strokeWidth={2.5} />
+        </button>
+      )}
+    </div>
+  );
+};
+
+const PeriodTitle = ({ label, count }: { label: string; count: number }) => (
+  <div className="flex items-center gap-2">
+    <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-orange-600">{label}</span>
+    <span className="h-px flex-1 bg-orange-100" />
+    <span className="text-[9px] tabular-nums text-neutral-400">{count}</span>
+  </div>
+);
+
+const AllDayEventChip = ({
+  training,
+  confirmed,
+  onOpen,
+}: {
+  training: Training;
+  confirmed: boolean;
+  onOpen: () => void;
+}) => {
+  const visual = trainingVisual(training, confirmed);
+  const client = training.client?.trim() || training.title;
+  const activity = training.client?.trim() && training.title !== training.client.trim() ? training.title : null;
+  const visitType = getVisitType(training.visit_type);
+  const VisitIcon = visitType.icon;
+  return (
+    <div
+      onClick={onOpen}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") onOpen();
+      }}
+      role="button"
+      tabIndex={0}
+      className="relative min-h-[68px] w-full cursor-pointer rounded-xl border p-2.5 text-left transition hover:-translate-y-px hover:shadow-sm"
+      style={{
+        borderColor: visual.border,
+        borderLeftColor: visual.accent,
+        borderLeftWidth: 4,
+        background: visual.background,
+        color: visual.text,
+      }}
+      title={`${client} · Dia inteiro · ${visual.label}`}
+    >
+      <div className="flex items-start gap-2 pr-5">
+        <span className="line-clamp-2 min-w-0 break-words text-[11px] font-semibold leading-snug">{client}</span>
+      </div>
+      <span
+        className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-white/80"
+        style={{ color: visitType.color }}
+        title={visitType.label}
+      >
+        <VisitIcon className="h-3 w-3" strokeWidth={2.4} />
+      </span>
+      {activity && <p className="mt-1 truncate text-[9px] text-neutral-600">{activity}</p>}
+      <div className="mt-2 flex items-center gap-1.5 text-[8px] font-semibold uppercase tracking-wide">
+        <span>Dia inteiro</span>
+        <span className="text-neutral-300">•</span>
+        <span>{visual.label}</span>
       </div>
     </div>
   );
 };
 
 const Legend = () => (
-  <div className="agenda-legend-items flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[13px]">
-    {VISIT_TYPES.map((vt) => {
-      const Icon = vt.icon;
+  <div className="agenda-legend-items flex flex-wrap items-center gap-2 text-[11px] text-neutral-600">
+    {VISIT_TYPES.map((visitType) => {
+      const Icon = visitType.icon;
       return (
-        <div key={vt.id} className="flex items-center gap-2">
+        <div
+          key={visitType.id}
+          className="flex items-center gap-1.5 rounded-full bg-neutral-50 px-2 py-1 ring-1 ring-neutral-200"
+        >
           <span
-            className="inline-flex items-center justify-center h-4 w-4 rounded-full border"
-            style={{ color: vt.color, borderColor: vt.color, background: vt.bg }}
+            className="inline-flex h-4 w-4 items-center justify-center rounded-full"
+            style={{ color: visitType.color, background: visitType.bg }}
           >
-            <Icon className="h-2.5 w-2.5" strokeWidth={2.5} />
+            <Icon className="h-2.5 w-2.5" strokeWidth={2.4} />
           </span>
-          <span>{vt.short}</span>
+          <span>{visitType.short}</span>
         </div>
       );
     })}
-    <div className="flex items-center gap-2">
-      <span
-        className="w-4 h-4 rounded-full inline-block"
-        style={{ background: ORANGE }}
-      />
-      <span>Agendado</span>
-    </div>
-    <div className="flex items-center gap-2">
-      <span
-        className="w-4 text-center font-bold leading-none"
-        style={{ color: BLUE }}
-      >
-        *
-      </span>
-      <span>Realizado</span>
-    </div>
-    <div className="flex items-center gap-2">
-      <X className="w-4 h-4" style={{ color: RED }} strokeWidth={3} />
-      <span>Reagendado</span>
-    </div>
-    <div className="flex items-center gap-2">
-      <span
-        className="w-4 h-4 rounded-sm inline-block border-2"
-        style={{ background: "#FDECEC", borderColor: RED }}
-      />
-      <span>Cancelado</span>
-    </div>
-    <div className="flex items-center gap-2">
-      <span
-        className="w-2 h-2 rounded-full inline-block"
-        style={{ background: GREEN }}
-      />
-      <span>Confirmada</span>
-    </div>
-    <div className="flex items-center gap-2">
-      <span
-        className="w-2 h-2 rounded-full inline-block"
-        style={{ background: "#E0B84A" }}
-      />
-      <span>Pendente</span>
-    </div>
+    <span className="ml-1 text-neutral-400">As cores dos cartões indicam a situação.</span>
   </div>
 );
 
