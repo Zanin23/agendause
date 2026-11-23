@@ -12,8 +12,8 @@ import { Printer, ChevronLeft, ChevronRight, X, FileDown, CalendarPlus } from "l
 import { BackButton } from "@/components/BackButton";
 import { CreateTrainingDialog } from "@/components/CreateTrainingDialog";
 import useLogo from "@/assets/logo-use-sistemas-v2.png.asset.json";
-import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import { supabase } from "@/integrations/supabase/client";
 import { SEO } from "@/components/SEO";
 import { useAuth } from "@/hooks/useAuth";
@@ -74,49 +74,6 @@ const PrintAgenda = () => {
   const [exporting, setExporting] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
-  const exportPDF = async () => {
-    const el = document.querySelector(".agenda-page") as HTMLElement | null;
-    if (!el) return;
-    setExporting(true);
-    try {
-      const canvas = await html2canvas(el, {
-        scale: 2,
-        backgroundColor: "#ffffff",
-        useCORS: true,
-        logging: false,
-        windowWidth: 1200, // Mantém todos os dias na mesma linha, inclusive ao exportar pelo celular.
-        ignoreElements: (element) =>
-          element.classList.contains("no-print") ||
-          element.tagName === "BUTTON" ||
-          element.getAttribute("data-pdf-hidden") === "true",
-        onclone: (clonedDocument) => {
-          // A exportação recebe um layout próprio: compacto, sem ações e sem depender
-          // das regras de @media print, que o html2canvas não aplica.
-          clonedDocument.body.style.backgroundColor = "#ffffff";
-          clonedDocument.body.style.margin = "0";
-          const exportPage = clonedDocument.querySelector<HTMLElement>(".agenda-page");
-          exportPage?.classList.add("agenda-export");
-        },
-      });
-      const imgData = canvas.toDataURL("image/png");
-      const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
-      const pageW = pdf.internal.pageSize.getWidth();
-      const pageH = pdf.internal.pageSize.getHeight();
-      const margin = 6;
-      const maxW = pageW - margin * 2;
-      const maxH = pageH - margin * 2;
-      const ratio = Math.min(maxW / canvas.width, maxH / canvas.height);
-      const w = canvas.width * ratio;
-      const h = canvas.height * ratio;
-      pdf.addImage(imgData, "PNG", (pageW - w) / 2, margin, w, h);
-      pdf.save(`agenda-${format(weekStart, "yyyy-MM-dd")}.pdf`);
-    } catch (e) {
-      toast({ title: "Erro ao gerar PDF", description: String(e), variant: "destructive" });
-    } finally {
-      setExporting(false);
-    }
-  };
-
   const loadAgenda = useCallback(async () => {
     const [{ data }, { data: ua }, { data: ga }] = await Promise.all([
       supabase
@@ -158,6 +115,155 @@ const PrintAgenda = () => {
     "d MMM yyyy",
     { locale: ptBR }
   )}`;
+
+  const exportPDF = () => {
+    setExporting(true);
+    try {
+      const totalEvents = agendaDays.reduce((total, { events }) => total + events.length, 0);
+      const rows = agendaDays.flatMap(({ day, label: dayLabel, events }) => {
+        const date = `${format(day, "dd/MM")}\n${dayLabel}`;
+        if (events.length === 0) {
+          return [[date, "—", "Nenhum compromisso agendado", "—", "—", "—", "Livre"]];
+        }
+
+        return events.map((training) => {
+          const scheduledAt = new Date(training.scheduled_at);
+          const isAllDay = Number(training.duration_minutes) >= 480;
+          const client = training.client?.trim();
+          const title = training.title.trim();
+          const commitment = [
+            client || title,
+            client && title && client !== title ? title : null,
+            training.status === "cancelado" && training.cancellation_reason
+              ? `Motivo do cancelamento: ${training.cancellation_reason}`
+              : null,
+            training.status === "reagendado" && training.description
+              ? `Reagendamento: ${training.description}`
+              : null,
+          ].filter(Boolean).join("\n");
+          const durationAndLocation = [
+            isAllDay ? "Dia inteiro" : `${training.duration_minutes} min`,
+            training.location?.trim() || null,
+          ].filter(Boolean).join("\n");
+          const isDone = training.status === "realizado" || training.status === "concluido";
+          const status = training.status === "cancelado"
+            ? "Cancelada"
+            : isDone
+              ? "Realizada"
+              : training.status === "reagendado"
+                ? "Reagendada"
+                : training.confirmed_at || confirmedIds.has(training.id)
+                  ? "Confirmada"
+                  : "Pendente";
+
+          return [
+            date,
+            isAllDay ? "Dia inteiro" : format(scheduledAt, "HH:mm"),
+            commitment,
+            getVisitType(training.visit_type).label,
+            durationAndLocation,
+            trainingResponsibleNames(training, responsibleUsers) || "Não informado",
+            status,
+          ];
+        });
+      });
+
+      const pdf = new jsPDF({
+        orientation: "landscape",
+        unit: "mm",
+        format: "a4",
+        compress: true,
+        putOnlyUsedFonts: true,
+      });
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const drawHeader = () => {
+        pdf.setFillColor(242, 107, 31);
+        pdf.rect(10, 8, 2.5, 18, "F");
+        pdf.setFont("helvetica", "bold");
+        pdf.setFontSize(17);
+        pdf.setTextColor(20, 20, 20);
+        pdf.text("AGENDA SEMANAL", 16, 14);
+        pdf.setFont("helvetica", "normal");
+        pdf.setFontSize(9);
+        pdf.setTextColor(90, 90, 90);
+        pdf.text(weekLabel.toUpperCase(), 16, 20);
+        pdf.setFontSize(7.5);
+        pdf.text(`${totalEvents} ${totalEvents === 1 ? "compromisso" : "compromissos"}`, 16, 24.5);
+        pdf.setFont("helvetica", "bold");
+        pdf.setFontSize(10);
+        pdf.setTextColor(242, 107, 31);
+        pdf.text("USE SISTEMAS", pageWidth - 10, 14, { align: "right" });
+        pdf.setDrawColor(225, 225, 225);
+        pdf.setLineWidth(0.25);
+        pdf.line(10, 28, pageWidth - 10, 28);
+      };
+
+      autoTable(pdf, {
+        startY: 32,
+        margin: { top: 32, right: 10, bottom: 10, left: 10 },
+        head: [["Data", "Horário", "Cliente / atividade", "Modalidade", "Duração / local", "Responsáveis", "Situação"]],
+        body: rows,
+        theme: "grid",
+        showHead: "everyPage",
+        rowPageBreak: "avoid",
+        styles: {
+          font: "helvetica",
+          fontSize: 7.2,
+          cellPadding: 1.7,
+          valign: "top",
+          overflow: "linebreak",
+          textColor: [35, 35, 35],
+          lineColor: [218, 218, 218],
+          lineWidth: 0.15,
+        },
+        headStyles: {
+          fillColor: [242, 107, 31],
+          textColor: [255, 255, 255],
+          fontStyle: "bold",
+          fontSize: 7.5,
+          cellPadding: 1.8,
+        },
+        alternateRowStyles: { fillColor: [250, 250, 250] },
+        columnStyles: {
+          0: { cellWidth: 20, fontStyle: "bold" },
+          1: { cellWidth: 20, fontStyle: "bold" },
+          2: { cellWidth: 75 },
+          3: { cellWidth: 25 },
+          4: { cellWidth: 38 },
+          5: { cellWidth: 68 },
+          6: { cellWidth: 31, fontStyle: "bold" },
+        },
+        didParseCell: ({ section, column, cell }) => {
+          if (section !== "body" || column.index !== 6) return;
+          const status = String(cell.raw);
+          if (status === "Cancelada") cell.styles.textColor = [190, 35, 35];
+          else if (status === "Confirmada" || status === "Realizada") cell.styles.textColor = [24, 130, 72];
+          else if (status === "Reagendada" || status === "Pendente") cell.styles.textColor = [160, 105, 0];
+          else cell.styles.textColor = [90, 90, 90];
+        },
+        didDrawPage: ({ pageNumber }) => {
+          drawHeader();
+          pdf.setFont("helvetica", "normal");
+          pdf.setFontSize(7);
+          pdf.setTextColor(130, 130, 130);
+          pdf.text(`Página ${pageNumber}`, pageWidth - 10, pageHeight - 5, { align: "right" });
+        },
+      });
+
+      pdf.setProperties({
+        title: `Agenda semanal — ${weekLabel}`,
+        subject: "Agenda de visitas, reuniões e configurações internas",
+        author: "Use Sistemas",
+      });
+      pdf.save(`agenda-${format(weekStart, "yyyy-MM-dd")}.pdf`);
+      toast({ title: "PDF gerado", description: "Agenda exportada em formato leve e sem cortes." });
+    } catch (e) {
+      toast({ title: "Erro ao gerar PDF", description: String(e), variant: "destructive" });
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const handleDropOnDay = (day: Date) => {
     if (!dragId) return;
@@ -204,154 +310,13 @@ const PrintAgenda = () => {
         path="/agenda/imprimir"
       />
       <style>{`
-        /* Use a hex border fallback so html2canvas can render agenda elements. */
+        /* Cores explícitas mantêm a impressão consistente em qualquer tema. */
         .agenda-page { --color-border: #e5e5e5; }
         .agenda-title { font-family: 'Clash Display', 'Archivo', sans-serif; font-weight: 700; letter-spacing: -0.02em; }
         .agenda-sub { font-family: 'Clash Display', 'Archivo', sans-serif; font-weight: 600; font-style: italic; }
         .day-head { font-family: 'Clash Display', 'Archivo', sans-serif; font-weight: 700; letter-spacing: 0.01em; }
         .agenda-grid { grid-template-columns: repeat(var(--agenda-columns), minmax(0, 1fr)); }
         .agenda-export-only { display: none; }
-        /* O html2canvas não usa @media print. Esta classe é adicionada apenas
-           ao clone usado na exportação e mantém o PDF compacto e sem ações. */
-        .agenda-page.agenda-export {
-          width: 1120px !important;
-          max-width: none !important;
-          min-height: 0 !important;
-          margin: 0 !important;
-          padding: 22px !important;
-          border-radius: 0 !important;
-          box-shadow: none !important;
-          overflow: visible !important;
-        }
-        .agenda-export .no-print,
-        .agenda-export [data-pdf-hidden="true"],
-        .agenda-export button {
-          display: none !important;
-        }
-        .agenda-export .agenda-export-only { display: inline-flex !important; }
-        .agenda-export .agenda-header {
-          display: flex !important;
-          flex-direction: row !important;
-          align-items: flex-start !important;
-          justify-content: space-between !important;
-          gap: 20px !important;
-          margin-bottom: 12px !important;
-        }
-        .agenda-export .agenda-title {
-          font-size: 42px !important;
-          line-height: 0.9 !important;
-        }
-        .agenda-export .agenda-sub {
-          margin-top: 2px !important;
-          font-size: 15px !important;
-          line-height: 1.1 !important;
-        }
-        .agenda-export .agenda-week-label {
-          margin-top: 6px !important;
-          font-size: 12px !important;
-          line-height: 1.2 !important;
-        }
-        .agenda-export .agenda-note-print {
-          margin-top: 2px !important;
-          font-size: 9px !important;
-          line-height: 1.2 !important;
-        }
-        .agenda-export .agenda-legend-print {
-          margin-top: 6px !important;
-          padding-top: 0 !important;
-          font-size: 9px !important;
-        }
-        .agenda-export .agenda-legend-items {
-          column-gap: 10px !important;
-          row-gap: 3px !important;
-          font-size: 9px !important;
-        }
-        .agenda-export .agenda-legend-items > div { gap: 4px !important; }
-        .agenda-export .agenda-layers-print {
-          width: 72px !important;
-          height: 72px !important;
-          min-width: 72px !important;
-          min-height: 72px !important;
-        }
-        .agenda-export .agenda-grid {
-          gap: 8px !important;
-          align-items: stretch !important;
-          width: 100% !important;
-        }
-        .agenda-export .agenda-day {
-          min-height: 0 !important;
-          height: auto !important;
-          overflow: visible !important;
-          border-width: 2px !important;
-        }
-        .agenda-export .day-head {
-          padding: 5px 7px !important;
-          border-bottom-width: 2px !important;
-          font-size: 18px !important;
-          line-height: 1 !important;
-        }
-        .agenda-export .agenda-day-body {
-          padding: 6px !important;
-        }
-        .agenda-export .agenda-day-body > * + * { margin-top: 5px !important; }
-        .agenda-export .agenda-period--empty,
-        .agenda-export .agenda-period-divider--export-hidden {
-          display: none !important;
-        }
-        .agenda-export .agenda-period-label {
-          padding: 0 2px 3px !important;
-          font-size: 8px !important;
-          line-height: 1 !important;
-        }
-        .agenda-export .agenda-period-events > * + * { margin-top: 5px !important; }
-        .agenda-export .agenda-period-divider {
-          margin-top: 5px !important;
-          padding-top: 2px !important;
-        }
-        .agenda-export .agenda-event {
-          padding: 6px !important;
-          border-width: 1px !important;
-          font-size: 10px !important;
-          line-height: 1.2 !important;
-        }
-        .agenda-export .agenda-event * { line-height: 1.2 !important; }
-        .agenda-export .agenda-event-title {
-          font-size: 10px !important;
-          line-height: 1.2 !important;
-        }
-        .agenda-export .agenda-event-allday {
-          margin: -6px -6px 4px !important;
-          padding: 2px 20px 2px 6px !important;
-          font-size: 8px !important;
-        }
-        .agenda-export .agenda-event-type {
-          top: 4px !important;
-          right: 4px !important;
-          width: 16px !important;
-          height: 16px !important;
-        }
-        .agenda-export .agenda-event-type svg {
-          width: 9px !important;
-          height: 9px !important;
-        }
-        .agenda-export .agenda-event-extra,
-        .agenda-export .agenda-event-meta,
-        .agenda-export .agenda-event-responsible {
-          margin-top: 3px !important;
-          font-size: 8.5px !important;
-          white-space: normal !important;
-          overflow: visible !important;
-          text-overflow: clip !important;
-        }
-        .agenda-export .agenda-event-confirmation {
-          margin-top: 4px !important;
-          gap: 4px !important;
-        }
-        .agenda-export .agenda-event-confirmation > span {
-          height: 15px !important;
-          padding-inline: 5px !important;
-          font-size: 7.5px !important;
-        }
         /* Wrap the extended grid on narrower screens so cards stay readable. */
         @media screen and (min-width: 768px) {
           .agenda-grid--weekend { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
