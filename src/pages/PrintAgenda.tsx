@@ -12,8 +12,6 @@ import { Printer, ChevronLeft, ChevronRight, X, FileDown, CalendarPlus } from "l
 import { BackButton } from "@/components/BackButton";
 import { CreateTrainingDialog } from "@/components/CreateTrainingDialog";
 import useLogo from "@/assets/logo-use-sistemas-v2.png.asset.json";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
 import { supabase } from "@/integrations/supabase/client";
 import { SEO } from "@/components/SEO";
 import { useAuth } from "@/hooks/useAuth";
@@ -32,6 +30,7 @@ import { toast } from "@/hooks/use-toast";
 import { getVisitType, VISIT_TYPES } from "@/lib/visitType";
 import { trainingResponsibleNames, type TrainingResponsibleAssignment, type TrainingResponsibleOption } from "@/lib/trainingResponsible";
 import { getWeeklyAgendaDays } from "@/lib/weeklyAgenda";
+import { createWeeklyAgendaPdf, type WeeklyAgendaPdfStatus } from "@/lib/weeklyAgendaPdf";
 
 type Training = {
   id: string;
@@ -109,6 +108,22 @@ const PrintAgenda = () => {
     () => getWeeklyAgendaDays(weekStart, trainings),
     [weekStart, trainings],
   );
+  const agendaDayLanes = useMemo(
+    () => agendaDays.map(({ events }) => {
+      const morningCount = events.filter((event) => new Date(event.scheduled_at).getHours() < 12).length;
+      const afternoonCount = events.length - morningCount;
+      return Math.max(1, Math.ceil(morningCount / 3), Math.ceil(afternoonCount / 3));
+    }),
+    [agendaDays],
+  );
+  const agendaDayWidths = useMemo(
+    () => agendaDayLanes.map((lanes) => lanes * 170 + Math.max(0, lanes - 1) * 8),
+    [agendaDayLanes],
+  );
+  const agendaScreenWidth = Math.max(
+    1200,
+    agendaDayWidths.reduce((total, width) => total + width, 0) + Math.max(0, agendaDayWidths.length - 1) * 12 + 64,
+  );
 
   const weekLabel = `${format(weekStart, "d MMM", { locale: ptBR })} – ${format(
     endOfWeek(weekStart, { weekStartsOn: 1 }),
@@ -119,34 +134,16 @@ const PrintAgenda = () => {
   const exportPDF = () => {
     setExporting(true);
     try {
-      const totalEvents = agendaDays.reduce((total, { events }) => total + events.length, 0);
-      const rows = agendaDays.flatMap(({ day, label: dayLabel, events }) => {
-        const date = `${format(day, "dd/MM")}\n${dayLabel}`;
-        if (events.length === 0) {
-          return [[date, "—", "Nenhum compromisso agendado", "—", "—", "—", "Livre"]];
-        }
-
-        return events.map((training) => {
+      const days = agendaDays.map(({ day, label, events }) => ({
+        dateLabel: format(day, "dd"),
+        dayLabel: label,
+        events: events.map((training) => {
           const scheduledAt = new Date(training.scheduled_at);
           const isAllDay = Number(training.duration_minutes) >= 480;
           const client = training.client?.trim();
           const title = training.title.trim();
-          const commitment = [
-            client || title,
-            client && title && client !== title ? title : null,
-            training.status === "cancelado" && training.cancellation_reason
-              ? `Motivo do cancelamento: ${training.cancellation_reason}`
-              : null,
-            training.status === "reagendado" && training.description
-              ? `Reagendamento: ${training.description}`
-              : null,
-          ].filter(Boolean).join("\n");
-          const durationAndLocation = [
-            isAllDay ? "Dia inteiro" : `${training.duration_minutes} min`,
-            training.location?.trim() || null,
-          ].filter(Boolean).join("\n");
           const isDone = training.status === "realizado" || training.status === "concluido";
-          const status = training.status === "cancelado"
+          const status: WeeklyAgendaPdfStatus = training.status === "cancelado"
             ? "Cancelada"
             : isDone
               ? "Realizada"
@@ -155,109 +152,29 @@ const PrintAgenda = () => {
                 : training.confirmed_at || confirmedIds.has(training.id)
                   ? "Confirmada"
                   : "Pendente";
+          const note = training.status === "cancelado" && training.cancellation_reason
+            ? `Cancelamento: ${training.cancellation_reason}`
+            : training.status === "reagendado" && training.description
+              ? `Reagendamento: ${training.description}`
+              : null;
 
-          return [
-            date,
-            isAllDay ? "Dia inteiro" : format(scheduledAt, "HH:mm"),
-            commitment,
-            getVisitType(training.visit_type).label,
-            durationAndLocation,
-            trainingResponsibleNames(training, responsibleUsers) || "Não informado",
+          return {
+            time: isAllDay ? "Dia inteiro" : format(scheduledAt, "HH:mm"),
+            client: client || title,
+            activity: client && title && client !== title ? title : null,
+            durationLabel: isAllDay ? "08:00 às 18:00" : `${training.duration_minutes} min`,
+            modality: getVisitType(training.visit_type).label,
+            location: training.location?.trim() || null,
+            responsibles: trainingResponsibleNames(training, responsibleUsers) || null,
             status,
-          ];
-        });
-      });
+            note,
+          };
+        }),
+      }));
 
-      const pdf = new jsPDF({
-        orientation: "landscape",
-        unit: "mm",
-        format: "a4",
-        compress: true,
-        putOnlyUsedFonts: true,
-      });
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      const drawHeader = () => {
-        pdf.setFillColor(242, 107, 31);
-        pdf.rect(10, 8, 2.5, 18, "F");
-        pdf.setFont("helvetica", "bold");
-        pdf.setFontSize(17);
-        pdf.setTextColor(20, 20, 20);
-        pdf.text("AGENDA SEMANAL", 16, 14);
-        pdf.setFont("helvetica", "normal");
-        pdf.setFontSize(9);
-        pdf.setTextColor(90, 90, 90);
-        pdf.text(weekLabel.toUpperCase(), 16, 20);
-        pdf.setFontSize(7.5);
-        pdf.text(`${totalEvents} ${totalEvents === 1 ? "compromisso" : "compromissos"}`, 16, 24.5);
-        pdf.setFont("helvetica", "bold");
-        pdf.setFontSize(10);
-        pdf.setTextColor(242, 107, 31);
-        pdf.text("USE SISTEMAS", pageWidth - 10, 14, { align: "right" });
-        pdf.setDrawColor(225, 225, 225);
-        pdf.setLineWidth(0.25);
-        pdf.line(10, 28, pageWidth - 10, 28);
-      };
-
-      autoTable(pdf, {
-        startY: 32,
-        margin: { top: 32, right: 10, bottom: 10, left: 10 },
-        head: [["Data", "Horário", "Cliente / atividade", "Modalidade", "Duração / local", "Responsáveis", "Situação"]],
-        body: rows,
-        theme: "grid",
-        showHead: "everyPage",
-        rowPageBreak: "avoid",
-        styles: {
-          font: "helvetica",
-          fontSize: 7.2,
-          cellPadding: 1.7,
-          valign: "top",
-          overflow: "linebreak",
-          textColor: [35, 35, 35],
-          lineColor: [218, 218, 218],
-          lineWidth: 0.15,
-        },
-        headStyles: {
-          fillColor: [242, 107, 31],
-          textColor: [255, 255, 255],
-          fontStyle: "bold",
-          fontSize: 7.5,
-          cellPadding: 1.8,
-        },
-        alternateRowStyles: { fillColor: [250, 250, 250] },
-        columnStyles: {
-          0: { cellWidth: 20, fontStyle: "bold" },
-          1: { cellWidth: 20, fontStyle: "bold" },
-          2: { cellWidth: 75 },
-          3: { cellWidth: 25 },
-          4: { cellWidth: 38 },
-          5: { cellWidth: 68 },
-          6: { cellWidth: 31, fontStyle: "bold" },
-        },
-        didParseCell: ({ section, column, cell }) => {
-          if (section !== "body" || column.index !== 6) return;
-          const status = String(cell.raw);
-          if (status === "Cancelada") cell.styles.textColor = [190, 35, 35];
-          else if (status === "Confirmada" || status === "Realizada") cell.styles.textColor = [24, 130, 72];
-          else if (status === "Reagendada" || status === "Pendente") cell.styles.textColor = [160, 105, 0];
-          else cell.styles.textColor = [90, 90, 90];
-        },
-        didDrawPage: ({ pageNumber }) => {
-          drawHeader();
-          pdf.setFont("helvetica", "normal");
-          pdf.setFontSize(7);
-          pdf.setTextColor(130, 130, 130);
-          pdf.text(`Página ${pageNumber}`, pageWidth - 10, pageHeight - 5, { align: "right" });
-        },
-      });
-
-      pdf.setProperties({
-        title: `Agenda semanal — ${weekLabel}`,
-        subject: "Agenda de visitas, reuniões e configurações internas",
-        author: "Use Sistemas",
-      });
+      const pdf = createWeeklyAgendaPdf({ weekLabel, days });
       pdf.save(`agenda-${format(weekStart, "yyyy-MM-dd")}.pdf`);
-      toast({ title: "PDF gerado", description: "Agenda exportada em formato leve e sem cortes." });
+      toast({ title: "PDF gerado", description: "Agenda exportada em formato leve, horizontal e sem cortes." });
     } catch (e) {
       toast({ title: "Erro ao gerar PDF", description: String(e), variant: "destructive" });
     } finally {
@@ -315,6 +232,7 @@ const PrintAgenda = () => {
         .agenda-title { font-family: 'Clash Display', 'Archivo', sans-serif; font-weight: 700; letter-spacing: -0.02em; }
         .agenda-sub { font-family: 'Clash Display', 'Archivo', sans-serif; font-weight: 600; font-style: italic; }
         .day-head { font-family: 'Clash Display', 'Archivo', sans-serif; font-weight: 700; letter-spacing: 0.01em; }
+        .agenda-scroll-shell { scrollbar-gutter: stable; }
         .agenda-grid { grid-template-columns: repeat(var(--agenda-columns), minmax(0, 1fr)); }
         .agenda-export-only { display: none; }
         /* Wrap the extended grid on narrower screens so cards stay readable. */
@@ -324,7 +242,7 @@ const PrintAgenda = () => {
         }
         /* Mobile screen styles — must NOT apply during print. */
         @media screen and (max-width: 767px) {
-          .agenda-page { padding: 16px !important; }
+          .agenda-page { width: 100% !important; padding: 16px !important; }
           .agenda-header {
             flex-direction: column !important;
             gap: 12px !important;
@@ -334,6 +252,7 @@ const PrintAgenda = () => {
           .agenda-sub { font-size: 16px !important; word-break: break-word; }
           .agenda-layers-print { width: 80px !important; height: 80px !important; }
           .agenda-grid { grid-template-columns: 1fr !important; }
+          .agenda-period-events { grid-template-columns: 1fr !important; }
           .agenda-day { min-height: 0 !important; }
         }
         /* Print block placed LAST so it wins the cascade over any screen rule
@@ -343,6 +262,7 @@ const PrintAgenda = () => {
           .no-print, [data-pdf-hidden="true"], button { display: none !important; }
           .agenda-export-only { display: inline-flex !important; }
           .agenda-period--empty, .agenda-period-divider--export-hidden { display: none !important; }
+          .agenda-scroll-shell { overflow: visible !important; }
           html, body {
             background: white !important;
             width: auto !important;
@@ -385,6 +305,7 @@ const PrintAgenda = () => {
           }
           .agenda-grid {
             display: grid !important;
+            grid-template-columns: repeat(var(--agenda-columns), minmax(0, 1fr)) !important;
             gap: 1.5mm !important;
             min-height: 0 !important;
             align-items: stretch !important;
@@ -409,6 +330,7 @@ const PrintAgenda = () => {
             overflow: visible !important;
           }
           .agenda-day-body > * + * { margin-top: 0.7mm !important; }
+          .agenda-period-events { display: block !important; grid-template-columns: 1fr !important; }
           .agenda-period-events > * + * { margin-top: 0.8mm !important; }
           .agenda-period-divider { margin-top: 0.8mm !important; padding-top: 0.4mm !important; }
           .agenda-period-label {
@@ -524,7 +446,11 @@ const PrintAgenda = () => {
         </div>
       </div>
 
-      <main className="agenda-page max-w-[1200px] mx-auto px-4 sm:px-8 py-4 sm:py-8 bg-white text-black my-4 sm:my-8 rounded-xl shadow-xl print:my-0 print:rounded-none print:shadow-none">
+      <div className="agenda-scroll-shell w-full overflow-x-auto pb-3 print:overflow-visible print:pb-0">
+      <main
+        className="agenda-page max-w-none mx-auto px-4 sm:px-8 py-4 sm:py-8 bg-white text-black my-4 sm:my-8 rounded-xl shadow-xl print:my-0 print:rounded-none print:shadow-none"
+        style={{ width: agendaScreenWidth }}
+      >
         {/* Header */}
         <header className="agenda-header flex flex-col md:flex-row md:items-start md:justify-between gap-4 md:gap-8 mb-6">
           <div className="min-w-0">
@@ -561,9 +487,12 @@ const PrintAgenda = () => {
         {/* Week grid */}
         <div
           className={`agenda-grid grid gap-3${agendaDays.length > 5 ? " agenda-grid--weekend" : ""}`}
-          style={{ "--agenda-columns": agendaDays.length } as CSSProperties}
+          style={{
+            "--agenda-columns": agendaDays.length,
+            gridTemplateColumns: agendaDayWidths.map((width) => `${width}px`).join(" "),
+          } as CSSProperties}
         >
-          {agendaDays.map(({ day, label, events }) => {
+          {agendaDays.map(({ day, label, events }, dayIndex) => {
             const dayKey = day.getTime();
             const isToday = isSameDay(day, new Date());
             const isOver = dropTarget === dayKey;
@@ -573,7 +502,7 @@ const PrintAgenda = () => {
                 className="agenda-day border-[3px] rounded-md flex flex-col transition-colors"
                 style={{
                   borderColor: isOver ? BLUE : ORANGE,
-                  minHeight: 520,
+                  minHeight: 440,
                   background: isOver ? "#EEF1FB" : "transparent",
                 }}
                 onDragOver={(e) => {
@@ -628,7 +557,10 @@ const PrintAgenda = () => {
                           >
                             Manhã
                           </div>
-                          <div className="agenda-period-events space-y-2">
+                          <div
+                            className="agenda-period-events grid gap-2"
+                            style={{ gridTemplateColumns: `repeat(${agendaDayLanes[dayIndex]}, minmax(0, 1fr))` }}
+                          >
                             {morning.length === 0 ? (
                               <div className="text-[10px] text-neutral-400 italic px-1">
                                 —
@@ -653,7 +585,10 @@ const PrintAgenda = () => {
                           >
                             Tarde
                           </div>
-                          <div className="agenda-period-events space-y-2">
+                          <div
+                            className="agenda-period-events grid gap-2"
+                            style={{ gridTemplateColumns: `repeat(${agendaDayLanes[dayIndex]}, minmax(0, 1fr))` }}
+                          >
                             {afternoon.length === 0 ? (
                               <div className="text-[10px] text-neutral-400 italic px-1">
                                 —
@@ -675,6 +610,7 @@ const PrintAgenda = () => {
           Dica: arraste uma visita para outro dia para reagendar.
         </p>
       </main>
+      </div>
 
       <CreateTrainingDialog
         open={createDialogOpen}
