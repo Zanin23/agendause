@@ -105,6 +105,13 @@ export const CreateTrainingDialog = ({ open, onOpenChange, onCreated }: Props) =
     if (open) scrollRef.current?.scrollTo({ top: 0 });
   }, [open]);
 
+  // Responsáveis selecionáveis: apenas os não arquivados (arquivados continuam
+  // visíveis no histórico, mas somem das novas atribuições).
+  const selectableResponsibles = useMemo(
+    () => responsibleUsers.filter((responsible) => !responsible.archived),
+    [responsibleUsers],
+  );
+
   useEffect(() => {
     if (!open) {
       responsibleSelectionInitialized.current = false;
@@ -133,8 +140,6 @@ export const CreateTrainingDialog = ({ open, onOpenChange, onCreated }: Props) =
       setCompanies(Array.from(s).sort((a, b) => a.localeCompare(b, "pt-BR")));
     })();
   }, [open]);
-
-  const selectableResponsibles = selectableResponsibles.filter((responsible) => !responsible.archived);
 
   const hasValidResponsibles =
     responsibleUserIds.length > 0 &&
