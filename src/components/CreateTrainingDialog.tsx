@@ -114,11 +114,11 @@ export const CreateTrainingDialog = ({ open, onOpenChange, onCreated }: Props) =
 
     responsibleSelectionInitialized.current = true;
     setResponsibleUserIds(
-      user?.id && responsibleUsers.some((responsible) => responsible.user_id === user.id)
+      user?.id && selectableResponsibles.some((responsible) => responsible.user_id === user.id)
         ? [user.id]
         : [],
     );
-  }, [open, user?.id, responsibleUsers, loadingResponsibleUsers]);
+  }, [open, user?.id, selectableResponsibles, loadingResponsibleUsers]);
 
   useEffect(() => {
     if (!open) return;
@@ -134,9 +134,11 @@ export const CreateTrainingDialog = ({ open, onOpenChange, onCreated }: Props) =
     })();
   }, [open]);
 
+  const selectableResponsibles = selectableResponsibles.filter((responsible) => !responsible.archived);
+
   const hasValidResponsibles =
     responsibleUserIds.length > 0 &&
-    responsibleUserIds.every((userId) => responsibleUsers.some((responsible) => responsible.user_id === userId));
+    responsibleUserIds.every((userId) => selectableResponsibles.some((responsible) => responsible.user_id === userId));
 
   const toggleResponsible = (userId: string) => {
     setResponsibleUserIds((selected) =>
@@ -158,7 +160,7 @@ export const CreateTrainingDialog = ({ open, onOpenChange, onCreated }: Props) =
     setDuration(60); setLocation(""); setInternalNotes(""); setVisitType("presencial");
     setRequiresAcceptance(true);
     setResponsibleUserIds(
-      user?.id && responsibleUsers.some((responsible) => responsible.user_id === user.id)
+      user?.id && selectableResponsibles.some((responsible) => responsible.user_id === user.id)
         ? [user.id]
         : [],
     );
@@ -307,9 +309,9 @@ export const CreateTrainingDialog = ({ open, onOpenChange, onCreated }: Props) =
                 </Label>
                 {loadingResponsibleUsers ? (
                   <p className="text-xs text-muted-foreground">Carregando responsáveis…</p>
-                ) : responsibleUsers.length > 0 ? (
+                ) : selectableResponsibles.length > 0 ? (
                   <div className="grid gap-2 sm:grid-cols-2" role="group" aria-label="Responsáveis pelo treinamento">
-                    {responsibleUsers.map((responsible) => {
+                    {selectableResponsibles.map((responsible) => {
                       const checkboxId = `training-responsible-${responsible.user_id}`;
                       return (
                         <label
@@ -344,13 +346,13 @@ export const CreateTrainingDialog = ({ open, onOpenChange, onCreated }: Props) =
                       Tentar novamente
                     </Button>
                   </div>
-                ) : responsibleUsers.length === 0 && !loadingResponsibleUsers ? (
+                ) : selectableResponsibles.length === 0 && !loadingResponsibleUsers ? (
                   <p className="text-xs text-muted-foreground">
                     Nenhum dos responsáveis autorizados está disponível nesta base.
                   </p>
                 ) : (
                   <p className="text-[11px] text-muted-foreground">
-                    Selecione uma ou mais pessoas. {user?.id && responsibleUsers.some((person) => person.user_id === user.id)
+                    Selecione uma ou mais pessoas. {user?.id && selectableResponsibles.some((person) => person.user_id === user.id)
                       ? "Você já vem selecionado por padrão."
                       : ""}
                   </p>
@@ -490,7 +492,7 @@ export const CreateTrainingDialog = ({ open, onOpenChange, onCreated }: Props) =
                   </Button>
                   <Button
                     type="submit"
-                    disabled={loading || loadingResponsibleUsers || responsibleUsersError || responsibleUsers.length === 0 || !hasValidResponsibles}
+                    disabled={loading || loadingResponsibleUsers || responsibleUsersError || selectableResponsibles.length === 0 || !hasValidResponsibles}
                     className="rounded-full px-5 flex-1 sm:flex-none"
                   >
                     <Feather className="h-4 w-4" />

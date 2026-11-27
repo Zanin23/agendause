@@ -2,16 +2,17 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { useAuth } from "@/hooks/useAuth";
-import { filterTrainingResponsibleOptions } from "@/lib/trainingResponsible";
 
 export type TrainingResponsible = {
   user_id: string;
   full_name: string | null;
   email: string | null;
   display_name: string;
+  /** true quando o responsável está arquivado (some das novas atribuições). */
+  archived?: boolean;
 };
 
-/** Usuários autorizados que podem ser atribuídos a uma visita ou treinamento. */
+/** Responsáveis atribuíveis aos atendimentos: lista padrão do sistema + cadastrados da base ativa. */
 export const useTrainingResponsibles = (enabled = true) => {
   const { activeId } = useWorkspace();
   const { user } = useAuth();
@@ -22,7 +23,13 @@ export const useTrainingResponsibles = (enabled = true) => {
     queryFn: async () => {
       const { data, error } = await supabase.rpc("list_workspace_training_responsibles");
       if (error) throw error;
-      return filterTrainingResponsibleOptions(data ?? []);
+      return (data ?? []).map((row) => ({
+        user_id: row.user_id,
+        full_name: row.full_name,
+        email: row.email,
+        display_name: row.full_name ?? row.email ?? "Sem nome",
+        archived: row.archived ?? false,
+      }));
     },
   });
 };

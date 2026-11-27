@@ -44,7 +44,7 @@ export const TodayVisitsCard = ({ className = "" }: { className?: string }) => {
       end.setDate(end.getDate() + 1);
       const { data, error } = await supabase
         .from("trainings")
-        .select("id,title,client,scheduled_at,duration_minutes,location,visit_type,status,requires_acceptance,responsible_user_id,training_responsibles:training_responsibles(responsible_user_id)")
+        .select("id,title,client,scheduled_at,duration_minutes,location,visit_type,status,requires_acceptance,responsible_user_id,training_responsibles:training_responsibles(responsible_user_id,workspace_responsible_id)")
         .gte("scheduled_at", start.toISOString())
         .lt("scheduled_at", end.toISOString())
         .order("scheduled_at");

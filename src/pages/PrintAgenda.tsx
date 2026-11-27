@@ -129,7 +129,7 @@ const PrintAgenda = () => {
     const [{ data }, { data: ua }, { data: ga }] = await Promise.all([
       supabase
         .from("trainings")
-        .select("*, training_responsibles:training_responsibles(responsible_user_id)")
+        .select("*, training_responsibles:training_responsibles(responsible_user_id,workspace_responsible_id)")
         .order("scheduled_at", { ascending: true }),
       supabase.from("training_acceptances").select("training_id"),
       supabase.from("guest_acceptances").select("training_id"),

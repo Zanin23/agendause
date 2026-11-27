@@ -44,7 +44,7 @@ const Dashboard = () => {
   const load = async () => {
     const { data: t } = await supabase
       .from("trainings")
-      .select("*, training_responsibles:training_responsibles(responsible_user_id)")
+      .select("*, training_responsibles:training_responsibles(responsible_user_id,workspace_responsible_id)")
       .order("scheduled_at", { ascending: true });
     setTrainings((t as Training[]) || []);
     if (user) {
