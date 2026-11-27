@@ -1288,21 +1288,27 @@ export type Database = {
       training_responsibles: {
         Row: {
           created_at: string
-          responsible_user_id: string
+          id: string
+          responsible_user_id: string | null
           training_id: string
           workspace_id: string
+          workspace_responsible_id: string | null
         }
         Insert: {
           created_at?: string
-          responsible_user_id: string
+          id?: string
+          responsible_user_id?: string | null
           training_id: string
           workspace_id: string
+          workspace_responsible_id?: string | null
         }
         Update: {
           created_at?: string
-          responsible_user_id?: string
+          id?: string
+          responsible_user_id?: string | null
           training_id?: string
           workspace_id?: string
+          workspace_responsible_id?: string | null
         }
         Relationships: [
           {
@@ -1310,6 +1316,13 @@ export type Database = {
             columns: ["responsible_user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_responsibles_workspace_responsible_id_fkey"
+            columns: ["workspace_responsible_id"]
+            isOneToOne: false
+            referencedRelation: "workspace_responsibles"
             referencedColumns: ["id"]
           },
           {
@@ -1447,6 +1460,58 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      workspace_responsibles: {
+        Row: {
+          archived_at: string | null
+          created_at: string
+          created_by: string | null
+          display_name: string
+          id: string
+          profile_id: string | null
+          workspace_id: string
+        }
+        Insert: {
+          archived_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          display_name: string
+          id?: string
+          profile_id?: string | null
+          workspace_id: string
+        }
+        Update: {
+          archived_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          display_name?: string
+          id?: string
+          profile_id?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workspace_responsibles_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workspace_responsibles_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workspace_responsibles_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       workspace_members: {
         Row: {
@@ -1601,10 +1666,55 @@ export type Database = {
       list_workspace_training_responsibles: {
         Args: Record<PropertyKey, never>
         Returns: {
+          archived: boolean
           email: string | null
           full_name: string | null
           user_id: string
         }[]
+      }
+      list_workspace_responsibles: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          archived: boolean
+          created_at: string
+          display_name: string
+          email: string | null
+          id: string
+          profile_id: string | null
+        }[]
+      }
+      list_workspace_responsible_candidates: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          email: string | null
+          full_name: string | null
+          user_id: string
+        }[]
+      }
+      create_workspace_responsible: {
+        Args: {
+          _display_name?: string | null
+          _profile_id?: string | null
+        }
+        Returns: string
+      }
+      rename_workspace_responsible: {
+        Args: {
+          _display_name: string
+          _id: string
+        }
+        Returns: undefined
+      }
+      set_workspace_responsible_archived: {
+        Args: {
+          _archived: boolean
+          _id: string
+        }
+        Returns: undefined
+      }
+      responsible_is_factory_name: {
+        Args: { _full_name: string }
+        Returns: boolean
       }
       create_training_with_responsibles: {
         Args: {

@@ -7,6 +7,8 @@ export type ResponsibleProfile = {
 
 export type TrainingResponsibleAssignment = {
   responsible_user_id?: string | null;
+  /** Pessoa cadastrada em workspace_responsibles (pode não ter login). */
+  workspace_responsible_id?: string | null;
   responsible_profile?: ResponsibleProfile;
 };
 
@@ -15,6 +17,8 @@ export type TrainingResponsibleOption = {
   full_name: string | null;
   email: string | null;
   display_name: string;
+  /** true quando o responsável foi arquivado (some das novas atribuições). */
+  archived?: boolean;
 };
 
 const RESPONSIBLE_CHOICES = [
@@ -41,29 +45,6 @@ export const canonicalResponsibleName = (profile: ResponsibleProfile): string | 
   return choice?.label ?? null;
 };
 
-/** Mantém somente as pessoas autorizadas e na ordem pedida para os campos de seleção. */
-export const filterTrainingResponsibleOptions = (
-  profiles: Omit<TrainingResponsibleOption, "display_name">[],
-): TrainingResponsibleOption[] => {
-  const normalizedProfiles = profiles.map((profile) => ({
-    profile,
-    normalizedName: normalizeName(profile.full_name),
-  }));
-
-  return RESPONSIBLE_CHOICES.flatMap(({ label, aliases }) => {
-    const match = aliases
-      .map((alias) => normalizedProfiles.find(({ normalizedName }) => normalizedName === alias))
-      .find((candidate) => candidate !== undefined);
-    if (!match) return [];
-
-    return [{
-      ...match.profile,
-      full_name: label,
-      display_name: label,
-    }];
-  });
-};
-
 export const responsibleDisplayName = (profile: ResponsibleProfile): string => {
   const canonicalName = canonicalResponsibleName(profile);
   const name = profile?.full_name?.trim();
@@ -85,6 +66,7 @@ export const getTrainingResponsibleIds = (
   const assignedIds = (assignments ?? [])
     .map((assignment) =>
       assignment.responsible_user_id ??
+      assignment.workspace_responsible_id ??
       assignment.responsible_profile?.user_id ??
       assignment.responsible_profile?.id ??
       null,

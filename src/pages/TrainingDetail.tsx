@@ -139,7 +139,7 @@ const TrainingDetail = () => {
     if (!id) return;
     const { data: t } = await supabase
       .from("trainings")
-      .select("*, training_responsibles:training_responsibles(responsible_user_id)")
+      .select("*, training_responsibles:training_responsibles(responsible_user_id,workspace_responsible_id)")
       .eq("id", id)
       .maybeSingle();
     setTraining(t as Training | null);
@@ -647,7 +647,9 @@ const TrainingDetail = () => {
                 {editingResponsible ? (
                   <div className="mt-1.5 space-y-2">
                     <div className="grid gap-2 sm:grid-cols-2" role="group" aria-label="Responsáveis pelo treinamento">
-                      {responsibleUsers.map((responsible) => {
+                      {[...responsibleUsers]
+                        .sort((a, b) => Number(a.archived ?? false) - Number(b.archived ?? false))
+                        .map((responsible) => {
                         const checkboxId = `detail-training-responsible-${responsible.user_id}`;
                         return (
                           <label
@@ -667,7 +669,12 @@ const TrainingDetail = () => {
                               disabled={loadingResponsibleUsers || savingResponsible}
                               className="h-4 w-4 shrink-0 accent-primary"
                             />
-                            <span>{responsibleOptionLabel(responsible)}</span>
+                            <span>
+                              {responsibleOptionLabel(responsible)}
+                              {responsible.archived ? (
+                                <span className="text-muted-foreground"> (arquivado)</span>
+                              ) : null}
+                            </span>
                           </label>
                         );
                       })}

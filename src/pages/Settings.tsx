@@ -4,6 +4,7 @@ import { Loader2, Accessibility, Type, ShieldCheck, ChevronRight, LogOut, UserRo
 import { AppHeader } from "@/components/AppHeader";
 import { SenhaDeAcessoCard } from "@/components/SenhaDeAcessoCard";
 import { BasesDeDadosCard } from "@/components/BasesDeDadosCard";
+import { ResponsaveisAtendimentosCard } from "@/components/ResponsaveisAtendimentosCard";
 import { BackButton } from "@/components/BackButton";
 import { SEO } from "@/components/SEO";
 import { useA11y, type FontScale } from "@/hooks/useA11y";
@@ -121,6 +122,8 @@ const Settings = () => {
         <SenhaDeAcessoCard />
 
         <BasesDeDadosCard />
+
+        <ResponsaveisAtendimentosCard />
 
         <section className="rounded-2xl border border-border bg-card/60 p-6">
           <header className="flex items-center gap-3 mb-4">
