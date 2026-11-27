@@ -130,7 +130,7 @@ const Settings = () => {
             <div>
               <h2 className="text-lg font-semibold">Temas do aplicativo</h2>
               <p className="text-sm text-muted-foreground">
-                Se preferir cores mais vivas, escolha um tema abaixo. Cada um funciona no modo claro e no modo escuro — e só muda para quem escolher.
+                Cada tema veste o aplicativo inteiro — fundos, cartões, bordas, botões, seleções e detalhes. Funciona no modo claro e no modo escuro, com contraste verificado, e só muda para quem escolher.
               </p>
             </div>
           </header>
@@ -179,6 +179,9 @@ const Settings = () => {
           </div>
           <p className="mt-4 text-xs text-muted-foreground">
             Dica: alterne entre modo claro e escuro pelo ícone no topo do aplicativo — todos os temas acompanham os dois modos. Para voltar, escolha "Padrão da marca".
+          </p>
+          <p className="mt-2 text-xs text-muted-foreground/80">
+            Inspirados em pôsteres retrô de viagem, grades de cor vintage, rótulos de apotécar@ e da The Boldest Co. — coleções como as de Stripe, Linear e Notion também tratam tema como um sistema completo de tokens.
           </p>
         </section>
 
