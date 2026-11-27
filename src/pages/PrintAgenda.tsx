@@ -8,7 +8,7 @@ import {
   startOfWeek,
 } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ChevronLeft, ChevronRight, FileDown, CalendarPlus, Check, Sun, CalendarClock } from "lucide-react";
+import { ChevronLeft, ChevronRight, FileDown, CalendarPlus, Check, Sun, CalendarClock, ZoomIn, ZoomOut, Maximize2 } from "lucide-react";
 import { BackButton } from "@/components/BackButton";
 import { CreateTrainingDialog } from "@/components/CreateTrainingDialog";
 import useLogo from "@/assets/logo-use-sistemas-v2.png.asset.json";
@@ -58,6 +58,25 @@ const ALL_DAY_MIN_MINUTES = 480;
 const isAllDayDuration = (durationMinutes: number | string | null | undefined) =>
   Number(durationMinutes) >= ALL_DAY_MIN_MINUTES;
 
+/** Controle de zoom do quadro: no celular o quadro (≈2.300px) cabe inteiro via zoom automático. */
+// Mínimo baixo de propósito: o botão "Ajustar" reduz o quadro inteiro para caber na tela do celular.
+const BOARD_ZOOM_MIN = 0.15;
+const BOARD_ZOOM_MAX = 1.1;
+const BOARD_ZOOM_STEP = 0.1;
+const BOARD_ZOOM_KEY = "treinacheck-agenda-zoom";
+const clampBoardZoom = (value: number) =>
+  Math.min(BOARD_ZOOM_MAX, Math.max(BOARD_ZOOM_MIN, Math.round(value * 100) / 100));
+const readStoredBoardZoom = (): number | null => {
+  try {
+    const raw = window.localStorage.getItem(BOARD_ZOOM_KEY);
+    if (!raw) return null;
+    const parsed = Number(raw);
+    return Number.isFinite(parsed) ? clampBoardZoom(parsed) : null;
+  } catch {
+    return null;
+  }
+};
+
 type ActiveDrag = { id: string; x: number; y: number; width: number };
 
 type DragSession = {
@@ -102,6 +121,9 @@ const PrintAgenda = () => {
   const [saving, setSaving] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  // `null` = zoom automático (ajusta o quadro à largura da tela); número = zoom escolhido pelo usuário.
+  const [boardZoomOverride, setBoardZoomOverride] = useState<number | null>(() => readStoredBoardZoom());
+  const [fitZoom, setFitZoom] = useState(1);
 
   const loadAgenda = useCallback(async () => {
     const [{ data }, { data: ua }, { data: ga }] = await Promise.all([
@@ -323,6 +345,32 @@ const PrintAgenda = () => {
       + 64,
   );
 
+  // Calcula o zoom "Ajustar": quanto do quadro cabe na largura visível (nunca amplia acima de 100%).
+  useEffect(() => {
+    const updateFit = () => {
+      const shell = scrollShellRef.current;
+      const available = (shell?.clientWidth ?? window.innerWidth) - 8;
+      setFitZoom(Math.min(1, clampBoardZoom(available / agendaScreenWidth)));
+    };
+    updateFit();
+    window.addEventListener("resize", updateFit);
+    return () => window.removeEventListener("resize", updateFit);
+  }, [agendaScreenWidth]);
+
+  const boardZoom = boardZoomOverride ?? fitZoom;
+  const setBoardZoom = (value: number | null) => {
+    setBoardZoomOverride(value);
+    try {
+      if (value === null) window.localStorage.removeItem(BOARD_ZOOM_KEY);
+      else window.localStorage.setItem(BOARD_ZOOM_KEY, String(clampBoardZoom(value)));
+    } catch {
+      // localStorage indisponível: o zoom ainda funciona só nesta sessão.
+    }
+  };
+  const zoomIn = () => setBoardZoom(clampBoardZoom(boardZoom + BOARD_ZOOM_STEP));
+  const zoomOut = () => setBoardZoom(clampBoardZoom(boardZoom - BOARD_ZOOM_STEP));
+  const fitToWidth = () => setBoardZoom(null);
+
   const weekLabel = `${format(weekStart, "d MMM", { locale: ptBR })} – ${format(
     endOfWeek(weekStart, { weekStartsOn: 1 }),
     "d MMM yyyy",
@@ -483,6 +531,7 @@ const PrintAgenda = () => {
             padding: 0 !important;
             border-radius: 0 !important;
             box-shadow: none !important;
+            zoom: 1 !important;
           }
           .agenda-header { margin-bottom: 2.5mm !important; padding-bottom: 2.5mm !important; }
           .agenda-title { font-size: 20pt !important; }
@@ -552,6 +601,51 @@ const PrintAgenda = () => {
             </span>
           </div>
 
+          <div
+            className="flex items-center gap-1 rounded-xl border border-border bg-background/60 p-1"
+            role="group"
+            aria-label="Zoom do quadro"
+          >
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={zoomOut}
+              disabled={boardZoom <= BOARD_ZOOM_MIN}
+              title="Reduzir zoom do quadro"
+              aria-label="Reduzir zoom do quadro"
+            >
+              <ZoomOut className="h-4 w-4" />
+            </Button>
+            <span
+              className="w-12 text-center text-xs font-semibold tabular-nums text-muted-foreground"
+              aria-live="polite"
+            >
+              {Math.round(boardZoom * 100)}%
+            </span>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={zoomIn}
+              disabled={boardZoom >= BOARD_ZOOM_MAX}
+              title="Aumentar zoom do quadro"
+              aria-label="Aumentar zoom do quadro"
+            >
+              <ZoomIn className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 gap-1 px-2 text-xs"
+              onClick={fitToWidth}
+              title="Ajustar o quadro à largura da tela (ver mais dias de uma vez)"
+            >
+              <Maximize2 className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Ajustar</span>
+            </Button>
+          </div>
+
           <div className="flex flex-wrap items-center gap-2">
             <Button onClick={() => setCreateDialogOpen(true)}>
               <CalendarPlus className="h-4 w-4" />
@@ -568,7 +662,7 @@ const PrintAgenda = () => {
       <div ref={scrollShellRef} className="agenda-scroll-shell w-full overflow-x-auto pb-3 print:overflow-visible print:pb-0">
       <main
         className="agenda-page max-w-none mx-auto px-4 sm:px-8 py-4 sm:py-8 bg-white text-black my-4 sm:my-8 rounded-xl shadow-xl print:my-0 print:rounded-none print:shadow-none"
-        style={{ width: agendaScreenWidth }}
+        style={{ width: agendaScreenWidth, zoom: boardZoom } as CSSProperties}
       >
         {/* Header */}
         <header className="agenda-header mb-5 flex flex-col gap-5 border-b border-neutral-200 pb-5 md:flex-row md:items-start md:justify-between md:gap-8">
@@ -687,7 +781,7 @@ const PrintAgenda = () => {
           })}
         </div>
         <p className="agenda-tip no-print text-[11px] text-neutral-500 mt-3">
-          Dica: arraste uma visita para outro dia para reagendar, ou use o botão de reagendar no cartão.
+          Dica: arraste uma visita para outro dia para reagendar, ou use o botão de reagendar no cartão. No celular, use o zoom no topo para ver mais dias de uma vez.
         </p>
       </main>
       </div>
