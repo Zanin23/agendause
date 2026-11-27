@@ -1118,611 +1118,160 @@ html.a11y-contrast *:focus-visible {
 }
 
 /* =========================================================================
-   Temas personalizados (opt-in) — repintam o sistema inteiro
+   Temas personalizados (opt-in) — cores vivas
    Aplicados via classe `theme-*` no <html>. Funcionam sobre os modos claro
    (.light) e escuro (padrão). O visual "Padrão" da marca permanece quando
    nenhuma classe de tema está presente.
-
-   Cada tema redefine não só as cores de marca, mas também as superfícies
-   neutras do sistema (background, card, popover, muted, border, input),
-   o anel de foco, a seleção, as sombras/brilhos e o peso dos títulos —
-   então modo claro e escuro mantêm o mesmo "clima" do tema.
-   Referências: Stripe/Linear/Notion (tokens semânticos), pôsteres retrô
-   americanos (image-1/2), grides de cor vintage (image-3), rótulos de
-   apotécari@ (image-4) e The Boldest Co. (image-5).
    ========================================================================= */
 
-contrast OK — all pairs pass
 /* ---------- OCEANO — ciano/azul elétrico ---------- */
 html.theme-oceano {
-  --color-background: #0B1E2B;
-  --color-foreground: #E3F3F8;
-  --color-card: #102635;
-  --color-card-foreground: #E3F3F8;
-  --color-popover: #102635;
-  --color-popover-foreground: #E3F3F8;
-  --color-primary: #2FD4FF;
-  --color-primary-foreground: #04222E;
-  --color-secondary: #3EC6B8;
-  --color-secondary-foreground: #04231F;
-  --color-accent: #123A6B;
-  --color-accent-foreground: #D9F0FF;
-  --color-muted: #18303F;
-  --color-muted-foreground: #92B7C9;
-  --color-border: #1F4050;
-  --color-input: #1F4050;
-  --color-ring: #2FD4FF;
-  --primary-light: #7FE4FF;
-  --primary-glow: #164E63;
-  --accent-red: #F0658A;
-  --editorial-text: #E3F3F8;
-  --editorial-text-light: #92B7C9;
-  --editorial-tag: #2FD4FF;
-  --editorial-tag-bg: #18303F;
-  --editorial-hover: #132838;
-  --gradient-primary: linear-gradient(135deg, #35E0C8, #2F7DF6);
-  --gradient-hero: linear-gradient(135deg, #35E0C8 0%, #2FA4FF 45%, #1D3A8F 100%);
-  --gradient-accent: linear-gradient(90deg, #35E0C8, #2FD4FF, #2F7DF6);
-  --font-heading-weight: 700;
+  --color-primary: oklch(72% 0.15 212);
+  --color-primary-foreground: oklch(16% 0.03 225);
+  --color-secondary: oklch(78% 0.14 185);
+  --color-secondary-foreground: oklch(15% 0.03 200);
+  --color-accent: oklch(74% 0.15 195);
+  --color-accent-foreground: oklch(15% 0.03 220);
+  --color-ring: oklch(72% 0.15 212);
+  --primary-light: oklch(82% 0.12 205);
+  --primary-glow: oklch(45% 0.11 215);
+  --accent-red: oklch(70% 0.2 20);
+  --editorial-tag: oklch(72% 0.15 212);
+  --editorial-tag-bg: oklch(25% 0.05 225);
+  --gradient-primary: linear-gradient(135deg, oklch(80% 0.14 192), oklch(64% 0.17 228));
+  --gradient-hero: linear-gradient(135deg, oklch(82% 0.14 190) 0%, oklch(71% 0.18 215) 45%, oklch(42% 0.13 250) 100%);
+  --gradient-accent: linear-gradient(90deg, oklch(80% 0.14 192), oklch(71% 0.18 215), oklch(72% 0.15 212));
 }
 html.light.theme-oceano,
 html.theme-oceano.light {
-  --color-background: #E9F4F8;
-  --color-foreground: #16324A;
-  --color-card: #F6FCFE;
-  --color-card-foreground: #16324A;
-  --color-popover: #F6FCFE;
-  --color-popover-foreground: #16324A;
-  --color-primary: #1268AF;
-  --color-primary-foreground: #F2FAFF;
-  --color-secondary: #D5E8EE;
-  --color-secondary-foreground: #17394A;
-  --color-accent: #0D3A54;
-  --color-accent-foreground: #E3F4FB;
-  --color-muted: #DCEAEF;
-  --color-muted-foreground: #48697A;
-  --color-border: #C4D8E0;
-  --color-input: #C4D8E0;
-  --color-ring: #1268AF;
-  --primary-light: #5FA8D3;
-  --primary-glow: #BFE3F0;
-  --accent-red: #C2410C;
-  --editorial-text: #16324A;
-  --editorial-text-light: #48697A;
-  --editorial-tag: #1268AF;
-  --editorial-tag-bg: #DCEAEF;
-  --editorial-hover: #DFECEF;
-  --gradient-primary: linear-gradient(135deg, #2BA8C4, #1268AF);
-  --gradient-hero: linear-gradient(135deg, #35C4B5 0%, #2F8FD8 45%, #1D3A8F 100%);
-  --gradient-accent: linear-gradient(90deg, #2BA8C4, #1268AF, #0D3A54);
-  --font-heading-weight: 700;
+  --color-primary: oklch(52% 0.15 218);
+  --color-primary-foreground: oklch(98% 0.02 212);
+  --color-secondary: oklch(88% 0.06 200);
+  --color-secondary-foreground: oklch(28% 0.07 222);
+  --color-accent: oklch(44% 0.13 225);
+  --color-accent-foreground: oklch(96% 0.02 215);
+  --color-ring: oklch(52% 0.15 218);
+  --primary-light: oklch(70% 0.12 205);
+  --primary-glow: oklch(78% 0.1 200);
+  --accent-red: oklch(55% 0.22 25);
+  --editorial-tag: oklch(52% 0.15 218);
+  --editorial-tag-bg: oklch(90% 0.05 210);
+  --editorial-hover: oklch(92% 0.03 212);
+  --gradient-primary: linear-gradient(135deg, oklch(68% 0.15 205), oklch(48% 0.17 235));
+  --gradient-hero: linear-gradient(135deg, oklch(74% 0.15 195) 0%, oklch(56% 0.17 220) 45%, oklch(32% 0.09 245) 100%);
+  --gradient-accent: linear-gradient(90deg, oklch(68% 0.15 205), oklch(52% 0.15 218), oklch(48% 0.17 235));
 }
 
 /* ---------- PITAYA — rosa choque ---------- */
 html.theme-pitaya {
-  --color-background: #22101E;
-  --color-foreground: #FBE9F2;
-  --color-card: #2C1628;
-  --color-card-foreground: #FBE9F2;
-  --color-popover: #2C1628;
-  --color-popover-foreground: #FBE9F2;
-  --color-primary: #FF5CA8;
-  --color-primary-foreground: #2B0718;
-  --color-secondary: #F0825C;
-  --color-secondary-foreground: #2B0E02;
-  --color-accent: #E34FD4;
-  --color-accent-foreground: #2C0526;
-  --color-muted: #371E32;
-  --color-muted-foreground: #CB9DAF;
-  --color-border: #452B3E;
-  --color-input: #452B3E;
-  --color-ring: #FF5CA8;
-  --primary-light: #FF8FC3;
-  --primary-glow: #5C1440;
-  --accent-red: #FF6B4A;
-  --editorial-text: #FBE9F2;
-  --editorial-text-light: #CB9DAF;
-  --editorial-tag: #FF5CA8;
-  --editorial-tag-bg: #371E32;
-  --editorial-hover: #2B1524;
-  --gradient-primary: linear-gradient(135deg, #FF6EC7, #F0825C);
-  --gradient-hero: linear-gradient(135deg, #FF6EC7 0%, #FF4D94 45%, #8B1E6B 100%);
-  --gradient-accent: linear-gradient(90deg, #FF6EC7, #FF5CA8, #F0825C);
-  --font-heading-weight: 700;
+  --color-primary: oklch(70% 0.21 352);
+  --color-primary-foreground: oklch(17% 0.03 355);
+  --color-secondary: oklch(74% 0.18 20);
+  --color-secondary-foreground: oklch(17% 0.03 30);
+  --color-accent: oklch(73% 0.2 330);
+  --color-accent-foreground: oklch(17% 0.03 340);
+  --color-ring: oklch(70% 0.21 352);
+  --primary-light: oklch(81% 0.16 350);
+  --primary-glow: oklch(48% 0.14 345);
+  --accent-red: oklch(70% 0.21 20);
+  --editorial-tag: oklch(70% 0.21 352);
+  --editorial-tag-bg: oklch(26% 0.06 345);
+  --gradient-primary: linear-gradient(135deg, oklch(76% 0.2 330), oklch(62% 0.24 5));
+  --gradient-hero: linear-gradient(135deg, oklch(80% 0.19 330) 0%, oklch(68% 0.24 355) 45%, oklch(40% 0.15 320) 100%);
+  --gradient-accent: linear-gradient(90deg, oklch(76% 0.2 330), oklch(70% 0.21 352), oklch(74% 0.18 20));
 }
 html.light.theme-pitaya,
 html.theme-pitaya.light {
-  --color-background: #FBEFF5;
-  --color-foreground: #3A2130;
-  --color-card: #FFF8FB;
-  --color-card-foreground: #3A2130;
-  --color-popover: #FFF8FB;
-  --color-popover-foreground: #3A2130;
-  --color-primary: #C42768;
-  --color-primary-foreground: #FFF0F6;
-  --color-secondary: #F6D8E1;
-  --color-secondary-foreground: #4A1626;
-  --color-accent: #8A2450;
-  --color-accent-foreground: #FDE3EE;
-  --color-muted: #F0DEE6;
-  --color-muted-foreground: #6F5561;
-  --color-border: #E0C6D2;
-  --color-input: #E0C6D2;
-  --color-ring: #C42768;
-  --primary-light: #E578A3;
-  --primary-glow: #F6C6D8;
-  --accent-red: #BE123C;
-  --editorial-text: #3A2130;
-  --editorial-text-light: #6F5561;
-  --editorial-tag: #C42768;
-  --editorial-tag-bg: #F0DEE6;
-  --editorial-hover: #F3E3EA;
-  --gradient-primary: linear-gradient(135deg, #E5599B, #C42768);
-  --gradient-hero: linear-gradient(135deg, #F472B6 0%, #C42768 45%, #6E1339 100%);
-  --gradient-accent: linear-gradient(90deg, #E5599B, #C42768, #8A2450);
-  --font-heading-weight: 700;
+  --color-primary: oklch(55% 0.22 352);
+  --color-primary-foreground: oklch(98% 0.02 350);
+  --color-secondary: oklch(88% 0.07 15);
+  --color-secondary-foreground: oklch(34% 0.12 20);
+  --color-accent: oklch(46% 0.19 345);
+  --color-accent-foreground: oklch(96% 0.02 345);
+  --color-ring: oklch(55% 0.22 352);
+  --primary-light: oklch(72% 0.18 350);
+  --primary-glow: oklch(80% 0.13 345);
+  --accent-red: oklch(58% 0.23 25);
+  --editorial-tag: oklch(55% 0.22 352);
+  --editorial-tag-bg: oklch(90% 0.06 350);
+  --editorial-hover: oklch(92% 0.04 345);
+  --gradient-primary: linear-gradient(135deg, oklch(66% 0.22 335), oklch(48% 0.24 5));
+  --gradient-hero: linear-gradient(135deg, oklch(74% 0.2 330) 0%, oklch(56% 0.23 350) 45%, oklch(32% 0.13 320) 100%);
+  --gradient-accent: linear-gradient(90deg, oklch(66% 0.22 335), oklch(55% 0.22 352), oklch(58% 0.23 25));
 }
 
 /* ---------- UVA — violeta elétrico ---------- */
 html.theme-uva {
-  --color-background: #17102A;
-  --color-foreground: #EFEAFB;
-  --color-card: #1F1736;
-  --color-card-foreground: #EFEAFB;
-  --color-popover: #1F1736;
-  --color-popover-foreground: #EFEAFB;
-  --color-primary: #A96CFF;
-  --color-primary-foreground: #1D1030;
-  --color-secondary: #8F7CF0;
-  --color-secondary-foreground: #16102E;
-  --color-accent: #E879F9;
-  --color-accent-foreground: #2A0530;
-  --color-muted: #281E45;
-  --color-muted-foreground: #ACA0D0;
-  --color-border: #35294F;
-  --color-input: #35294F;
-  --color-ring: #A96CFF;
-  --primary-light: #C4A5FF;
-  --primary-glow: #3B2264;
-  --accent-red: #FB7185;
-  --editorial-text: #EFEAFB;
-  --editorial-text-light: #ACA0D0;
-  --editorial-tag: #A96CFF;
-  --editorial-tag-bg: #281E45;
-  --editorial-hover: #1D1633;
-  --gradient-primary: linear-gradient(135deg, #B07CFF, #7C3AED);
-  --gradient-hero: linear-gradient(135deg, #C4B5FD 0%, #A96CFF 40%, #7C3AED 75%, #4C1D95 100%);
-  --gradient-accent: linear-gradient(90deg, #C4B5FD, #A96CFF, #E879F9);
-  --font-heading-weight: 700;
+  --color-primary: oklch(68% 0.2 292);
+  --color-primary-foreground: oklch(17% 0.03 295);
+  --color-secondary: oklch(74% 0.17 258);
+  --color-secondary-foreground: oklch(17% 0.03 265);
+  --color-accent: oklch(72% 0.2 315);
+  --color-accent-foreground: oklch(17% 0.03 315);
+  --color-ring: oklch(68% 0.2 292);
+  --primary-light: oklch(81% 0.14 290);
+  --primary-glow: oklch(47% 0.13 292);
+  --accent-red: oklch(70% 0.22 20);
+  --editorial-tag: oklch(72% 0.18 292);
+  --editorial-tag-bg: oklch(25% 0.06 292);
+  --gradient-primary: linear-gradient(135deg, oklch(74% 0.19 275), oklch(62% 0.23 312));
+  --gradient-hero: linear-gradient(135deg, oklch(78% 0.17 268) 0%, oklch(66% 0.22 295) 45%, oklch(38% 0.15 285) 100%);
+  --gradient-accent: linear-gradient(90deg, oklch(74% 0.19 275), oklch(68% 0.2 292), oklch(72% 0.2 315));
 }
 html.light.theme-uva,
 html.theme-uva.light {
-  --color-background: #F1EDFA;
-  --color-foreground: #251B3E;
-  --color-card: #FAF8FE;
-  --color-card-foreground: #251B3E;
-  --color-popover: #FAF8FE;
-  --color-popover-foreground: #251B3E;
-  --color-primary: #6D28D9;
-  --color-primary-foreground: #F7F3FF;
-  --color-secondary: #E2DCF0;
-  --color-secondary-foreground: #2E2352;
-  --color-accent: #4C1D95;
-  --color-accent-foreground: #EDE9FE;
-  --color-muted: #E2DCF0;
-  --color-muted-foreground: #5B547A;
-  --color-border: #CFC5E4;
-  --color-input: #CFC5E4;
-  --color-ring: #6D28D9;
-  --primary-light: #8B5CF6;
-  --primary-glow: #DDD0FA;
-  --accent-red: #BE123C;
-  --editorial-text: #251B3E;
-  --editorial-text-light: #5B547A;
-  --editorial-tag: #6D28D9;
-  --editorial-tag-bg: #E2DCF0;
-  --editorial-hover: #E7E3F3;
-  --gradient-primary: linear-gradient(135deg, #8B5CF6, #6D28D9);
-  --gradient-hero: linear-gradient(135deg, #A78BFA 0%, #6D28D9 45%, #3B0764 100%);
-  --gradient-accent: linear-gradient(90deg, #A78BFA, #6D28D9, #4C1D95);
-  --font-heading-weight: 700;
+  --color-primary: oklch(50% 0.23 292);
+  --color-primary-foreground: oklch(97% 0.02 292);
+  --color-secondary: oklch(86% 0.07 268);
+  --color-secondary-foreground: oklch(28% 0.09 278);
+  --color-accent: oklch(44% 0.2 295);
+  --color-accent-foreground: oklch(96% 0.02 292);
+  --color-ring: oklch(50% 0.23 292);
+  --primary-light: oklch(68% 0.18 288);
+  --primary-glow: oklch(78% 0.13 282);
+  --accent-red: oklch(55% 0.23 25);
+  --editorial-tag: oklch(50% 0.23 292);
+  --editorial-tag-bg: oklch(89% 0.06 288);
+  --editorial-hover: oklch(91% 0.04 285);
+  --gradient-primary: linear-gradient(135deg, oklch(62% 0.22 275), oklch(46% 0.25 308));
+  --gradient-hero: linear-gradient(135deg, oklch(72% 0.19 270) 0%, oklch(52% 0.24 292) 45%, oklch(30% 0.14 285) 100%);
+  --gradient-accent: linear-gradient(90deg, oklch(62% 0.22 275), oklch(50% 0.23 292), oklch(52% 0.24 310));
 }
 
 /* ---------- ESMERALDA — verde vívido ---------- */
 html.theme-esmeralda {
-  --color-background: #0E1F16;
-  --color-foreground: #EAF7EE;
-  --color-card: #142A1F;
-  --color-card-foreground: #EAF7EE;
-  --color-popover: #142A1F;
-  --color-popover-foreground: #EAF7EE;
-  --color-primary: #3EE08F;
-  --color-primary-foreground: #052A16;
-  --color-secondary: #A3E635;
-  --color-secondary-foreground: #1A2E00;
-  --color-accent: #2DD4BF;
-  --color-accent-foreground: #052A26;
-  --color-muted: #1B3428;
-  --color-muted-foreground: #8FB89E;
-  --color-border: #24402F;
-  --color-input: #24402F;
-  --color-ring: #3EE08F;
-  --primary-light: #86EFAC;
-  --primary-glow: #14532D;
-  --accent-red: #FB7185;
-  --editorial-text: #EAF7EE;
-  --editorial-text-light: #8FB89E;
-  --editorial-tag: #3EE08F;
-  --editorial-tag-bg: #1B3428;
-  --editorial-hover: #122419;
-  --gradient-primary: linear-gradient(135deg, #4ADE80, #0D9488);
-  --gradient-hero: linear-gradient(135deg, #84CC16 0%, #34D399 40%, #0F766E 100%);
-  --gradient-accent: linear-gradient(90deg, #84CC16, #3EE08F, #2DD4BF);
-  --font-heading-weight: 700;
+  --color-primary: oklch(75% 0.17 160);
+  --color-primary-foreground: oklch(15% 0.03 165);
+  --color-secondary: oklch(83% 0.16 128);
+  --color-secondary-foreground: oklch(17% 0.03 135);
+  --color-accent: oklch(74% 0.16 192);
+  --color-accent-foreground: oklch(15% 0.03 200);
+  --color-ring: oklch(75% 0.17 160);
+  --primary-light: oklch(84% 0.13 155);
+  --primary-glow: oklch(45% 0.1 165);
+  --accent-red: oklch(70% 0.21 20);
+  --editorial-tag: oklch(76% 0.16 160);
+  --editorial-tag-bg: oklch(25% 0.05 165);
+  --gradient-primary: linear-gradient(135deg, oklch(78% 0.17 140), oklch(62% 0.17 185));
+  --gradient-hero: linear-gradient(135deg, oklch(82% 0.15 135) 0%, oklch(70% 0.18 162) 45%, oklch(38% 0.12 195) 100%);
+  --gradient-accent: linear-gradient(90deg, oklch(78% 0.17 140), oklch(75% 0.17 160), oklch(74% 0.16 192));
 }
 html.light.theme-esmeralda,
 html.theme-esmeralda.light {
-  --color-background: #EDF7EF;
-  --color-foreground: #12301F;
-  --color-card: #F8FEF9;
-  --color-card-foreground: #12301F;
-  --color-popover: #F8FEF9;
-  --color-popover-foreground: #12301F;
-  --color-primary: #15803D;
-  --color-primary-foreground: #F2FDF6;
-  --color-secondary: #D6EBDD;
-  --color-secondary-foreground: #153826;
-  --color-accent: #0F766E;
-  --color-accent-foreground: #ECFDF7;
-  --color-muted: #DCEDE1;
-  --color-muted-foreground: #476B54;
-  --color-border: #C0DBC9;
-  --color-input: #C0DBC9;
-  --color-ring: #15803D;
-  --primary-light: #22C55E;
-  --primary-glow: #C9E9D2;
-  --accent-red: #BE123C;
-  --editorial-text: #12301F;
-  --editorial-text-light: #476B54;
-  --editorial-tag: #15803D;
-  --editorial-tag-bg: #DCEDE1;
-  --editorial-hover: #DFEEE4;
-  --gradient-primary: linear-gradient(135deg, #22C55E, #15803D);
-  --gradient-hero: linear-gradient(135deg, #4ADE80 0%, #16A34A 45%, #14532D 100%);
-  --gradient-accent: linear-gradient(90deg, #4ADE80, #15803D, #0F766E);
-  --font-heading-weight: 700;
-}
-
-/* ---------- AMERICANA — rota 66 ---------- */
-html.theme-americana {
-  --color-background: #0B2233;
-  --color-foreground: #EAE2B7;
-  --color-card: #12293C;
-  --color-card-foreground: #EAE2B7;
-  --color-popover: #12293C;
-  --color-popover-foreground: #EAE2B7;
-  --color-primary: #F77F00;
-  --color-primary-foreground: #241200;
-  --color-secondary: #FCBF49;
-  --color-secondary-foreground: #2A1A00;
-  --color-accent: #C61F1F;
-  --color-accent-foreground: #FFF0D8;
-  --color-muted: #17334A;
-  --color-muted-foreground: #B9B39B;
-  --color-border: #23405A;
-  --color-input: #23405A;
-  --color-ring: #F77F00;
-  --primary-light: #FDA854;
-  --primary-glow: #5C3603;
-  --accent-red: #FF5A3C;
-  --editorial-text: #EAE2B7;
-  --editorial-text-light: #B9B39B;
-  --editorial-tag: #F77F00;
-  --editorial-tag-bg: #17334A;
-  --editorial-hover: #142B40;
-  --gradient-primary: linear-gradient(135deg, #FCBF49, #F77F00);
-  --gradient-hero: linear-gradient(135deg, #FCBF49 0%, #F77F00 40%, #C81E1E 75%, #003049 100%);
-  --gradient-accent: linear-gradient(90deg, #FCBF49, #F77F00, #C81E1E);
-  --font-heading-weight: 700;
-}
-html.light.theme-americana,
-html.theme-americana.light {
-  --color-background: #EAE2B7;
-  --color-foreground: #22303F;
-  --color-card: #F2EBC9;
-  --color-card-foreground: #22303F;
-  --color-popover: #F4EECC;
-  --color-popover-foreground: #22303F;
-  --color-primary: #C81E1E;
-  --color-primary-foreground: #FAEFD2;
-  --color-secondary: #F77F00;
-  --color-secondary-foreground: #2B1200;
-  --color-accent: #003049;
-  --color-accent-foreground: #EAE2B7;
-  --color-muted: #DED3A6;
-  --color-muted-foreground: #57503C;
-  --color-border: #CBBE8E;
-  --color-input: #CBBE8E;
-  --color-ring: #C81E1E;
-  --primary-light: #E8684A;
-  --primary-glow: #F6CFC0;
-  --accent-red: #B91C1C;
-  --editorial-text: #22303F;
-  --editorial-text-light: #57503C;
-  --editorial-tag: #C81E1E;
-  --editorial-tag-bg: #DED3A6;
-  --editorial-hover: #E3D8AC;
-  --gradient-primary: linear-gradient(135deg, #F77F00, #C81E1E);
-  --gradient-hero: linear-gradient(135deg, #FCBF49 0%, #F77F00 35%, #C81E1E 70%, #003049 100%);
-  --gradient-accent: linear-gradient(90deg, #F77F00, #C81E1E, #003049);
-  --font-heading-weight: 700;
-}
-
-/* ---------- FEIRA LIVRE — retrô de mercado ---------- */
-html.theme-feira {
-  --color-background: #101D11;
-  --color-foreground: #F3E8CC;
-  --color-card: #16261A;
-  --color-card-foreground: #F3E8CC;
-  --color-popover: #16261A;
-  --color-popover-foreground: #F3E8CC;
-  --color-primary: #FFC926;
-  --color-primary-foreground: #241A00;
-  --color-secondary: #F96015;
-  --color-secondary-foreground: #261000;
-  --color-accent: #C41F10;
-  --color-accent-foreground: #FFF1E2;
-  --color-muted: #1E3223;
-  --color-muted-foreground: #A9BD97;
-  --color-border: #2A4030;
-  --color-input: #2A4030;
-  --color-ring: #FFC926;
-  --primary-light: #FFDE6B;
-  --primary-glow: #5C4A00;
-  --accent-red: #FF6B3D;
-  --editorial-text: #F3E8CC;
-  --editorial-text-light: #A9BD97;
-  --editorial-tag: #FFC926;
-  --editorial-tag-bg: #1E3223;
-  --editorial-hover: #132316;
-  --gradient-primary: linear-gradient(135deg, #FFC926, #F96015);
-  --gradient-hero: linear-gradient(135deg, #FFC926 0%, #F96015 40%, #C41F10 70%, #18542A 100%);
-  --gradient-accent: linear-gradient(90deg, #FFC926, #F96015, #C41F10);
-  --font-heading-weight: 700;
-}
-html.light.theme-feira,
-html.theme-feira.light {
-  --color-background: #F3E8CC;
-  --color-foreground: #23301F;
-  --color-card: #FBF6E4;
-  --color-card-foreground: #23301F;
-  --color-popover: #FCF8E9;
-  --color-popover-foreground: #23301F;
-  --color-primary: #C41F10;
-  --color-primary-foreground: #FBF3DF;
-  --color-secondary: #F96015;
-  --color-secondary-foreground: #2A0E00;
-  --color-accent: #18542A;
-  --color-accent-foreground: #F3E8CC;
-  --color-muted: #E4D8B4;
-  --color-muted-foreground: #575031;
-  --color-border: #D3C59B;
-  --color-input: #D3C59B;
-  --color-ring: #C41F10;
-  --primary-light: #F96015;
-  --primary-glow: #F5CBA8;
-  --accent-red: #B91C1C;
-  --editorial-text: #23301F;
-  --editorial-text-light: #575031;
-  --editorial-tag: #C41F10;
-  --editorial-tag-bg: #E4D8B4;
-  --editorial-hover: #E9DFC0;
-  --gradient-primary: linear-gradient(135deg, #F96015, #C41F10);
-  --gradient-hero: linear-gradient(135deg, #FFC926 0%, #F96015 35%, #C41F10 65%, #18542A 100%);
-  --gradient-accent: linear-gradient(90deg, #FFC926, #F96015, #C41F10);
-  --font-heading-weight: 700;
-}
-
-/* ---------- BOTÂNICA — apothecary ---------- */
-html.theme-botanica {
-  --color-background: #1F2420;
-  --color-foreground: #F3D5CE;
-  --color-card: #272D28;
-  --color-card-foreground: #F3D5CE;
-  --color-popover: #272D28;
-  --color-popover-foreground: #F3D5CE;
-  --color-primary: #F29033;
-  --color-primary-foreground: #2A1503;
-  --color-secondary: #DA9FA1;
-  --color-secondary-foreground: #2E1216;
-  --color-accent: #FAD91D;
-  --color-accent-foreground: #241C00;
-  --color-muted: #2E362F;
-  --color-muted-foreground: #A9B2A7;
-  --color-border: #39423A;
-  --color-input: #39423A;
-  --color-ring: #F29033;
-  --primary-light: #F7A95C;
-  --primary-glow: #5C3603;
-  --accent-red: #FF6B4A;
-  --editorial-text: #F3D5CE;
-  --editorial-text-light: #A9B2A7;
-  --editorial-tag: #F29033;
-  --editorial-tag-bg: #2E362F;
-  --editorial-hover: #242B26;
-  --gradient-primary: linear-gradient(135deg, #FAD91D, #F29033);
-  --gradient-hero: linear-gradient(135deg, #FAD91D 0%, #F29033 40%, #C1553B 70%, #4A2B47 100%);
-  --gradient-accent: linear-gradient(90deg, #FAD91D, #F29033, #DA9FA1);
-  --font-heading-weight: 700;
-}
-html.light.theme-botanica,
-html.theme-botanica.light {
-  --color-background: #F3ECE2;
-  --color-foreground: #2A211B;
-  --color-card: #FDF9EF;
-  --color-card-foreground: #2A211B;
-  --color-popover: #FEFAF2;
-  --color-popover-foreground: #2A211B;
-  --color-primary: #B44E0B;
-  --color-primary-foreground: #FDEFE3;
-  --color-secondary: #6A3250;
-  --color-secondary-foreground: #F6E4DE;
-  --color-accent: #0B4417;
-  --color-accent-foreground: #E9F3EA;
-  --color-muted: #E2D7CB;
-  --color-muted-foreground: #5F5347;
-  --color-border: #D4C7B6;
-  --color-input: #D4C7B6;
-  --color-ring: #B44E0B;
-  --primary-light: #D97B2F;
-  --primary-glow: #EBD8C2;
-  --accent-red: #BE123C;
-  --editorial-text: #2A211B;
-  --editorial-text-light: #6E6156;
-  --editorial-tag: #B44E0B;
-  --editorial-tag-bg: #E2D7CB;
-  --editorial-hover: #E7DECF;
-  --gradient-primary: linear-gradient(135deg, #D97B2F, #B44E0B);
-  --gradient-hero: linear-gradient(135deg, #E8A33D 0%, #B44E0B 40%, #6A3250 75%, #0B4417 100%);
-  --gradient-accent: linear-gradient(90deg, #D97B2F, #B44E0B, #6A3250);
-  --font-heading-weight: 700;
-}
-
-/* ---------- PEDRO — rosa BOLD (feito para o Pedro) ---------- */
-html.theme-pedro {
-  --color-background: #241019;
-  --color-foreground: #FBE0EA;
-  --color-card: #2E1722;
-  --color-card-foreground: #FBE0EA;
-  --color-popover: #2E1722;
-  --color-popover-foreground: #FBE0EA;
-  --color-primary: #FF5FA2;
-  --color-primary-foreground: #2B0716;
-  --color-secondary: #F194B6;
-  --color-secondary-foreground: #33101F;
-  --color-accent: #F2B33D;
-  --color-accent-foreground: #2A1A00;
-  --color-muted: #38202C;
-  --color-muted-foreground: #CDA0AF;
-  --color-border: #472A38;
-  --color-input: #472A38;
-  --color-ring: #FF5FA2;
-  --primary-light: #FF8FBE;
-  --primary-glow: #571B34;
-  --accent-red: #FF7AB0;
-  --editorial-text: #FBE0EA;
-  --editorial-text-light: #CDA0AF;
-  --editorial-tag: #FF5FA2;
-  --editorial-tag-bg: #38202C;
-  --editorial-hover: #2B1520;
-  --gradient-primary: linear-gradient(135deg, #FF5FA2, #C92460);
-  --gradient-hero: linear-gradient(135deg, #FF8FBF 0%, #FF5FA2 30%, #C92460 62%, #6E1030 100%);
-  --gradient-accent: linear-gradient(90deg, #FF8FBF, #FF5FA2, #F2B33D);
-  --font-heading-weight: 800;
-}
-html.light.theme-pedro,
-html.theme-pedro.light {
-  --color-background: #EEDBCB;
-  --color-foreground: #33201A;
-  --color-card: #F7EDE1;
-  --color-card-foreground: #33201A;
-  --color-popover: #F9EFE5;
-  --color-popover-foreground: #33201A;
-  --color-primary: #C92460;
-  --color-primary-foreground: #FDEDF4;
-  --color-secondary: #F2A9BD;
-  --color-secondary-foreground: #4A1024;
-  --color-accent: #A5234E;
-  --color-accent-foreground: #FBE4EC;
-  --color-muted: #E3D2C1;
-  --color-muted-foreground: #5F4D43;
-  --color-border: #D8C2B1;
-  --color-input: #D8C2B1;
-  --color-ring: #C92460;
-  --primary-light: #E578A3;
-  --primary-glow: #F6C6D3;
-  --accent-red: #BE123C;
-  --editorial-text: #33201A;
-  --editorial-text-light: #6F5A50;
-  --editorial-tag: #C92460;
-  --editorial-tag-bg: #E3D2C1;
-  --editorial-hover: #E7D9CB;
-  --gradient-primary: linear-gradient(135deg, #E8558D, #C92460);
-  --gradient-hero: linear-gradient(135deg, #F277A8 0%, #C92460 40%, #A5234E 70%, #571B34 100%);
-  --gradient-accent: linear-gradient(90deg, #F277A8, #C92460, #A5234E);
-  --font-heading-weight: 800;
-}
-
-/* =========================================================================
-   Texturas ambientais por tema — camadas decorativas sutis sobre o fundo.
-   Derivam dos tokens do tema (color-mix), então acompanham claro e escuro.
-   ========================================================================= */
-
-/* Oceano — linhas finas de carta náutica */
-html.theme-oceano body {
-  background-image: repeating-linear-gradient(
-    180deg,
-    color-mix(in oklch, var(--color-primary) 6%, transparent) 0 1px,
-    transparent 1px 46px
-  );
-}
-
-/* Pitaya — pontilhado de confete */
-html.theme-pitaya body {
-  background-image:
-    radial-gradient(color-mix(in oklch, var(--color-primary) 9%, transparent) 1.3px, transparent 1.7px),
-    radial-gradient(color-mix(in oklch, var(--color-secondary) 9%, transparent) 1.3px, transparent 1.7px);
-  background-size: 30px 30px, 30px 30px;
-  background-position: 0 0, 15px 15px;
-}
-
-/* Uva — aurora diagonal suave */
-html.theme-uva body {
-  background-image: repeating-linear-gradient(
-    115deg,
-    color-mix(in oklch, var(--color-primary) 7%, transparent) 0 2px,
-    transparent 2px 52px
-  );
-}
-
-/* Esmeralda — estufa quadriculada de pontos */
-html.theme-esmeralda body {
-  background-image: radial-gradient(
-    color-mix(in oklch, var(--color-secondary) 10%, transparent) 1.2px,
-    transparent 1.6px
-  );
-  background-size: 22px 22px;
-}
-
-/* Americana — listras diagonais de estrada (rota 66) */
-html.theme-americana body {
-  background-image: repeating-linear-gradient(
-    -45deg,
-    color-mix(in oklch, var(--color-primary) 7%, transparent) 0 2px,
-    transparent 2px 44px
-  );
-}
-
-/* Feira Livre — xadrez de toldo de mercado */
-html.theme-feira body {
-  background-image:
-    linear-gradient(45deg, color-mix(in oklch, var(--color-primary) 5%, transparent) 25%, transparent 25%),
-    linear-gradient(-45deg, color-mix(in oklch, var(--color-primary) 5%, transparent) 25%, transparent 25%);
-  background-size: 44px 44px;
-}
-
-/* Botânica — hachuras cruzadas de gravura de apotécari@ */
-html.theme-botanica body {
-  background-image:
-    repeating-linear-gradient(45deg, color-mix(in oklch, var(--color-foreground) 4%, transparent) 0 1px, transparent 1px 14px),
-    repeating-linear-gradient(-45deg, color-mix(in oklch, var(--color-foreground) 4%, transparent) 0 1px, transparent 1px 14px);
-}
-
-/* Pedro — listras de bala (especialmente para o Pedro) */
-html.theme-pedro body {
-  background-image: repeating-linear-gradient(
-    -60deg,
-    color-mix(in oklch, var(--color-primary) 7%, transparent) 0 12px,
-    transparent 12px 68px
-  );
+  --color-primary: oklch(50% 0.16 160);
+  --color-primary-foreground: oklch(98% 0.02 158);
+  --color-secondary: oklch(86% 0.09 130);
+  --color-secondary-foreground: oklch(29% 0.08 138);
+  --color-accent: oklch(42% 0.14 168);
+  --color-accent-foreground: oklch(96% 0.02 160);
+  --color-ring: oklch(50% 0.16 160);
+  --primary-light: oklch(65% 0.14 152);
+  --primary-glow: oklch(76% 0.12 145);
+  --accent-red: oklch(55% 0.23 25);
+  --editorial-tag: oklch(50% 0.16 160);
+  --editorial-tag-bg: oklch(89% 0.06 152);
+  --editorial-hover: oklch(91% 0.04 155);
+  --gradient-primary: linear-gradient(135deg, oklch(64% 0.17 142), oklch(44% 0.16 178));
+  --gradient-hero: linear-gradient(135deg, oklch(72% 0.16 138) 0%, oklch(53% 0.17 162) 45%, oklch(29% 0.1 190) 100%);
+  --gradient-accent: linear-gradient(90deg, oklch(64% 0.17 142), oklch(50% 0.16 160), oklch(47% 0.15 178));
 }
