@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Loader2, Accessibility, Type, ShieldCheck, ChevronRight, LogOut, UserRound, Save } from "lucide-react";
+import { Loader2, Accessibility, Type, ShieldCheck, ChevronRight, LogOut, UserRound, Save, Palette, Check } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
 import { SenhaDeAcessoCard } from "@/components/SenhaDeAcessoCard";
 import { BasesDeDadosCard } from "@/components/BasesDeDadosCard";
 import { BackButton } from "@/components/BackButton";
 import { SEO } from "@/components/SEO";
 import { useA11y, type FontScale } from "@/hooks/useA11y";
+import { usePalette, PALETTE_OPTIONS } from "@/hooks/usePalette";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -38,6 +39,7 @@ function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: 
 
 const Settings = () => {
   const { scale, setScale, bold, setBold, contrast, setContrast } = useA11y();
+  const { palette, setPalette } = usePalette();
   const { isAdmin } = useIsAdmin();
   const { user, signOut, fullName, profileLoading, profileError, updateFullName } = useAuth();
   const [name, setName] = useState(fullName);
@@ -119,6 +121,66 @@ const Settings = () => {
         <SenhaDeAcessoCard />
 
         <BasesDeDadosCard />
+
+        <section className="rounded-2xl border border-border bg-card/60 p-6">
+          <header className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+              <Palette className="h-5 w-5" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold">Temas do aplicativo</h2>
+              <p className="text-sm text-muted-foreground">
+                Se preferir cores mais vivas, escolha um tema abaixo. Cada um funciona no modo claro e no modo escuro — e só muda para quem escolher.
+              </p>
+            </div>
+          </header>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" role="radiogroup" aria-label="Tema de cores do aplicativo">
+            {PALETTE_OPTIONS.map((option) => {
+              const active = palette === option.id;
+              return (
+                <button
+                  key={option.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={active}
+                  onClick={() => setPalette(option.id)}
+                  className={`group relative flex items-center gap-3 rounded-2xl border p-3 text-left transition-all ${
+                    active
+                      ? "border-primary/70 bg-primary/[0.06] shadow-sm"
+                      : "border-border hover:border-primary/40"
+                  }`}
+                >
+                  <span
+                    aria-hidden="true"
+                    className="h-14 w-20 shrink-0 overflow-hidden rounded-xl ring-1 ring-black/10 dark:ring-white/10"
+                    style={{ background: `linear-gradient(135deg, ${option.swatch[0]} 0%, ${option.swatch[1]} 55%, ${option.swatch[2]} 100%)` }}
+                  >
+                    <span className="flex h-full items-end justify-between p-1.5">
+                      <span className="h-2.5 w-2.5 rounded-full bg-white/80 shadow-sm" />
+                      <span className="h-4 w-4 rounded-full bg-white/40 backdrop-blur-[1px]" />
+                    </span>
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-semibold leading-tight">{option.name}</span>
+                    <span className="mt-1 block text-[11px] leading-snug text-muted-foreground">{option.description}</span>
+                  </span>
+                  <span
+                    aria-hidden="true"
+                    className={`absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full border transition-colors ${
+                      active ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background text-transparent"
+                    }`}
+                  >
+                    <Check className="h-3 w-3" strokeWidth={3} />
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          <p className="mt-4 text-xs text-muted-foreground">
+            Dica: alterne entre modo claro e escuro pelo ícone no topo do aplicativo — todos os temas acompanham os dois modos. Para voltar, escolha "Padrão da marca".
+          </p>
+        </section>
 
         <section className="rounded-2xl border border-border bg-card/60 p-6">
           <header className="flex items-center gap-3 mb-4">
