@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { AlarmClock, ArrowUpRight, Check, Clock, Link2, MapPin, X, UserCheck } from "lucide-react";
+import { AlarmClock, ArrowUpRight, Check, Clock, Link2, MapPin, X, UserCheck, Sun } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { publicUrl } from "@/lib/publicUrl";
@@ -153,12 +153,17 @@ export const TodayVisitsCard = ({ className = "" }: { className?: string }) => {
             const Icon = vt.icon;
             const isNext = next?.id === v.id;
             const isDone = v.status === "concluido";
+            const isAllDay = Number(v.duration_minutes) >= 480;
             return (
               <li
                 key={v.id}
                 className={`rounded-2xl border p-3 transition-colors ${
-                  isNext ? "border-primary/60 bg-primary/[0.06]" : "border-border/60 bg-background/40"
-                } hover:border-primary/60`}
+                  isAllDay
+                    ? "border-amber-400/80 bg-amber-50/60 hover:border-amber-500 dark:bg-amber-950/20"
+                    : isNext
+                      ? "border-primary/60 bg-primary/[0.06] hover:border-primary/60"
+                      : "border-border/60 bg-background/40 hover:border-primary/60"
+                }`}
               >
                 <Link to={`/treinamento/${v.id}`} className="group flex items-center gap-3">
                   <span
@@ -168,8 +173,15 @@ export const TodayVisitsCard = ({ className = "" }: { className?: string }) => {
                     <Icon className="h-4 w-4" />
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="flex items-center gap-2">
-                      <span className="font-mono text-sm tabular-nums text-foreground">{hhmm(v.scheduled_at)}</span>
+                    <span className="flex flex-wrap items-center gap-2">
+                      {isAllDay ? (
+                        <span className="inline-flex items-center gap-1 rounded-md bg-amber-500 px-1.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-amber-950">
+                          <Sun className="h-3 w-3" strokeWidth={2.6} />
+                          Dia todo
+                        </span>
+                      ) : (
+                        <span className="font-mono text-sm tabular-nums text-foreground">{hhmm(v.scheduled_at)}</span>
+                      )}
                       {isNext && (
                         <span className="rounded-full bg-primary px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-primary-foreground">
                           Próxima
@@ -188,7 +200,7 @@ export const TodayVisitsCard = ({ className = "" }: { className?: string }) => {
                     <span className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">
                       <span className="inline-flex items-center gap-1">
                         <Clock className="h-3 w-3" />
-                        {v.duration_minutes} min
+                        {isAllDay ? "Dia todo" : `${v.duration_minutes} min`}
                       </span>
                       {v.location && (
                         <span className="inline-flex items-center gap-1 truncate">
