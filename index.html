@@ -45,6 +45,10 @@
           : (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
         document.documentElement.classList.add(theme);
         document.documentElement.style.colorScheme = theme;
+        var palette = localStorage.getItem('treinacheck-theme-palette');
+        if (palette === 'oceano' || palette === 'pitaya' || palette === 'uva' || palette === 'esmeralda') {
+          document.documentElement.classList.add('theme-' + palette);
+        }
       } catch (e) {}
     })();
   </script>
